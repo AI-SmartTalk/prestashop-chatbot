@@ -572,15 +572,28 @@ class AiSmartTalk extends Module
             Configuration::updateValue('AI_SMART_TALK_CDN', $cdn);
         }
         
+        // Ensure API URL is valid
+        $apiUrl = Configuration::get('AI_SMART_TALK_URL');
+        if (empty($apiUrl) || !filter_var($apiUrl, FILTER_VALIDATE_URL)) {
+            $apiUrl = 'https://aismarttalk.tech';
+            Configuration::updateValue('AI_SMART_TALK_URL', $apiUrl);
+        }
+        
+        // Build WebSocket URL from API URL
+        $wsUrl = str_replace(['https://', 'http://'], ['wss://', 'ws://'], $apiUrl);
+        
         $chatModelId = Configuration::get('CHAT_MODEL_ID');
-        $lang = $this->context->language->iso_code;
+        $integrationToken = Configuration::get('CHAT_MODEL_TOKEN');
+        $userToken = isset($_COOKIE['ai_smarttalk_oauth_token']) ? $_COOKIE['ai_smarttalk_oauth_token'] : null;
 
         $this->context->smarty->assign([
             'chatModelId' => $chatModelId,
+            'integrationToken' => $integrationToken,
             'CDN' => $cdn,
-            'lang' => $lang,
+            'apiUrl' => $apiUrl,
+            'wsUrl' => $wsUrl,
             'source' => 'PRESTASHOP',
-            'userToken' => $_COOKIE['ai_smarttalk_oauth_token'],
+            'userToken' => $userToken,
         ]);
 
         return $this->display(__FILE__, 'views/templates/hook/footer.tpl');
