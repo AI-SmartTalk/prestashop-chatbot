@@ -30,7 +30,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '2.3.2';
+        $this->version = '2.5.0';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -49,15 +49,20 @@ class AiSmartTalk extends Module
         // Initialize URL configurations with defaults if not already set or empty
         $defaultUrl = 'https://aismarttalk.tech';
         $defaultCdn = 'https://cdn.aismarttalk.tech';
+        $defaultWs = 'wss://ws.aismarttalk.tech';
         
         $currentUrl = Configuration::get('AI_SMART_TALK_URL');
         $currentCdn = Configuration::get('AI_SMART_TALK_CDN');
+        $currentWs = Configuration::get('AI_SMART_TALK_WS');
         
         if (empty($currentUrl) || !filter_var($currentUrl, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_URL', $defaultUrl);
         }
         if (empty($currentCdn) || !filter_var($currentCdn, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_CDN', $defaultCdn);
+        }
+        if (empty($currentWs)) {
+            Configuration::updateValue('AI_SMART_TALK_WS', $defaultWs);
         }
 
         // Set default iframe position if not set
@@ -91,6 +96,11 @@ class AiSmartTalk extends Module
         }
 
         if (!Configuration::updateValue('AI_SMART_TALK_CDN', 'https://cdn.aismarttalk.tech')) {
+            return false;
+        }
+
+        // Set default WebSocket URL
+        if (!Configuration::updateValue('AI_SMART_TALK_WS', 'wss://ws.aismarttalk.tech')) {
             return false;
         }
 
@@ -149,6 +159,7 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_ENABLED')
             && Configuration::deleteByName('AI_SMART_TALK_URL')
             && Configuration::deleteByName('AI_SMART_TALK_CDN')
+            && Configuration::deleteByName('AI_SMART_TALK_WS')
             && Configuration::deleteByName('AI_SMART_TALK_IFRAME_POSITION')
             && Configuration::deleteByName('AI_SMART_TALK_PRODUCT_SYNC')
             && Configuration::deleteByName('CHAT_MODEL_ID')
@@ -258,10 +269,12 @@ class AiSmartTalk extends Module
         if (Tools::isSubmit('submitWhiteLabel')) {
             $url = Tools::getValue('AI_SMART_TALK_URL');
             $cdn = Tools::getValue('AI_SMART_TALK_CDN');
+            $ws = Tools::getValue('AI_SMART_TALK_WS');
             
             // Validate URLs and use defaults if invalid
             $defaultUrl = 'https://aismarttalk.tech';
             $defaultCdn = 'https://cdn.aismarttalk.tech';
+            $defaultWs = 'wss://ws.aismarttalk.tech';
             
             if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
                 $url = $defaultUrl;
@@ -269,9 +282,14 @@ class AiSmartTalk extends Module
             if (empty($cdn) || !filter_var($cdn, FILTER_VALIDATE_URL)) {
                 $cdn = $defaultCdn;
             }
+            // Validate WebSocket URL (wss:// or ws://)
+            if (empty($ws) || !preg_match('/^wss?:\/\//', $ws)) {
+                $ws = $defaultWs;
+            }
             
             Configuration::updateValue('AI_SMART_TALK_URL', $url);
             Configuration::updateValue('AI_SMART_TALK_CDN', $cdn);
+            Configuration::updateValue('AI_SMART_TALK_WS', $ws);
             $output .= $this->displayConfirmation($this->trans('WhiteLabel settings updated.', [], 'Modules.Aismarttalk.Admin'));
         }
 
@@ -390,7 +408,7 @@ class AiSmartTalk extends Module
                     'label' => $this->trans('AI SmartTalk URL', [], 'Modules.Aismarttalk.Admin'),
                     'name' => 'AI_SMART_TALK_URL',
                     'required' => true,
-                    'desc' => $this->trans('Base URL of AI SmartTalk API', [], 'Modules.Aismarttalk.Admin'),
+                    'desc' => $this->trans('Base URL of AI SmartTalk API (e.g., https://aismarttalk.tech)', [], 'Modules.Aismarttalk.Admin'),
                     'value' => Configuration::get('AI_SMART_TALK_URL'),
                 ],
                 [
@@ -398,8 +416,16 @@ class AiSmartTalk extends Module
                     'label' => $this->trans('AI SmartTalk CDN URL', [], 'Modules.Aismarttalk.Admin'),
                     'name' => 'AI_SMART_TALK_CDN',
                     'required' => true,
-                    'desc' => $this->trans('CDN URL for AI SmartTalk resources', [], 'Modules.Aismarttalk.Admin'),
+                    'desc' => $this->trans('CDN URL for AI SmartTalk resources (e.g., https://cdn.aismarttalk.tech)', [], 'Modules.Aismarttalk.Admin'),
                     'value' => Configuration::get('AI_SMART_TALK_CDN'),
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->trans('AI SmartTalk WebSocket URL', [], 'Modules.Aismarttalk.Admin'),
+                    'name' => 'AI_SMART_TALK_WS',
+                    'required' => true,
+                    'desc' => $this->trans('WebSocket URL for real-time communication (e.g., wss://ws.aismarttalk.tech)', [], 'Modules.Aismarttalk.Admin'),
+                    'value' => Configuration::get('AI_SMART_TALK_WS'),
                 ],
             ],
             'submit' => [
@@ -418,6 +444,7 @@ class AiSmartTalk extends Module
         $helper->submit_action = 'submitWhiteLabel';
         $helper->fields_value['AI_SMART_TALK_URL'] = Configuration::get('AI_SMART_TALK_URL');
         $helper->fields_value['AI_SMART_TALK_CDN'] = Configuration::get('AI_SMART_TALK_CDN');
+        $helper->fields_value['AI_SMART_TALK_WS'] = Configuration::get('AI_SMART_TALK_WS');
 
         return $helper->generateForm($fields_form);
     }
@@ -545,7 +572,7 @@ class AiSmartTalk extends Module
     {
         $position = Configuration::get('AI_SMART_TALK_IFRAME_POSITION');
         if ($position === 'footer') {
-            return $this->renderIframe();
+            return $this->renderChatbot();
         }
         return '';
     }
@@ -554,33 +581,141 @@ class AiSmartTalk extends Module
     {
         $position = Configuration::get('AI_SMART_TALK_IFRAME_POSITION');
         if ($position === 'before_footer') {
-            return $this->renderIframe();
+            return $this->renderChatbot();
         }
         return '';
     }
 
-    private function renderIframe()
+    /**
+     * Fetch embed configuration from the API
+     * 
+     * @return array|null The embed configuration or null if failed
+     */
+    private function fetchEmbedConfig()
+    {
+        $chatModelId = Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = Configuration::get('CHAT_MODEL_TOKEN');
+        $apiUrl = Configuration::get('AI_SMART_TALK_URL');
+        
+        if (empty($chatModelId) || empty($chatModelToken) || empty($apiUrl)) {
+            return null;
+        }
+        
+        // Build the API URL for embed config
+        $embedConfigUrl = rtrim($apiUrl, '/') . '/api/public/chatModel/' . urlencode($chatModelId) . '/embed-config?integrationType=PRESTASHOP';
+        
+        // Initialize cURL
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $embedConfigUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $chatModelToken,
+                'Content-Type: application/json',
+            ],
+        ]);
+        
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+        
+        if ($httpCode !== 200 || empty($response)) {
+            // Log error for debugging
+            PrestaShopLogger::addLog(
+                'AI SmartTalk: Failed to fetch embed config. HTTP Code: ' . $httpCode,
+                3,
+                null,
+                'AiSmartTalk',
+                null,
+                true
+            );
+            return null;
+        }
+        
+        $data = json_decode($response, true);
+        
+        if (isset($data['data'])) {
+            return $data['data'];
+        }
+        
+        return null;
+    }
+
+    /**
+     * Render the chatbot using the universal embed script
+     * 
+     * @return string The HTML/JS code to embed the chatbot
+     */
+    private function renderChatbot()
     {
         if (!Configuration::get('AI_SMART_TALK_ENABLED')) {
             return '';
         }
         
-        // Ensure CDN URL is valid
-        $cdn = Configuration::get('AI_SMART_TALK_CDN');
-        if (empty($cdn) || !filter_var($cdn, FILTER_VALIDATE_URL)) {
-            $cdn = 'https://cdn.aismarttalk.tech';
-            Configuration::updateValue('AI_SMART_TALK_CDN', $cdn);
+        $chatModelId = Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = Configuration::get('CHAT_MODEL_TOKEN');
+        
+        if (empty($chatModelId) || empty($chatModelToken)) {
+            return '';
         }
         
-        $chatModelId = Configuration::get('CHAT_MODEL_ID');
+        // Ensure URLs are valid
+        $apiUrl = Configuration::get('AI_SMART_TALK_URL');
+        $cdnUrl = Configuration::get('AI_SMART_TALK_CDN');
+        $wsUrl = Configuration::get('AI_SMART_TALK_WS');
+        
+        if (empty($apiUrl) || !filter_var($apiUrl, FILTER_VALIDATE_URL)) {
+            $apiUrl = 'https://aismarttalk.tech';
+            Configuration::updateValue('AI_SMART_TALK_URL', $apiUrl);
+        }
+        if (empty($cdnUrl) || !filter_var($cdnUrl, FILTER_VALIDATE_URL)) {
+            $cdnUrl = 'https://cdn.aismarttalk.tech';
+            Configuration::updateValue('AI_SMART_TALK_CDN', $cdnUrl);
+        }
+        if (empty($wsUrl) || !preg_match('/^wss?:\/\//', $wsUrl)) {
+            $wsUrl = 'wss://ws.aismarttalk.tech';
+            Configuration::updateValue('AI_SMART_TALK_WS', $wsUrl);
+        }
+        
         $lang = $this->context->language->iso_code;
-
-        $this->context->smarty->assign([
+        $userToken = isset($_COOKIE['ai_smarttalk_oauth_token']) ? $_COOKIE['ai_smarttalk_oauth_token'] : null;
+        
+        // Fetch embed config from API
+        $embedConfig = $this->fetchEmbedConfig();
+        
+        // Build chatbot settings - merge API config with local settings
+        $chatbotSettings = [
             'chatModelId' => $chatModelId,
-            'CDN' => $cdn,
             'lang' => $lang,
+            'apiUrl' => rtrim($apiUrl, '/') . '/api',
+            'wsUrl' => $wsUrl,
+            'cdnUrl' => $cdnUrl,
             'source' => 'PRESTASHOP',
-            'userToken' => $_COOKIE['ai_smarttalk_oauth_token'],
+        ];
+        
+        // Add user token if available
+        if ($userToken) {
+            $chatbotSettings['userToken'] = $userToken;
+        }
+        
+        // Merge with API embed config if available
+        // Automatically merge all settings from API, except critical ones that must not be overridden
+        if ($embedConfig && is_array($embedConfig)) {
+            $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang'];
+            
+            foreach ($embedConfig as $key => $value) {
+                // Only merge settings that are not protected
+                if (!in_array($key, $protectedSettings)) {
+                    $chatbotSettings[$key] = $value;
+                }
+            }
+        }
+        
+        // Assign variables to Smarty
+        $this->context->smarty->assign([
+            'chatbotSettings' => json_encode($chatbotSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            'cdnUrl' => $cdnUrl,
         ]);
 
         return $this->display(__FILE__, 'views/templates/hook/footer.tpl');
@@ -692,15 +827,20 @@ class AiSmartTalk extends Module
     {
         $defaultUrl = 'https://aismarttalk.tech';
         $defaultCdn = 'https://cdn.aismarttalk.tech';
+        $defaultWs = 'wss://ws.aismarttalk.tech';
         
         $currentUrl = Configuration::get('AI_SMART_TALK_URL');
         $currentCdn = Configuration::get('AI_SMART_TALK_CDN');
+        $currentWs = Configuration::get('AI_SMART_TALK_WS');
         
         if (empty($currentUrl) || !filter_var($currentUrl, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_URL', $defaultUrl);
         }
         if (empty($currentCdn) || !filter_var($currentCdn, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_CDN', $defaultCdn);
+        }
+        if (empty($currentWs) || !preg_match('/^wss?:\/\//', $currentWs)) {
+            Configuration::updateValue('AI_SMART_TALK_WS', $defaultWs);
         }
     }
 
@@ -712,12 +852,65 @@ class AiSmartTalk extends Module
 
         $backofficeUrl = $this->getApiHost() . '/admin/chatModel/' . $chatModelId;
 
+        // Ensure URLs are valid
+        $apiUrl = Configuration::get('AI_SMART_TALK_URL');
+        $cdnUrl = Configuration::get('AI_SMART_TALK_CDN');
+        $wsUrl = Configuration::get('AI_SMART_TALK_WS');
+        
+        if (empty($apiUrl) || !filter_var($apiUrl, FILTER_VALIDATE_URL)) {
+            $apiUrl = 'https://aismarttalk.tech';
+            Configuration::updateValue('AI_SMART_TALK_URL', $apiUrl);
+        }
+        if (empty($cdnUrl) || !filter_var($cdnUrl, FILTER_VALIDATE_URL)) {
+            $cdnUrl = 'https://cdn.aismarttalk.tech';
+            Configuration::updateValue('AI_SMART_TALK_CDN', $cdnUrl);
+        }
+        if (empty($wsUrl) || !preg_match('/^wss?:\/\//', $wsUrl)) {
+            $wsUrl = 'wss://ws.aismarttalk.tech';
+            Configuration::updateValue('AI_SMART_TALK_WS', $wsUrl);
+        }
+        
+        $userToken = isset($_COOKIE['ai_smarttalk_oauth_token']) ? $_COOKIE['ai_smarttalk_oauth_token'] : null;
+        
+        // Fetch embed config from API
+        $embedConfig = $this->fetchEmbedConfig();
+        
+        // Build chatbot settings - merge API config with local settings
+        $chatbotSettings = [
+            'chatModelId' => $chatModelId,
+            'lang' => $lang,
+            'apiUrl' => rtrim($apiUrl, '/') . '/api',
+            'wsUrl' => $wsUrl,
+            'cdnUrl' => $cdnUrl,
+            'source' => 'PRESTASHOP',
+        ];
+        
+        // Add user token if available
+        if ($userToken) {
+            $chatbotSettings['userToken'] = $userToken;
+        }
+        
+        // Merge with API embed config if available
+        // Automatically merge all settings from API, except critical ones that must not be overridden
+        if ($embedConfig && is_array($embedConfig)) {
+            $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang'];
+            
+            foreach ($embedConfig as $key => $value) {
+                // Only merge settings that are not protected
+                if (!in_array($key, $protectedSettings)) {
+                    $chatbotSettings[$key] = $value;
+                }
+            }
+        }
+
         $this->context->smarty->assign([
-            'CDN' => Configuration::get('AI_SMART_TALK_CDN'),
+            'CDN' => $cdnUrl,
+            'cdnUrl' => $cdnUrl,
             'backofficeUrl' => $backofficeUrl,
             'chatModelId' => $chatModelId,
             'lang' => $lang,
             'customerSyncEnabled' => (bool)Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC'),
+            'chatbotSettings' => json_encode($chatbotSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
         ]);
 
         if ($this->isConfigured()) {
@@ -762,10 +955,12 @@ class AiSmartTalk extends Module
         Configuration::deleteByName('CHAT_MODEL_TOKEN');
         Configuration::deleteByName('AI_SMART_TALK_URL');
         Configuration::deleteByName('AI_SMART_TALK_CDN');
+        Configuration::deleteByName('AI_SMART_TALK_WS');
 
         // Reset to default values
         Configuration::updateValue('AI_SMART_TALK_URL', 'https://aismarttalk.tech');
         Configuration::updateValue('AI_SMART_TALK_CDN', 'https://cdn.aismarttalk.tech');
+        Configuration::updateValue('AI_SMART_TALK_WS', 'wss://ws.aismarttalk.tech');
 
         return true;
     }
