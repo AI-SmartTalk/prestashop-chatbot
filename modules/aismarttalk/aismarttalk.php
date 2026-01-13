@@ -49,7 +49,7 @@ class AiSmartTalk extends Module
         // Initialize URL configurations with defaults if not already set or empty
         $defaultUrl = 'https://aismarttalk.tech';
         $defaultCdn = 'https://cdn.aismarttalk.tech';
-        $defaultWs = 'wss://ws.aismarttalk.tech';
+        $defaultWs = 'https://ws.223.io.aismarttalk.tech';
         
         $currentUrl = Configuration::get('AI_SMART_TALK_URL');
         $currentCdn = Configuration::get('AI_SMART_TALK_CDN');
@@ -100,7 +100,7 @@ class AiSmartTalk extends Module
         }
 
         // Set default WebSocket URL
-        if (!Configuration::updateValue('AI_SMART_TALK_WS', 'wss://ws.aismarttalk.tech')) {
+        if (!Configuration::updateValue('AI_SMART_TALK_WS', 'https://ws.223.io.aismarttalk.tech')) {
             return false;
         }
 
@@ -274,7 +274,7 @@ class AiSmartTalk extends Module
             // Validate URLs and use defaults if invalid
             $defaultUrl = 'https://aismarttalk.tech';
             $defaultCdn = 'https://cdn.aismarttalk.tech';
-            $defaultWs = 'wss://ws.aismarttalk.tech';
+            $defaultWs = 'https://ws.223.io.aismarttalk.tech';
             
             if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
                 $url = $defaultUrl;
@@ -424,7 +424,7 @@ class AiSmartTalk extends Module
                     'label' => $this->trans('AI SmartTalk WebSocket URL', [], 'Modules.Aismarttalk.Admin'),
                     'name' => 'AI_SMART_TALK_WS',
                     'required' => true,
-                    'desc' => $this->trans('WebSocket URL for real-time communication (e.g., wss://ws.aismarttalk.tech)', [], 'Modules.Aismarttalk.Admin'),
+                    'desc' => $this->trans('WebSocket URL for real-time communication (e.g., https://ws.223.io.aismarttalk.tech)', [], 'Modules.Aismarttalk.Admin'),
                     'value' => Configuration::get('AI_SMART_TALK_WS'),
                 ],
             ],
@@ -674,7 +674,7 @@ class AiSmartTalk extends Module
             Configuration::updateValue('AI_SMART_TALK_CDN', $cdnUrl);
         }
         if (empty($wsUrl) || !preg_match('/^wss?:\/\//', $wsUrl)) {
-            $wsUrl = 'wss://ws.aismarttalk.tech';
+            $wsUrl = 'https://ws.223.io.aismarttalk.tech';
             Configuration::updateValue('AI_SMART_TALK_WS', $wsUrl);
         }
         
@@ -827,7 +827,7 @@ class AiSmartTalk extends Module
     {
         $defaultUrl = 'https://aismarttalk.tech';
         $defaultCdn = 'https://cdn.aismarttalk.tech';
-        $defaultWs = 'wss://ws.aismarttalk.tech';
+        $defaultWs = 'https://ws.223.io.aismarttalk.tech';
         
         $currentUrl = Configuration::get('AI_SMART_TALK_URL');
         $currentCdn = Configuration::get('AI_SMART_TALK_CDN');
@@ -866,7 +866,7 @@ class AiSmartTalk extends Module
             Configuration::updateValue('AI_SMART_TALK_CDN', $cdnUrl);
         }
         if (empty($wsUrl) || !preg_match('/^wss?:\/\//', $wsUrl)) {
-            $wsUrl = 'wss://ws.aismarttalk.tech';
+            $wsUrl = 'https://ws.223.io.aismarttalk.tech';
             Configuration::updateValue('AI_SMART_TALK_WS', $wsUrl);
         }
         
@@ -960,7 +960,7 @@ class AiSmartTalk extends Module
         // Reset to default values
         Configuration::updateValue('AI_SMART_TALK_URL', 'https://aismarttalk.tech');
         Configuration::updateValue('AI_SMART_TALK_CDN', 'https://cdn.aismarttalk.tech');
-        Configuration::updateValue('AI_SMART_TALK_WS', 'wss://ws.aismarttalk.tech');
+        Configuration::updateValue('AI_SMART_TALK_WS', 'https://ws.223.io.aismarttalk.tech');
 
         return true;
     }
