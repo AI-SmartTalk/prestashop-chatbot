@@ -68,14 +68,11 @@
   </div>
 </div>
 
-<!-- views/templates/admin/backoffice.tpl -->
+<!-- AI SmartTalk Chatbot Embedding Code for Backoffice -->
 <script>
-    window.chatbotSettings = {
-      lang: "{$lang|escape:'javascript':'UTF-8'}"
-    };
+window.chatbotSettings = {$chatbotSettings nofilter};
 </script>
-<script type="text/javascript" src="{$CDN|escape:'html':'UTF-8'}/cdn?chatModelId={$chatModelId|escape:'html':'UTF-8'}" async></script>
-<div id="chatbot">Loading ...</div>
+<script src="{$cdnUrl|escape:'html':'UTF-8'}/universal-chatbot.js" async></script>
 
 <script type="text/javascript">
 $(document).ready(function() {
