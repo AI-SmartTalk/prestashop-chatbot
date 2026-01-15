@@ -20,6 +20,7 @@ if (!defined('_PS_VERSION_')) {
 require_once dirname(__FILE__) . '/vendor/autoload.php';
 
 use PrestaShop\AiSmartTalk\CleanProductDocuments;
+use PrestaShop\AiSmartTalk\OAuthHandler;
 use PrestaShop\AiSmartTalk\OAuthTokenHandler;
 use PrestaShop\AiSmartTalk\SynchProductsToAiSmartTalk;
 use PrestaShop\AiSmartTalk\CustomerSync;
@@ -48,15 +49,20 @@ class AiSmartTalk extends Module
 
         // Initialize URL configurations with defaults if not already set or empty
         $defaultUrl = 'https://aismarttalk.tech';
+        $defaultFrontUrl = 'https://aismarttalk.tech';
         $defaultCdn = 'https://cdn.aismarttalk.tech';
         $defaultWs = 'https://ws.223.io.aismarttalk.tech';
         
         $currentUrl = Configuration::get('AI_SMART_TALK_URL');
+        $currentFrontUrl = Configuration::get('AI_SMART_TALK_FRONT_URL');
         $currentCdn = Configuration::get('AI_SMART_TALK_CDN');
         $currentWs = Configuration::get('AI_SMART_TALK_WS');
         
         if (empty($currentUrl) || !filter_var($currentUrl, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_URL', $defaultUrl);
+        }
+        if (empty($currentFrontUrl) || !filter_var($currentFrontUrl, FILTER_VALIDATE_URL)) {
+            Configuration::updateValue('AI_SMART_TALK_FRONT_URL', $defaultFrontUrl);
         }
         if (empty($currentCdn) || !filter_var($currentCdn, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_CDN', $defaultCdn);
@@ -95,6 +101,11 @@ class AiSmartTalk extends Module
             return false;
         }
 
+        // Set default frontend URL (for browser redirects, may differ from backend URL in Docker)
+        if (!Configuration::updateValue('AI_SMART_TALK_FRONT_URL', 'https://aismarttalk.tech')) {
+            return false;
+        }
+
         if (!Configuration::updateValue('AI_SMART_TALK_CDN', 'https://cdn.aismarttalk.tech')) {
             return false;
         }
@@ -113,6 +124,9 @@ class AiSmartTalk extends Module
         if (!Configuration::updateValue('AI_SMART_TALK_PRODUCT_SYNC', false)) {
             return false;
         }
+
+        // Register OAuth redirect URI
+        OAuthHandler::registerRedirectUri();
 
         return true;
     }
@@ -146,6 +160,9 @@ class AiSmartTalk extends Module
 
     public function uninstall()
     {
+        // Disconnect OAuth before uninstalling
+        OAuthHandler::disconnect();
+        
         return parent::uninstall()
             && $this->unregisterHook('displayFooter')
             && $this->unregisterHook('displayBeforeBodyClosingTag')
@@ -158,10 +175,15 @@ class AiSmartTalk extends Module
             && $this->removeSynchField()
             && Configuration::deleteByName('AI_SMART_TALK_ENABLED')
             && Configuration::deleteByName('AI_SMART_TALK_URL')
+            && Configuration::deleteByName('AI_SMART_TALK_FRONT_URL')
             && Configuration::deleteByName('AI_SMART_TALK_CDN')
             && Configuration::deleteByName('AI_SMART_TALK_WS')
             && Configuration::deleteByName('AI_SMART_TALK_IFRAME_POSITION')
             && Configuration::deleteByName('AI_SMART_TALK_PRODUCT_SYNC')
+            && Configuration::deleteByName('AI_SMART_TALK_ACCESS_TOKEN')
+            && Configuration::deleteByName('AI_SMART_TALK_CHAT_MODEL_ID')
+            && Configuration::deleteByName('AI_SMART_TALK_OAUTH_SCOPE')
+            && Configuration::deleteByName('AI_SMART_TALK_OAUTH_CONNECTED')
             && Configuration::deleteByName('CHAT_MODEL_ID')
             && Configuration::deleteByName('CHAT_MODEL_TOKEN');
     }
@@ -224,8 +246,39 @@ class AiSmartTalk extends Module
         // Ensure default URLs are always available
         $this->ensureDefaultUrls();
 
+        // Check for OAuth success/error messages from callback
+        $oauthSuccess = Configuration::get('AI_SMART_TALK_OAUTH_SUCCESS');
+        $oauthError = Configuration::get('AI_SMART_TALK_OAUTH_ERROR');
+        
+        if (!empty($oauthSuccess)) {
+            $output .= $this->displayConfirmation($oauthSuccess);
+            Configuration::deleteByName('AI_SMART_TALK_OAUTH_SUCCESS');
+        }
+        
+        if (!empty($oauthError)) {
+            $output .= $this->displayError($oauthError);
+            Configuration::deleteByName('AI_SMART_TALK_OAUTH_ERROR');
+        }
+
         if (Tools::getValue('resetConfiguration') === $this->name) {
             $this->resetConfiguration();
+        }
+
+        // Handle OAuth disconnect
+        if (Tools::getValue('disconnectOAuth')) {
+            OAuthHandler::disconnect();
+            $output .= $this->displayConfirmation($this->trans('Successfully disconnected from AI SmartTalk.', [], 'Modules.Aismarttalk.Admin'));
+        }
+
+        // Handle OAuth connect (redirect to authorization URL)
+        if (Tools::getValue('connectOAuth')) {
+            // First register the redirect URI (in case it wasn't registered during install)
+            OAuthHandler::registerRedirectUri();
+            
+            // Build and redirect to authorization URL
+            $authUrl = OAuthHandler::buildAuthorizationUrl();
+            Tools::redirect($authUrl);
+            exit;
         }
 
         if (Tools::getValue('forceSync')) {
@@ -268,16 +321,21 @@ class AiSmartTalk extends Module
 
         if (Tools::isSubmit('submitWhiteLabel')) {
             $url = Tools::getValue('AI_SMART_TALK_URL');
+            $frontUrl = Tools::getValue('AI_SMART_TALK_FRONT_URL');
             $cdn = Tools::getValue('AI_SMART_TALK_CDN');
             $ws = Tools::getValue('AI_SMART_TALK_WS');
             
             // Validate URLs and use defaults if invalid
             $defaultUrl = 'https://aismarttalk.tech';
+            $defaultFrontUrl = 'https://aismarttalk.tech';
             $defaultCdn = 'https://cdn.aismarttalk.tech';
             $defaultWs = 'https://ws.223.io.aismarttalk.tech';
             
             if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
                 $url = $defaultUrl;
+            }
+            if (empty($frontUrl) || !filter_var($frontUrl, FILTER_VALIDATE_URL)) {
+                $frontUrl = $defaultFrontUrl;
             }
             if (empty($cdn) || !filter_var($cdn, FILTER_VALIDATE_URL)) {
                 $cdn = $defaultCdn;
@@ -288,8 +346,13 @@ class AiSmartTalk extends Module
             }
             
             Configuration::updateValue('AI_SMART_TALK_URL', $url);
+            Configuration::updateValue('AI_SMART_TALK_FRONT_URL', $frontUrl);
             Configuration::updateValue('AI_SMART_TALK_CDN', $cdn);
             Configuration::updateValue('AI_SMART_TALK_WS', $ws);
+            
+            // Re-register OAuth redirect URI with potentially new URLs
+            OAuthHandler::registerRedirectUri();
+            
             $output .= $this->displayConfirmation($this->trans('WhiteLabel settings updated.', [], 'Modules.Aismarttalk.Admin'));
         }
 
@@ -313,11 +376,11 @@ class AiSmartTalk extends Module
             }
         }
 
-        // Handle form submissions first
+        // Handle legacy form submissions (for backward compatibility)
         $output .= $this->handleForm();
         
-        // Main configuration
-        $output .= $this->displayForm();
+        // Main configuration - OAuth connect/disconnect
+        $output .= $this->displayOAuthForm();
         
         // Show additional settings if configured
         if ($this->isConfigured()) {
@@ -345,14 +408,75 @@ class AiSmartTalk extends Module
         return $this->display(__FILE__, 'views/templates/admin/chatbot-toggle.tpl');
     }
 
+    /**
+     * Display the OAuth connection form
+     * 
+     * @return string
+     */
+    public function displayOAuthForm()
+    {
+        $isConnected = OAuthHandler::isConnected();
+        $chatModelId = OAuthHandler::getChatModelId();
+        $currentIndex = AdminController::$currentIndex . '&configure=' . $this->name;
+        $token = Tools::getAdminTokenLite('AdminModules');
+        
+        $html = '<div class="panel">';
+        $html .= '<h3><i class="icon icon-plug"></i> ' . $this->trans('AI SmartTalk Connection', [], 'Modules.Aismarttalk.Admin') . '</h3>';
+        
+        if ($isConnected) {
+            // Connected state
+            $html .= '<div class="alert alert-success">';
+            $html .= '<i class="icon icon-check"></i> ';
+            $html .= $this->trans('Connected to AI SmartTalk', [], 'Modules.Aismarttalk.Admin');
+            $html .= '</div>';
+            
+            $html .= '<p><strong>' . $this->trans('Chat Model ID:', [], 'Modules.Aismarttalk.Admin') . '</strong> <code>' . htmlspecialchars($chatModelId) . '</code></p>';
+            
+            // Disconnect button
+            $html .= '<a href="' . $currentIndex . '&token=' . $token . '&disconnectOAuth=1" class="btn btn-danger" onclick="return confirm(\'' . $this->trans('Are you sure you want to disconnect from AI SmartTalk?', [], 'Modules.Aismarttalk.Admin') . '\');">';
+            $html .= '<i class="icon icon-unlink"></i> ' . $this->trans('Disconnect', [], 'Modules.Aismarttalk.Admin');
+            $html .= '</a>';
+        } else {
+            // Not connected state
+            $html .= '<div class="alert alert-info">';
+            $html .= '<i class="icon icon-info-circle"></i> ';
+            $html .= $this->trans('Connect your PrestaShop store to AI SmartTalk to enable the AI chatbot.', [], 'Modules.Aismarttalk.Admin');
+            $html .= '</div>';
+            
+            $html .= '<p>' . $this->trans('Click the button below to securely connect your store with your AI SmartTalk account. You will be redirected to AI SmartTalk to authorize the connection.', [], 'Modules.Aismarttalk.Admin') . '</p>';
+            
+            // Connect button
+            $html .= '<a href="' . $currentIndex . '&token=' . $token . '&connectOAuth=1" class="btn btn-primary btn-lg">';
+            $html .= '<i class="icon icon-plug"></i> ' . $this->trans('Connect with AI SmartTalk', [], 'Modules.Aismarttalk.Admin');
+            $html .= '</a>';
+        }
+        
+        $html .= '</div>';
+        
+        return $html;
+    }
+
+    /**
+     * Legacy form for backward compatibility (manual token entry)
+     * Only shown if not connected via OAuth
+     * 
+     * @return string
+     */
     public function displayForm()
     {
+        // If connected via OAuth, don't show the legacy form
+        if (OAuthHandler::isConnected()) {
+            return '';
+        }
+        
         $default_lang = (int) Configuration::get('PS_LANG_DEFAULT');
 
         $fields_form[0]['form'] = [
             'legend' => [
-                'title' => $this->trans('Parameters', [], 'Modules.Aismarttalk.Admin'),
+                'title' => $this->trans('Manual Configuration (Legacy)', [], 'Modules.Aismarttalk.Admin'),
+                'icon' => 'icon-cog',
             ],
+            'description' => $this->trans('Use this only if you cannot use the OAuth connection above. We recommend using the "Connect with AI SmartTalk" button instead.', [], 'Modules.Aismarttalk.Admin'),
             'input' => [
                 [
                     'type' => 'text',
@@ -405,11 +529,19 @@ class AiSmartTalk extends Module
             'input' => [
                 [
                     'type' => 'text',
-                    'label' => $this->trans('AI SmartTalk URL', [], 'Modules.Aismarttalk.Admin'),
+                    'label' => $this->trans('AI SmartTalk API URL (Backend)', [], 'Modules.Aismarttalk.Admin'),
                     'name' => 'AI_SMART_TALK_URL',
                     'required' => true,
-                    'desc' => $this->trans('Base URL of AI SmartTalk API (e.g., https://aismarttalk.tech)', [], 'Modules.Aismarttalk.Admin'),
+                    'desc' => $this->trans('Base URL for server-to-server API calls (e.g., https://aismarttalk.tech or http://ai-toolkit-node:3000 for Docker)', [], 'Modules.Aismarttalk.Admin'),
                     'value' => Configuration::get('AI_SMART_TALK_URL'),
+                ],
+                [
+                    'type' => 'text',
+                    'label' => $this->trans('AI SmartTalk URL (Frontend)', [], 'Modules.Aismarttalk.Admin'),
+                    'name' => 'AI_SMART_TALK_FRONT_URL',
+                    'required' => true,
+                    'desc' => $this->trans('URL for browser redirects and OAuth (e.g., https://aismarttalk.tech or http://localhost:3001 for local development)', [], 'Modules.Aismarttalk.Admin'),
+                    'value' => Configuration::get('AI_SMART_TALK_FRONT_URL'),
                 ],
                 [
                     'type' => 'text',
@@ -443,6 +575,7 @@ class AiSmartTalk extends Module
         $helper->title = $this->displayName;
         $helper->submit_action = 'submitWhiteLabel';
         $helper->fields_value['AI_SMART_TALK_URL'] = Configuration::get('AI_SMART_TALK_URL');
+        $helper->fields_value['AI_SMART_TALK_FRONT_URL'] = Configuration::get('AI_SMART_TALK_FRONT_URL');
         $helper->fields_value['AI_SMART_TALK_CDN'] = Configuration::get('AI_SMART_TALK_CDN');
         $helper->fields_value['AI_SMART_TALK_WS'] = Configuration::get('AI_SMART_TALK_WS');
 
@@ -593,9 +726,10 @@ class AiSmartTalk extends Module
      */
     private function fetchEmbedConfig()
     {
-        $chatModelId = Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken = Configuration::get('CHAT_MODEL_TOKEN');
-        $apiUrl = Configuration::get('AI_SMART_TALK_URL');
+        // Use OAuthHandler for credentials, with fallback to legacy config
+        $chatModelId = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = OAuthHandler::getAccessToken() ?? Configuration::get('CHAT_MODEL_TOKEN');
+        $apiUrl = OAuthHandler::getBackendApiUrl();
         
         if (empty($chatModelId) || empty($chatModelToken) || empty($apiUrl)) {
             return null;
@@ -653,22 +787,18 @@ class AiSmartTalk extends Module
             return '';
         }
         
-        $chatModelId = Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken = Configuration::get('CHAT_MODEL_TOKEN');
+        // Use OAuthHandler for credentials, with fallback to legacy config
+        $chatModelId = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
         
-        if (empty($chatModelId) || empty($chatModelToken)) {
+        if (empty($chatModelId)) {
             return '';
         }
         
-        // Ensure URLs are valid
-        $apiUrl = Configuration::get('AI_SMART_TALK_URL');
+        // Ensure URLs are valid - for frontend rendering, use backend URLs for API calls
+        $apiUrl = OAuthHandler::getBackendApiUrl();
         $cdnUrl = Configuration::get('AI_SMART_TALK_CDN');
         $wsUrl = Configuration::get('AI_SMART_TALK_WS');
         
-        if (empty($apiUrl) || !filter_var($apiUrl, FILTER_VALIDATE_URL)) {
-            $apiUrl = 'https://aismarttalk.tech';
-            Configuration::updateValue('AI_SMART_TALK_URL', $apiUrl);
-        }
         if (empty($cdnUrl) || !filter_var($cdnUrl, FILTER_VALIDATE_URL)) {
             $cdnUrl = 'https://cdn.aismarttalk.tech';
             Configuration::updateValue('AI_SMART_TALK_CDN', $cdnUrl);
@@ -826,15 +956,20 @@ class AiSmartTalk extends Module
     private function ensureDefaultUrls()
     {
         $defaultUrl = 'https://aismarttalk.tech';
+        $defaultFrontUrl = 'https://aismarttalk.tech';
         $defaultCdn = 'https://cdn.aismarttalk.tech';
         $defaultWs = 'https://ws.223.io.aismarttalk.tech';
         
         $currentUrl = Configuration::get('AI_SMART_TALK_URL');
+        $currentFrontUrl = Configuration::get('AI_SMART_TALK_FRONT_URL');
         $currentCdn = Configuration::get('AI_SMART_TALK_CDN');
         $currentWs = Configuration::get('AI_SMART_TALK_WS');
         
         if (empty($currentUrl) || !filter_var($currentUrl, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_URL', $defaultUrl);
+        }
+        if (empty($currentFrontUrl) || !filter_var($currentFrontUrl, FILTER_VALIDATE_URL)) {
+            Configuration::updateValue('AI_SMART_TALK_FRONT_URL', $defaultFrontUrl);
         }
         if (empty($currentCdn) || !filter_var($currentCdn, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_CDN', $defaultCdn);
@@ -846,21 +981,18 @@ class AiSmartTalk extends Module
 
     public function displayBackOfficeIframe()
     {
-        $chatModelId = Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken = Configuration::get('CHAT_MODEL_TOKEN');
+        // Use OAuthHandler for credentials, with fallback to legacy config
+        $chatModelId = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
         $lang = $this->context->language->iso_code;
 
-        $backofficeUrl = $this->getApiHost() . '/admin/chatModel/' . $chatModelId;
+        // Use frontend URL for backoffice link (browser accessible)
+        $backofficeUrl = OAuthHandler::getFrontendApiUrl() . '/admin/chatModel/' . $chatModelId;
 
         // Ensure URLs are valid
-        $apiUrl = Configuration::get('AI_SMART_TALK_URL');
+        $apiUrl = OAuthHandler::getBackendApiUrl();
         $cdnUrl = Configuration::get('AI_SMART_TALK_CDN');
         $wsUrl = Configuration::get('AI_SMART_TALK_WS');
         
-        if (empty($apiUrl) || !filter_var($apiUrl, FILTER_VALIDATE_URL)) {
-            $apiUrl = 'https://aismarttalk.tech';
-            Configuration::updateValue('AI_SMART_TALK_URL', $apiUrl);
-        }
         if (empty($cdnUrl) || !filter_var($cdnUrl, FILTER_VALIDATE_URL)) {
             $cdnUrl = 'https://cdn.aismarttalk.tech';
             Configuration::updateValue('AI_SMART_TALK_CDN', $cdnUrl);
@@ -921,8 +1053,10 @@ class AiSmartTalk extends Module
 
     private function isConfigured()
     {
-        return !empty(Configuration::get('CHAT_MODEL_ID'))
-            && !empty(Configuration::get('CHAT_MODEL_TOKEN'));
+        // Check OAuth connection first, then fall back to legacy config
+        return OAuthHandler::isConnected() 
+            || (!empty(Configuration::get('CHAT_MODEL_ID'))
+                && !empty(Configuration::get('CHAT_MODEL_TOKEN')));
     }
 
     private function handleForm()
@@ -951,14 +1085,19 @@ class AiSmartTalk extends Module
 
     private function resetConfiguration()
     {
+        // Disconnect OAuth first
+        OAuthHandler::disconnect();
+        
         Configuration::deleteByName('CHAT_MODEL_ID');
         Configuration::deleteByName('CHAT_MODEL_TOKEN');
         Configuration::deleteByName('AI_SMART_TALK_URL');
+        Configuration::deleteByName('AI_SMART_TALK_FRONT_URL');
         Configuration::deleteByName('AI_SMART_TALK_CDN');
         Configuration::deleteByName('AI_SMART_TALK_WS');
 
         // Reset to default values
         Configuration::updateValue('AI_SMART_TALK_URL', 'https://aismarttalk.tech');
+        Configuration::updateValue('AI_SMART_TALK_FRONT_URL', 'https://aismarttalk.tech');
         Configuration::updateValue('AI_SMART_TALK_CDN', 'https://cdn.aismarttalk.tech');
         Configuration::updateValue('AI_SMART_TALK_WS', 'https://ws.223.io.aismarttalk.tech');
 

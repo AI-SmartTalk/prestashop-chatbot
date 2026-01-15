@@ -33,6 +33,7 @@ use PrestaShopException;
 use PrestaShopLogger;
 use Customer;
 use Order;
+use PrestaShop\AiSmartTalk\OAuthHandler;
 
 /**
  * Class CustomerSync
@@ -69,9 +70,10 @@ class CustomerSync
      */
     public function exportCustomerBatch(array $customers)
     {
-        $aiSmartTalkUrl   = Configuration::get('AI_SMART_TALK_URL');
-        $chatModelId      = Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken   = Configuration::get('CHAT_MODEL_TOKEN');
+        // Use OAuthHandler for backend API URL and credentials
+        $aiSmartTalkUrl   = OAuthHandler::getBackendApiUrl();
+        $chatModelId      = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken   = OAuthHandler::getAccessToken() ?? Configuration::get('CHAT_MODEL_TOKEN');
 
         // Map PrestaShop customer data to the expected AI SmartTalk format
         $customerData = array_map([$this, 'mapCustomerData'], $customers);

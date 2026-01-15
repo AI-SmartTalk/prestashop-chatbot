@@ -23,6 +23,7 @@ if (!defined('_PS_VERSION_')) {
 require_once dirname(__FILE__) . '/../vendor/autoload.php';
 
 use PrestaShop\PrestaShop\Adapter\Module\Module;
+use PrestaShop\AiSmartTalk\OAuthHandler;
 
 class CleanProductDocuments extends Module
 {
@@ -52,9 +53,12 @@ class CleanProductDocuments extends Module
     private function cleanProducts()
     {
         $productIds = $this->productIds ? $this->productIds : $this->fetchAllProductIds();
-        $aiSmartTalkUrl = \Configuration::get('AI_SMART_TALK_URL');
-        $chatModelId = \Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken = \Configuration::get('CHAT_MODEL_TOKEN');
+        
+        // Use OAuthHandler for backend API URL and credentials
+        $aiSmartTalkUrl = OAuthHandler::getBackendApiUrl();
+        $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
+        
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $aiSmartTalkUrl . '/api/document/clean');
         curl_setopt($ch, CURLOPT_POST, 1);

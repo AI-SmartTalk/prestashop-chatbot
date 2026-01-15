@@ -10,6 +10,7 @@ return array(
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
     'PrestaShop\\AiSmartTalk\\CleanProductDocuments' => $baseDir . '/classes/CleanProductDocuments.php',
     'PrestaShop\\AiSmartTalk\\CustomerSync' => $baseDir . '/classes/CustomerSync.php',
+    'PrestaShop\\AiSmartTalk\\OAuthHandler' => $baseDir . '/classes/OAuthHandler.php',
     'PrestaShop\\AiSmartTalk\\OAuthTokenHandler' => $baseDir . '/classes/OAuthTokenHandler.php',
     'PrestaShop\\AiSmartTalk\\SynchProductsToAiSmartTalk' => $baseDir . '/classes/SynchProductsToAiSmartTalk.php',
 );

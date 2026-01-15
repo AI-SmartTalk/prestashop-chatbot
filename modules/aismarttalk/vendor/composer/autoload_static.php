@@ -25,6 +25,7 @@ class ComposerStaticInit1a64e4a2bee93f2d2c517a3b98c5161e
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
         'PrestaShop\\AiSmartTalk\\CleanProductDocuments' => __DIR__ . '/../..' . '/classes/CleanProductDocuments.php',
         'PrestaShop\\AiSmartTalk\\CustomerSync' => __DIR__ . '/../..' . '/classes/CustomerSync.php',
+        'PrestaShop\\AiSmartTalk\\OAuthHandler' => __DIR__ . '/../..' . '/classes/OAuthHandler.php',
         'PrestaShop\\AiSmartTalk\\OAuthTokenHandler' => __DIR__ . '/../..' . '/classes/OAuthTokenHandler.php',
         'PrestaShop\\AiSmartTalk\\SynchProductsToAiSmartTalk' => __DIR__ . '/../..' . '/classes/SynchProductsToAiSmartTalk.php',
     );

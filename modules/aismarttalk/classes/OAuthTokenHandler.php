@@ -25,6 +25,7 @@ if (!defined('_PS_VERSION_')) {
 require_once dirname(__FILE__) . '/../vendor/autoload.php';
 
 use PrestaShop\PrestaShop\Adapter\Module\Module;
+use PrestaShop\AiSmartTalk\OAuthHandler;
 
 class OAuthTokenHandler extends Module
 {
@@ -58,10 +59,15 @@ class OAuthTokenHandler extends Module
 
     private static function requestOAuthToken($user)
     {
-        $url = \Configuration::get('AI_SMART_TALK_URL') . '/api/oauth/integration';
+        // Use OAuthHandler for backend API URL and credentials
+        $apiUrl = OAuthHandler::getBackendApiUrl();
+        $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
+        
+        $url = $apiUrl . '/api/oauth/integration';
         $data = [
-            'chatModelId' => \Configuration::get('CHAT_MODEL_ID'),
-            'token' => \Configuration::get('CHAT_MODEL_TOKEN'),
+            'chatModelId' => $chatModelId,
+            'token' => $chatModelToken,
             'source' => 'PRESTASHOP',
             'userId' => $user->id,
             'email' => $user->email,
