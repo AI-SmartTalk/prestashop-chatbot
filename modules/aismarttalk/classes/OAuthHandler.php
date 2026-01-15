@@ -38,8 +38,10 @@ class OAuthHandler
     public static function getCallbackUrl(): string
     {
         // Use PrestaShop's front controller URL (not direct PHP file access which gets 403)
+        // Use current protocol (HTTP/HTTPS) to avoid mismatch between authorization and token exchange
         $context = \Context::getContext();
-        return $context->link->getModuleLink('aismarttalk', 'oauthcallback', [], true);
+        $useSsl = \Tools::usingSecureMode();
+        return $context->link->getModuleLink('aismarttalk', 'oauthcallback', [], $useSsl);
     }
     
     /**
@@ -263,18 +265,32 @@ class OAuthHandler
     public static function exchangeCodeForToken(string $code, string $codeVerifier): ?array
     {
         $apiUrl = self::getBackendApiUrl();
+        $callbackUrl = self::getCallbackUrl();
+        $tokenEndpoint = $apiUrl . '/api/oauth/aist/token';
+        
+        $payload = [
+            'grant_type' => 'authorization_code',
+            'code' => $code,
+            'redirect_uri' => $callbackUrl,
+            'client_id' => self::CLIENT_ID,
+            'code_verifier' => $codeVerifier,
+        ];
+        
+        // Log the request for debugging
+        \PrestaShopLogger::addLog(
+            'AI SmartTalk: Token exchange request to ' . $tokenEndpoint . ' with redirect_uri: ' . $callbackUrl,
+            1,
+            null,
+            'AiSmartTalk',
+            null,
+            true
+        );
         
         $ch = curl_init();
         curl_setopt_array($ch, [
-            CURLOPT_URL => $apiUrl . '/api/oauth/aist/token',
+            CURLOPT_URL => $tokenEndpoint,
             CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode([
-                'grant_type' => 'authorization_code',
-                'code' => $code,
-                'redirect_uri' => self::getCallbackUrl(),
-                'client_id' => self::CLIENT_ID,
-                'code_verifier' => $codeVerifier,
-            ]),
+            CURLOPT_POSTFIELDS => json_encode($payload),
             CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 30,
@@ -282,7 +298,20 @@ class OAuthHandler
         
         $result = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
         curl_close($ch);
+        
+        if ($curlError) {
+            \PrestaShopLogger::addLog(
+                'AI SmartTalk: cURL error during token exchange: ' . $curlError,
+                3,
+                null,
+                'AiSmartTalk',
+                null,
+                true
+            );
+            return null;
+        }
         
         if ($httpCode !== 200 || empty($result)) {
             \PrestaShopLogger::addLog(

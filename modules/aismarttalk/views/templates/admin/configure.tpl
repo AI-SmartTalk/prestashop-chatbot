@@ -300,26 +300,18 @@
                 
                 <form action="{$formAction|escape:'html':'UTF-8'}" method="post" class="form-horizontal">
                     <div class="form-group">
-                        <label class="control-label col-lg-3">{l s='API URL (Backend)' mod='aismarttalk'}</label>
+                        <label class="control-label col-lg-3">{l s='API Base URL' mod='aismarttalk'}</label>
                         <div class="col-lg-9">
                             <input type="text" name="AI_SMART_TALK_URL" value="{$apiUrl|escape:'html':'UTF-8'}" class="form-control">
-                            <p class="help-block">{l s='Server-to-server API calls (e.g., http://ai-toolkit-node:3000 for Docker)' mod='aismarttalk'}</p>
+                            <p class="help-block">{l s='Your custom API endpoint for whitelabel deployments.' mod='aismarttalk'}</p>
                         </div>
                     </div>
                     
                     <div class="form-group">
-                        <label class="control-label col-lg-3">{l s='API URL (Frontend)' mod='aismarttalk'}</label>
-                        <div class="col-lg-9">
-                            <input type="text" name="AI_SMART_TALK_FRONT_URL" value="{$frontUrl|escape:'html':'UTF-8'}" class="form-control">
-                            <p class="help-block">{l s='Browser redirects and chatbot (e.g., http://localhost:3001 for local dev)' mod='aismarttalk'}</p>
-                        </div>
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="control-label col-lg-3">{l s='CDN URL' mod='aismarttalk'}</label>
+                        <label class="control-label col-lg-3">{l s='CDN Base URL' mod='aismarttalk'}</label>
                         <div class="col-lg-9">
                             <input type="text" name="AI_SMART_TALK_CDN" value="{$cdnUrl|escape:'html':'UTF-8'}" class="form-control">
-                            <p class="help-block">{l s='CDN for chatbot assets' mod='aismarttalk'}</p>
+                            <p class="help-block">{l s='Custom CDN for chatbot assets.' mod='aismarttalk'}</p>
                         </div>
                     </div>
                     
@@ -327,7 +319,7 @@
                         <label class="control-label col-lg-3">{l s='WebSocket URL' mod='aismarttalk'}</label>
                         <div class="col-lg-9">
                             <input type="text" name="AI_SMART_TALK_WS" value="{$wsUrl|escape:'html':'UTF-8'}" class="form-control">
-                            <p class="help-block">{l s='Real-time communication' mod='aismarttalk'}</p>
+                            <p class="help-block">{l s='Custom WebSocket endpoint.' mod='aismarttalk'}</p>
                         </div>
                     </div>
                     

@@ -326,32 +326,28 @@ class AiSmartTalk extends Module
 
         if (Tools::isSubmit('submitWhiteLabel')) {
             $url = Tools::getValue('AI_SMART_TALK_URL');
-            $frontUrl = Tools::getValue('AI_SMART_TALK_FRONT_URL');
             $cdn = Tools::getValue('AI_SMART_TALK_CDN');
             $ws = Tools::getValue('AI_SMART_TALK_WS');
             
             // Validate URLs and use defaults if invalid
             $defaultUrl = 'https://aismarttalk.tech';
-            $defaultFrontUrl = 'https://aismarttalk.tech';
             $defaultCdn = 'https://cdn.aismarttalk.tech';
             $defaultWs = 'https://ws.223.io.aismarttalk.tech';
             
             if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
                 $url = $defaultUrl;
             }
-            if (empty($frontUrl) || !filter_var($frontUrl, FILTER_VALIDATE_URL)) {
-                $frontUrl = $defaultFrontUrl;
-            }
             if (empty($cdn) || !filter_var($cdn, FILTER_VALIDATE_URL)) {
                 $cdn = $defaultCdn;
             }
-            // Validate WebSocket URL (wss:// or ws://)
-            if (empty($ws) || !preg_match('/^wss?:\/\//', $ws)) {
+            // Validate WebSocket URL (wss:// or ws:// or https://)
+            if (empty($ws)) {
                 $ws = $defaultWs;
             }
             
             Configuration::updateValue('AI_SMART_TALK_URL', $url);
-            Configuration::updateValue('AI_SMART_TALK_FRONT_URL', $frontUrl);
+            // Keep frontend URL in sync with main URL
+            Configuration::updateValue('AI_SMART_TALK_FRONT_URL', $url);
             Configuration::updateValue('AI_SMART_TALK_CDN', $cdn);
             Configuration::updateValue('AI_SMART_TALK_WS', $ws);
             
@@ -473,7 +469,6 @@ class AiSmartTalk extends Module
             
             // Advanced/WhiteLabel settings
             'apiUrl' => Configuration::get('AI_SMART_TALK_URL') ?: 'https://aismarttalk.tech',
-            'frontUrl' => Configuration::get('AI_SMART_TALK_FRONT_URL') ?: 'https://aismarttalk.tech',
             'cdnUrl' => $cdnUrl,
             'wsUrl' => $wsUrl,
             
@@ -686,7 +681,7 @@ class AiSmartTalk extends Module
             $cdnUrl = 'https://cdn.aismarttalk.tech';
             Configuration::updateValue('AI_SMART_TALK_CDN', $cdnUrl);
         }
-        if (empty($wsUrl) || !preg_match('/^wss?:\/\//', $wsUrl)) {
+        if (empty($wsUrl) || !filter_var($wsUrl, FILTER_VALIDATE_URL)) {
             $wsUrl = 'https://ws.223.io.aismarttalk.tech';
             Configuration::updateValue('AI_SMART_TALK_WS', $wsUrl);
         }
@@ -857,7 +852,7 @@ class AiSmartTalk extends Module
         if (empty($currentCdn) || !filter_var($currentCdn, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_CDN', $defaultCdn);
         }
-        if (empty($currentWs) || !preg_match('/^wss?:\/\//', $currentWs)) {
+        if (empty($currentWs) || !filter_var($currentWs, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_WS', $defaultWs);
         }
     }
