@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2024 AI SmartTalk
+ * Copyright (c) 2026 AI SmartTalk
  * 
  * NOTICE OF LICENSE
  * This source file is subject to the Academic Free License (AFL 3.0)
@@ -13,7 +13,7 @@
  * needs please refer to http://www.prestashop.com for more information.
  *
  * @author    AI SmartTalk
- * @copyright 2024
+ * @copyright 2026
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 

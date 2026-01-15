@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2024 AI SmartTalk
+ * Copyright (c) 2026 AI SmartTalk
  *
  * NOTICE OF LICENSE
  *
@@ -10,7 +10,7 @@
  * http://opensource.org/licenses/afl-3.0.php
  *
  * @author    AI SmartTalk <contact@aismarttalk.tech>
- * @copyright 2024 AI SmartTalk
+ * @copyright 2026 AI SmartTalk
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
@@ -37,8 +37,9 @@ class OAuthHandler
      */
     public static function getCallbackUrl(): string
     {
-        $shopUrl = \Tools::getShopDomainSsl(true) . __PS_BASE_URI__;
-        return rtrim($shopUrl, '/') . 'modules/aismarttalk/oauth-callback.php';
+        // Use PrestaShop's front controller URL (not direct PHP file access which gets 403)
+        $context = \Context::getContext();
+        return $context->link->getModuleLink('aismarttalk', 'oauthcallback', [], true);
     }
     
     /**
@@ -105,18 +106,23 @@ class OAuthHandler
     }
     
     /**
-     * Store OAuth state in session/cookie
+     * Store OAuth state in Configuration (works across admin/front contexts)
      * 
      * @param string $state
      * @param string $codeVerifier
+     * @param string $returnUrl URL to redirect back to after OAuth
      */
-    public static function storeOAuthState(string $state, string $codeVerifier): void
+    public static function storeOAuthState(string $state, string $codeVerifier, string $returnUrl = ''): void
     {
-        // Use PrestaShop cookie for session storage
-        $cookie = \Context::getContext()->cookie;
-        $cookie->oauth_state = $state;
-        $cookie->oauth_code_verifier = $codeVerifier;
-        $cookie->write();
+        // Use Configuration table for cross-context storage
+        // Store as JSON with expiry time (10 minutes)
+        $data = json_encode([
+            'state' => $state,
+            'code_verifier' => $codeVerifier,
+            'return_url' => $returnUrl,
+            'expires' => time() + 600, // 10 minutes
+        ]);
+        \Configuration::updateValue('AI_SMART_TALK_OAUTH_PENDING', $data);
     }
     
     /**
@@ -126,15 +132,28 @@ class OAuthHandler
      */
     public static function getStoredOAuthState(): ?array
     {
-        $cookie = \Context::getContext()->cookie;
+        $data = \Configuration::get('AI_SMART_TALK_OAUTH_PENDING');
         
-        if (empty($cookie->oauth_state) || empty($cookie->oauth_code_verifier)) {
+        if (empty($data)) {
+            return null;
+        }
+        
+        $parsed = json_decode($data, true);
+        
+        if (!$parsed || !isset($parsed['state']) || !isset($parsed['code_verifier'])) {
+            return null;
+        }
+        
+        // Check expiry
+        if (isset($parsed['expires']) && $parsed['expires'] < time()) {
+            self::clearOAuthState();
             return null;
         }
         
         return [
-            'state' => $cookie->oauth_state,
-            'code_verifier' => $cookie->oauth_code_verifier,
+            'state' => $parsed['state'],
+            'code_verifier' => $parsed['code_verifier'],
+            'return_url' => $parsed['return_url'] ?? '',
         ];
     }
     
@@ -143,10 +162,7 @@ class OAuthHandler
      */
     public static function clearOAuthState(): void
     {
-        $cookie = \Context::getContext()->cookie;
-        unset($cookie->oauth_state);
-        unset($cookie->oauth_code_verifier);
-        $cookie->write();
+        \Configuration::deleteByName('AI_SMART_TALK_OAUTH_PENDING');
     }
     
     /**
@@ -208,17 +224,18 @@ class OAuthHandler
     /**
      * Build the authorization URL for OAuth flow
      * 
+     * @param string $returnUrl URL to redirect back to after OAuth completion
      * @return string
      */
-    public static function buildAuthorizationUrl(): string
+    public static function buildAuthorizationUrl(string $returnUrl = ''): string
     {
         // Generate PKCE values
         $codeVerifier = self::generateCodeVerifier();
         $codeChallenge = self::generateCodeChallenge($codeVerifier);
         $state = self::generateState();
         
-        // Store for callback validation
-        self::storeOAuthState($state, $codeVerifier);
+        // Store for callback validation (including return URL)
+        self::storeOAuthState($state, $codeVerifier, $returnUrl);
         
         // Build authorization URL using frontend URL (for browser redirect)
         $frontendUrl = self::getFrontendApiUrl();
@@ -301,7 +318,7 @@ class OAuthHandler
      * 
      * @param string $code The authorization code
      * @param string $state The state for CSRF validation
-     * @return array Result with success status and message
+     * @return array Result with success status, message, and return_url
      */
     public static function handleCallback(string $code, string $state): array
     {
@@ -312,16 +329,21 @@ class OAuthHandler
             return [
                 'success' => false,
                 'message' => 'OAuth state not found. Please try connecting again.',
+                'return_url' => '',
             ];
         }
         
         if ($storedState['state'] !== $state) {
+            $returnUrl = $storedState['return_url'] ?? '';
             self::clearOAuthState();
             return [
                 'success' => false,
                 'message' => 'Invalid OAuth state (CSRF validation failed). Please try again.',
+                'return_url' => $returnUrl,
             ];
         }
+        
+        $returnUrl = $storedState['return_url'] ?? '';
         
         // Exchange code for token
         $tokenData = self::exchangeCodeForToken($code, $storedState['code_verifier']);
@@ -333,6 +355,7 @@ class OAuthHandler
             return [
                 'success' => false,
                 'message' => 'Failed to exchange authorization code for access token.',
+                'return_url' => $returnUrl,
             ];
         }
         
@@ -359,6 +382,7 @@ class OAuthHandler
             'success' => true,
             'message' => 'Successfully connected to AI SmartTalk!',
             'chat_model_id' => $tokenData['chat_model_id'],
+            'return_url' => $returnUrl,
         ];
     }
     
@@ -489,4 +513,5 @@ class OAuthHandler
         return $data;
     }
 }
+
 
