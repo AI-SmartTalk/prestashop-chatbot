@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2024 AI SmartTalk
+ * Copyright (c) 2026 AI SmartTalk
  *
  * NOTICE OF LICENSE
  *
@@ -10,7 +10,7 @@
  * http://opensource.org/licenses/afl-3.0.php
  *
  * @author    AI SmartTalk <contact@aismarttalk.tech>
- * @copyright 2024 AI SmartTalk
+ * @copyright 2026 AI SmartTalk
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
@@ -25,6 +25,7 @@ if (!defined('_PS_VERSION_')) {
 require_once dirname(__FILE__) . '/../vendor/autoload.php';
 
 use PrestaShop\PrestaShop\Adapter\Module\Module;
+use PrestaShop\AiSmartTalk\OAuthHandler;
 
 class OAuthTokenHandler extends Module
 {
@@ -58,10 +59,15 @@ class OAuthTokenHandler extends Module
 
     private static function requestOAuthToken($user)
     {
-        $url = \Configuration::get('AI_SMART_TALK_URL') . '/api/oauth/integration';
+        // Use OAuthHandler for backend API URL and credentials
+        $apiUrl = OAuthHandler::getBackendApiUrl();
+        $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
+        
+        $url = $apiUrl . '/api/oauth/integration';
         $data = [
-            'chatModelId' => \Configuration::get('CHAT_MODEL_ID'),
-            'token' => \Configuration::get('CHAT_MODEL_TOKEN'),
+            'chatModelId' => $chatModelId,
+            'token' => $chatModelToken,
             'source' => 'PRESTASHOP',
             'userId' => $user->id,
             'email' => $user->email,

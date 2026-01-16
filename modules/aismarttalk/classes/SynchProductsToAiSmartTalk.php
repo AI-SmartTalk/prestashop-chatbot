@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2024 AI SmartTalk
+ * Copyright (c) 2026 AI SmartTalk
  *
  * NOTICE OF LICENSE
  *
@@ -10,7 +10,7 @@
  * http://opensource.org/licenses/afl-3.0.php
  *
  * @author    AI SmartTalk <contact@aismarttalk.tech>
- * @copyright 2024 AI SmartTalk
+ * @copyright 2026 AI SmartTalk
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
@@ -23,6 +23,7 @@ if (!defined('_PS_VERSION_')) {
 require_once dirname(__FILE__) . '/../vendor/autoload.php';
 
 use PrestaShop\PrestaShop\Adapter\Module\Module;
+use PrestaShop\AiSmartTalk\OAuthHandler;
 
 class SynchProductsToAiSmartTalk extends Module
 {
@@ -132,9 +133,10 @@ class SynchProductsToAiSmartTalk extends Module
 
     private function postToApi($documentDatas)
     {
-        $aiSmartTalkUrl = \Configuration::get('AI_SMART_TALK_URL');
-        $chatModelId = \Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken = \Configuration::get('CHAT_MODEL_TOKEN');
+        // Use OAuthHandler for backend API URL and credentials
+        $aiSmartTalkUrl = OAuthHandler::getBackendApiUrl();
+        $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $aiSmartTalkUrl . '/api/document/source');

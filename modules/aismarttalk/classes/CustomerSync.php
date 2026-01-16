@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2024 AI SmartTalk
+ * Copyright (c) 2026 AI SmartTalk
  * 
  * NOTICE OF LICENSE
  * This source file is subject to the Academic Free License (AFL 3.0)
@@ -13,7 +13,7 @@
  * needs please refer to http://www.prestashop.com for more information.
  *
  * @author    AI SmartTalk
- * @copyright 2024
+ * @copyright 2026
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
 
@@ -33,6 +33,7 @@ use PrestaShopException;
 use PrestaShopLogger;
 use Customer;
 use Order;
+use PrestaShop\AiSmartTalk\OAuthHandler;
 
 /**
  * Class CustomerSync
@@ -69,9 +70,10 @@ class CustomerSync
      */
     public function exportCustomerBatch(array $customers)
     {
-        $aiSmartTalkUrl   = Configuration::get('AI_SMART_TALK_URL');
-        $chatModelId      = Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken   = Configuration::get('CHAT_MODEL_TOKEN');
+        // Use OAuthHandler for backend API URL and credentials
+        $aiSmartTalkUrl   = OAuthHandler::getBackendApiUrl();
+        $chatModelId      = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken   = OAuthHandler::getAccessToken() ?? Configuration::get('CHAT_MODEL_TOKEN');
 
         // Map PrestaShop customer data to the expected AI SmartTalk format
         $customerData = array_map([$this, 'mapCustomerData'], $customers);
