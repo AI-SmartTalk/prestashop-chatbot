@@ -2,8 +2,8 @@
 <module>
     <name>aismarttalk</name>
     <displayName><![CDATA[AI SmartTalk]]></displayName>
-    <version><![CDATA[3.0.0]]></version>
-    <description><![CDATA[AI-powered chatbot for your PrestaShop store - https://aismarttalk.tech/]]></description>
+    <version><![CDATA[3.0.1]]></version>
+    <description><![CDATA[https://aismarttalk.tech/]]></description>
     <author><![CDATA[AI SmartTalk]]></author>
     <tab><![CDATA[front_office_features]]></tab>
     <is_configurable>1</is_configurable>

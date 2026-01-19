@@ -70,7 +70,7 @@
 
 <!-- AI SmartTalk Chatbot Embedding Code for Backoffice -->
 <script>
-window.chatbotSettings = {$chatbotSettings nofilter};
+window.chatbotSettings = JSON.parse(atob("{$chatbotSettingsEncoded|escape:'html':'UTF-8'}"));
 </script>
 <script src="{$cdnUrl|escape:'html':'UTF-8'}/universal-chatbot.js" async></script>
 

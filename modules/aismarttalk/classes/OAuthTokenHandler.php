@@ -25,7 +25,6 @@ if (!defined('_PS_VERSION_')) {
 require_once dirname(__FILE__) . '/../vendor/autoload.php';
 
 use PrestaShop\PrestaShop\Adapter\Module\Module;
-use PrestaShop\AiSmartTalk\OAuthHandler;
 
 class OAuthTokenHandler extends Module
 {
@@ -53,7 +52,7 @@ class OAuthTokenHandler extends Module
 
     public static function unsetOAuthTokenCookie()
     {
-        setcookie('ai_smarttalk_oauth_token', '', time() - 3600, '/', null, false, true);
+        setcookie('ai_smarttalk_oauth_token', '', time() - 3600, '/', '', false, true);
         unset($_COOKIE['ai_smarttalk_oauth_token']);
     }
 
@@ -63,7 +62,7 @@ class OAuthTokenHandler extends Module
         $apiUrl = OAuthHandler::getBackendApiUrl();
         $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
         $chatModelToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
-        
+
         $url = $apiUrl . '/api/oauth/integration';
         $data = [
             'chatModelId' => $chatModelId,

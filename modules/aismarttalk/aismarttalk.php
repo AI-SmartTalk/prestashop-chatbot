@@ -20,10 +20,10 @@ if (!defined('_PS_VERSION_')) {
 require_once dirname(__FILE__) . '/vendor/autoload.php';
 
 use PrestaShop\AiSmartTalk\CleanProductDocuments;
+use PrestaShop\AiSmartTalk\CustomerSync;
 use PrestaShop\AiSmartTalk\OAuthHandler;
 use PrestaShop\AiSmartTalk\OAuthTokenHandler;
 use PrestaShop\AiSmartTalk\SynchProductsToAiSmartTalk;
-use PrestaShop\AiSmartTalk\CustomerSync;
 
 class AiSmartTalk extends Module
 {
@@ -31,7 +31,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.0.0';
+        $this->version = '3.0.1';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -52,12 +52,12 @@ class AiSmartTalk extends Module
         $defaultFrontUrl = 'https://aismarttalk.tech';
         $defaultCdn = 'https://cdn.aismarttalk.tech';
         $defaultWs = 'https://ws.223.io.aismarttalk.tech';
-        
+
         $currentUrl = Configuration::get('AI_SMART_TALK_URL');
         $currentFrontUrl = Configuration::get('AI_SMART_TALK_FRONT_URL');
         $currentCdn = Configuration::get('AI_SMART_TALK_CDN');
         $currentWs = Configuration::get('AI_SMART_TALK_WS');
-        
+
         if (empty($currentUrl) || !filter_var($currentUrl, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_URL', $defaultUrl);
         }
@@ -78,7 +78,7 @@ class AiSmartTalk extends Module
 
         // Set default product sync if not set (disabled by default)
         $productSyncConfig = Configuration::get('AI_SMART_TALK_PRODUCT_SYNC');
-        if ($productSyncConfig === null || $productSyncConfig === '') {
+        if ($productSyncConfig === false || $productSyncConfig === '') {
             Configuration::updateValue('AI_SMART_TALK_PRODUCT_SYNC', false);
         }
 
@@ -126,7 +126,7 @@ class AiSmartTalk extends Module
         }
 
         // Register OAuth redirect URI
-        OAuthHandler::registerRedirectUri();
+        OAuthHandler::registerRedirectUri($this->context);
 
         return true;
     }
@@ -162,7 +162,7 @@ class AiSmartTalk extends Module
     {
         // Disconnect OAuth before uninstalling
         OAuthHandler::disconnect();
-        
+
         return parent::uninstall()
             && $this->unregisterHook('displayFooter')
             && $this->unregisterHook('displayBeforeBodyClosingTag')
@@ -249,12 +249,12 @@ class AiSmartTalk extends Module
         // Check for OAuth success/error messages from callback
         $oauthSuccess = Configuration::get('AI_SMART_TALK_OAUTH_SUCCESS');
         $oauthError = Configuration::get('AI_SMART_TALK_OAUTH_ERROR');
-        
+
         if (!empty($oauthSuccess)) {
             $output .= $this->displayConfirmation($oauthSuccess);
             Configuration::deleteByName('AI_SMART_TALK_OAUTH_SUCCESS');
         }
-        
+
         if (!empty($oauthError)) {
             $output .= $this->displayError($oauthError);
             Configuration::deleteByName('AI_SMART_TALK_OAUTH_ERROR');
@@ -273,15 +273,15 @@ class AiSmartTalk extends Module
         // Handle OAuth connect (redirect to authorization URL)
         if (Tools::getValue('connectOAuth')) {
             // First register the redirect URI (in case it wasn't registered during install)
-            OAuthHandler::registerRedirectUri();
-            
+            OAuthHandler::registerRedirectUri($this->context);
+
             // Build return URL (current admin page) to redirect back after OAuth
             $returnUrl = $this->context->link->getAdminLink('AdminModules', true, [], [
                 'configure' => $this->name,
             ]);
-            
+
             // Build and redirect to authorization URL
-            $authUrl = OAuthHandler::buildAuthorizationUrl($returnUrl);
+            $authUrl = OAuthHandler::buildAuthorizationUrl($this->context, $returnUrl);
             Tools::redirect($authUrl);
             exit;
         }
@@ -292,9 +292,9 @@ class AiSmartTalk extends Module
         }
 
         if (Tools::getValue('exportCustomers')) {
-            $sync = new CustomerSync();
+            $sync = new CustomerSync($this->context);
             $result = $sync->exportAllCustomers();
-            
+
             if ($result['success']) {
                 $output .= $this->displayConfirmation($this->l('Customers exported successfully!'));
             } else {
@@ -328,12 +328,12 @@ class AiSmartTalk extends Module
             $url = Tools::getValue('AI_SMART_TALK_URL');
             $cdn = Tools::getValue('AI_SMART_TALK_CDN');
             $ws = Tools::getValue('AI_SMART_TALK_WS');
-            
+
             // Validate URLs and use defaults if invalid
             $defaultUrl = 'https://aismarttalk.tech';
             $defaultCdn = 'https://cdn.aismarttalk.tech';
             $defaultWs = 'https://ws.223.io.aismarttalk.tech';
-            
+
             if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
                 $url = $defaultUrl;
             }
@@ -344,16 +344,16 @@ class AiSmartTalk extends Module
             if (empty($ws)) {
                 $ws = $defaultWs;
             }
-            
+
             Configuration::updateValue('AI_SMART_TALK_URL', $url);
             // Keep frontend URL in sync with main URL
             Configuration::updateValue('AI_SMART_TALK_FRONT_URL', $url);
             Configuration::updateValue('AI_SMART_TALK_CDN', $cdn);
             Configuration::updateValue('AI_SMART_TALK_WS', $ws);
-            
+
             // Re-register OAuth redirect URI with potentially new URLs
-            OAuthHandler::registerRedirectUri();
-            
+            OAuthHandler::registerRedirectUri($this->context);
+
             $output .= $this->displayConfirmation($this->trans('WhiteLabel settings updated.', [], 'Modules.Aismarttalk.Admin'));
         }
 
@@ -369,7 +369,7 @@ class AiSmartTalk extends Module
         if (Tools::isSubmit('submitProductSync')) {
             $productSyncEnabled = (bool) Tools::getValue('AI_SMART_TALK_PRODUCT_SYNC');
             Configuration::updateValue('AI_SMART_TALK_PRODUCT_SYNC', $productSyncEnabled);
-            
+
             if ($productSyncEnabled) {
                 $output .= $this->displayConfirmation($this->trans('Product synchronization enabled. Products will automatically sync with AI SmartTalk.', [], 'Modules.Aismarttalk.Admin'));
             } else {
@@ -381,11 +381,11 @@ class AiSmartTalk extends Module
         if (Tools::isSubmit('submitChatbotSettings')) {
             $chatbotEnabled = (bool) Tools::getValue('AI_SMART_TALK_ENABLED');
             $position = Tools::getValue('AI_SMART_TALK_IFRAME_POSITION');
-            
+
             if (!in_array($position, ['footer', 'before_footer'])) {
                 $position = 'footer';
             }
-            
+
             Configuration::updateValue('AI_SMART_TALK_ENABLED', $chatbotEnabled);
             Configuration::updateValue('AI_SMART_TALK_IFRAME_POSITION', $position);
             $output .= $this->displayConfirmation($this->trans('Chatbot settings saved.', [], 'Modules.Aismarttalk.Admin'));
@@ -395,7 +395,7 @@ class AiSmartTalk extends Module
         if (Tools::isSubmit('submitSyncSettings')) {
             $productSyncEnabled = (bool) Tools::getValue('AI_SMART_TALK_PRODUCT_SYNC');
             $customerSyncEnabled = (bool) Tools::getValue('AI_SMART_TALK_CUSTOMER_SYNC');
-            
+
             Configuration::updateValue('AI_SMART_TALK_PRODUCT_SYNC', $productSyncEnabled);
             Configuration::updateValue('AI_SMART_TALK_CUSTOMER_SYNC', $customerSyncEnabled);
             $output .= $this->displayConfirmation($this->trans('Synchronization settings saved.', [], 'Modules.Aismarttalk.Admin'));
@@ -403,7 +403,7 @@ class AiSmartTalk extends Module
 
         // Handle legacy form submissions (for backward compatibility)
         $output .= $this->handleForm();
-        
+
         // Display the unified configuration interface
         $output .= $this->displayConfigurationPage();
 
@@ -412,7 +412,7 @@ class AiSmartTalk extends Module
 
     /**
      * Display the unified configuration page
-     * 
+     *
      * @return string
      */
     protected function displayConfigurationPage()
@@ -421,17 +421,17 @@ class AiSmartTalk extends Module
         $chatModelId = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
         $currentIndex = AdminController::$currentIndex . '&configure=' . $this->name;
         $token = Tools::getAdminTokenLite('AdminModules');
-        
+
         // Build URLs
         $frontendApiUrl = OAuthHandler::getFrontendApiUrl();
         $backofficeUrl = $frontendApiUrl . '/admin/chatModel/' . $chatModelId;
-        
+
         // Get chatbot settings for embedding
         $apiUrl = $frontendApiUrl;
         $cdnUrl = Configuration::get('AI_SMART_TALK_CDN') ?: 'https://cdn.aismarttalk.tech';
         $wsUrl = Configuration::get('AI_SMART_TALK_WS') ?: 'https://ws.223.io.aismarttalk.tech';
         $lang = $this->context->language->iso_code;
-        
+
         $chatbotSettings = [
             'chatModelId' => $chatModelId,
             'lang' => $lang,
@@ -440,7 +440,7 @@ class AiSmartTalk extends Module
             'cdnUrl' => $cdnUrl,
             'source' => 'PRESTASHOP',
         ];
-        
+
         // Fetch and merge embed config
         $embedConfig = $this->fetchEmbedConfig();
         if ($embedConfig && is_array($embedConfig)) {
@@ -451,29 +451,29 @@ class AiSmartTalk extends Module
                 }
             }
         }
-        
+
         $this->context->smarty->assign([
             'isConnected' => $isConnected,
             'chatModelId' => $chatModelId,
             'moduleLink' => $currentIndex . '&token=' . $token,
             'formAction' => $_SERVER['REQUEST_URI'],
             'backofficeUrl' => $backofficeUrl,
-            
+
             // Chatbot settings
             'chatbotEnabled' => (bool) Configuration::get('AI_SMART_TALK_ENABLED'),
             'iframePosition' => Configuration::get('AI_SMART_TALK_IFRAME_POSITION') ?: 'footer',
-            
+
             // Sync settings
             'productSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC'),
             'customerSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC'),
-            
+
             // Advanced/WhiteLabel settings
             'apiUrl' => Configuration::get('AI_SMART_TALK_URL') ?: 'https://aismarttalk.tech',
             'cdnUrl' => $cdnUrl,
             'wsUrl' => $wsUrl,
-            
-            // Chatbot embed
-            'chatbotSettings' => json_encode($chatbotSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+
+            // Chatbot embed (base64 encoded for security)
+            'chatbotSettingsEncoded' => base64_encode(json_encode($chatbotSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
         ]);
 
         return $this->display(__FILE__, 'views/templates/admin/configure.tpl');
@@ -498,7 +498,7 @@ class AiSmartTalk extends Module
     /**
      * Legacy form for backward compatibility (manual token entry)
      * Only shown if not connected via OAuth
-     * 
+     *
      * @return string
      */
     public function displayForm()
@@ -507,7 +507,7 @@ class AiSmartTalk extends Module
         if (OAuthHandler::isConnected()) {
             return '';
         }
-        
+
         $default_lang = (int) Configuration::get('PS_LANG_DEFAULT');
 
         $fields_form[0]['form'] = [
@@ -585,6 +585,7 @@ class AiSmartTalk extends Module
         if ($position === 'footer') {
             return $this->renderChatbot();
         }
+
         return '';
     }
 
@@ -594,12 +595,13 @@ class AiSmartTalk extends Module
         if ($position === 'before_footer') {
             return $this->renderChatbot();
         }
+
         return '';
     }
 
     /**
      * Fetch embed configuration from the API
-     * 
+     *
      * @return array|null The embed configuration or null if failed
      */
     private function fetchEmbedConfig()
@@ -608,14 +610,14 @@ class AiSmartTalk extends Module
         $chatModelId = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
         $chatModelToken = OAuthHandler::getAccessToken() ?? Configuration::get('CHAT_MODEL_TOKEN');
         $apiUrl = OAuthHandler::getBackendApiUrl();
-        
+
         if (empty($chatModelId) || empty($chatModelToken) || empty($apiUrl)) {
             return null;
         }
-        
+
         // Build the API URL for embed config
         $embedConfigUrl = rtrim($apiUrl, '/') . '/api/public/chatModel/' . urlencode($chatModelId) . '/embed-config?integrationType=PRESTASHOP';
-        
+
         // Initialize cURL
         $ch = curl_init();
         curl_setopt_array($ch, [
@@ -627,11 +629,11 @@ class AiSmartTalk extends Module
                 'Content-Type: application/json',
             ],
         ]);
-        
+
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
+
         if ($httpCode !== 200 || empty($response)) {
             // Log error for debugging
             PrestaShopLogger::addLog(
@@ -642,21 +644,22 @@ class AiSmartTalk extends Module
                 null,
                 true
             );
+
             return null;
         }
-        
+
         $data = json_decode($response, true);
-        
+
         if (isset($data['data'])) {
             return $data['data'];
         }
-        
+
         return null;
     }
 
     /**
      * Render the chatbot using the universal embed script
-     * 
+     *
      * @return string The HTML/JS code to embed the chatbot
      */
     private function renderChatbot()
@@ -664,19 +667,19 @@ class AiSmartTalk extends Module
         if (!Configuration::get('AI_SMART_TALK_ENABLED')) {
             return '';
         }
-        
+
         // Use OAuthHandler for credentials, with fallback to legacy config
         $chatModelId = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
-        
+
         if (empty($chatModelId)) {
             return '';
         }
-        
+
         // For chatbot (runs in browser), use frontend URL (accessible from browser)
         $apiUrl = OAuthHandler::getFrontendApiUrl();
         $cdnUrl = Configuration::get('AI_SMART_TALK_CDN');
         $wsUrl = Configuration::get('AI_SMART_TALK_WS');
-        
+
         if (empty($cdnUrl) || !filter_var($cdnUrl, FILTER_VALIDATE_URL)) {
             $cdnUrl = 'https://cdn.aismarttalk.tech';
             Configuration::updateValue('AI_SMART_TALK_CDN', $cdnUrl);
@@ -685,13 +688,13 @@ class AiSmartTalk extends Module
             $wsUrl = 'https://ws.223.io.aismarttalk.tech';
             Configuration::updateValue('AI_SMART_TALK_WS', $wsUrl);
         }
-        
+
         $lang = $this->context->language->iso_code;
         $userToken = isset($_COOKIE['ai_smarttalk_oauth_token']) ? $_COOKIE['ai_smarttalk_oauth_token'] : null;
-        
+
         // Fetch embed config from API
         $embedConfig = $this->fetchEmbedConfig();
-        
+
         // Build chatbot settings - merge API config with local settings
         $chatbotSettings = [
             'chatModelId' => $chatModelId,
@@ -701,17 +704,17 @@ class AiSmartTalk extends Module
             'cdnUrl' => $cdnUrl,
             'source' => 'PRESTASHOP',
         ];
-        
+
         // Add user token if available
         if ($userToken) {
             $chatbotSettings['userToken'] = $userToken;
         }
-        
+
         // Merge with API embed config if available
         // Automatically merge all settings from API, except critical ones that must not be overridden
         if ($embedConfig && is_array($embedConfig)) {
             $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang'];
-            
+
             foreach ($embedConfig as $key => $value) {
                 // Only merge settings that are not protected
                 if (!in_array($key, $protectedSettings)) {
@@ -719,10 +722,10 @@ class AiSmartTalk extends Module
                 }
             }
         }
-        
-        // Assign variables to Smarty
+
+        // Assign variables to Smarty (base64 encoded for security)
         $this->context->smarty->assign([
-            'chatbotSettings' => json_encode($chatbotSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            'chatbotSettingsEncoded' => base64_encode(json_encode($chatbotSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
             'cdnUrl' => $cdnUrl,
         ]);
 
@@ -730,28 +733,28 @@ class AiSmartTalk extends Module
     }
 
     public function hookActionProductUpdate($params)
-    {   
+    {
         // Check if product sync is enabled
-        if (!(bool)Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+        if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
             return;
         }
 
         $idProduct = $params['id_product'];
         $currentQuantity = (int) StockAvailable::getQuantityAvailableByProduct($idProduct);
-    
+
         if ($currentQuantity == 0) {
             return;
         }
 
-        $lastTimeWeSynch = Db::getInstance()->getValue('SELECT aismarttalk_last_source FROM ' . _DB_PREFIX_ . 'product WHERE id_product = ' . (int) $params['id_product']);
+        $lastTimeWeSynchValue = Db::getInstance()->getValue('SELECT aismarttalk_last_source FROM ' . _DB_PREFIX_ . 'product WHERE id_product = ' . (int) $params['id_product']);
 
         $date = new DateTime();
-        $date->modify('-3 seconds')->format('Y-m-d H:i:s');
-        $lastTimeWeSynch = (new DateTime($lastTimeWeSynch));
+        $date->modify('-3 seconds');
+        $lastTimeWeSynch = $lastTimeWeSynchValue ? new DateTime($lastTimeWeSynchValue) : null;
 
-        if (empty($lastTimeWeSynch) || ($date > $lastTimeWeSynch)) {
+        if ($lastTimeWeSynch === null || $date > $lastTimeWeSynch) {
             $idProduct = $params['id_product'];
-            $api = new SynchProductsToAiSmartTalk();
+            $api = new SynchProductsToAiSmartTalk($this->context);
             $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
             $now = new DateTime();
             Db::getInstance()->execute('UPDATE ' . _DB_PREFIX_ . 'product SET aismarttalk_last_source = "' . $now->format('Y-m-d H:i:s') . '" WHERE id_product = ' . (int) $params['id_product']);
@@ -761,19 +764,19 @@ class AiSmartTalk extends Module
     public function hookActionProductCreate($params)
     {
         // Check if product sync is enabled
-        if (!(bool)Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+        if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
             return;
         }
 
         $idProduct = $params['id_product'];
-        $api = new SynchProductsToAiSmartTalk();
+        $api = new SynchProductsToAiSmartTalk($this->context);
         $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
     }
 
     public function hookActionProductDelete($params)
     {
         // Check if product sync is enabled
-        if (!(bool)Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+        if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
             return;
         }
 
@@ -785,7 +788,7 @@ class AiSmartTalk extends Module
     public function hookActionUpdateQuantity($params)
     {
         // Check if product sync is enabled
-        if (!(bool)Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+        if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
             return;
         }
 
@@ -795,7 +798,7 @@ class AiSmartTalk extends Module
 
         $idProduct = $params['id_product'];
         $newQuantity = $params['quantity'];
-        
+
         // Récupérer la quantité actuelle (avant mise à jour)
         $currentQuantity = (int) StockAvailable::getQuantityAvailableByProduct($idProduct);
 
@@ -803,10 +806,9 @@ class AiSmartTalk extends Module
         if ($newQuantity === 0) {
             $api = new CleanProductDocuments();
             $api(['productIds' => [(string) $idProduct]]);
-        }
-        // Si le produit passe de 0 à >0 (réapprovisionnement), le synchroniser
-        elseif ($currentQuantity == 0 && $newQuantity > 0) {
-            $api = new SynchProductsToAiSmartTalk();
+        } elseif ($currentQuantity == 0 && $newQuantity > 0) {
+            // Si le produit passe de 0 à >0 (réapprovisionnement), le synchroniser
+            $api = new SynchProductsToAiSmartTalk($this->context);
             $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
             $now = new DateTime();
             Db::getInstance()->execute(
@@ -815,34 +817,18 @@ class AiSmartTalk extends Module
         }
     }
 
-    private function getApiHost()
-    {
-        $url = Configuration::get('AI_SMART_TALK_URL');
-        
-        // Fallback to default if URL is empty or invalid
-        if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
-            $url = 'https://aismarttalk.tech';
-            Configuration::updateValue('AI_SMART_TALK_URL', $url);
-        }
-
-        if (strpos($url, 'http://ai-toolkit-node:3000') !== false) {
-            $url = str_replace('http://ai-toolkit-node:3000', 'http://localhost:3000', $url);
-        }
-        return $url;
-    }
-
     private function ensureDefaultUrls()
     {
         $defaultUrl = 'https://aismarttalk.tech';
         $defaultFrontUrl = 'https://aismarttalk.tech';
         $defaultCdn = 'https://cdn.aismarttalk.tech';
         $defaultWs = 'https://ws.223.io.aismarttalk.tech';
-        
+
         $currentUrl = Configuration::get('AI_SMART_TALK_URL');
         $currentFrontUrl = Configuration::get('AI_SMART_TALK_FRONT_URL');
         $currentCdn = Configuration::get('AI_SMART_TALK_CDN');
         $currentWs = Configuration::get('AI_SMART_TALK_WS');
-        
+
         if (empty($currentUrl) || !filter_var($currentUrl, FILTER_VALIDATE_URL)) {
             Configuration::updateValue('AI_SMART_TALK_URL', $defaultUrl);
         }
@@ -865,22 +851,13 @@ class AiSmartTalk extends Module
         return ''; // Deprecated, handled by configure.tpl
     }
 
-
-    private function isConfigured()
-    {
-        // Check OAuth connection first, then fall back to legacy config
-        return OAuthHandler::isConnected() 
-            || (!empty(Configuration::get('CHAT_MODEL_ID'))
-                && !empty(Configuration::get('CHAT_MODEL_TOKEN')));
-    }
-
     private function handleForm()
     {
         $output = '';
         if (Tools::isSubmit('submit' . $this->name)) {
             // Ensure URLs are valid before processing
             $this->ensureDefaultUrls();
-            
+
             // Only update Chat Model ID and Token from main form
             // URLs are handled by the WhiteLabel form now
             Configuration::updateValue('CHAT_MODEL_ID', Tools::getValue('CHAT_MODEL_ID'));
@@ -893,16 +870,11 @@ class AiSmartTalk extends Module
         return $output;
     }
 
-    private function displayButtons()
-    {
-        return '';
-    }
-
     private function resetConfiguration()
     {
         // Disconnect OAuth first
         OAuthHandler::disconnect();
-        
+
         Configuration::deleteByName('CHAT_MODEL_ID');
         Configuration::deleteByName('CHAT_MODEL_TOKEN');
         Configuration::deleteByName('AI_SMART_TALK_URL');
@@ -921,7 +893,7 @@ class AiSmartTalk extends Module
 
     private function sync(bool $force = false, $output = '')
     {
-        $api = new SynchProductsToAiSmartTalk();
+        $api = new SynchProductsToAiSmartTalk($this->context);
         $isSynch = $api(['forceSync' => $force]);
 
         if (true === $isSynch) {
@@ -943,9 +915,9 @@ class AiSmartTalk extends Module
         if (!\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
             return;
         }
-        
+
         $customer = $params['newCustomer'];
-        $sync = new CustomerSync();
+        $sync = new CustomerSync($this->context);
         $sync->exportCustomerBatch([$customer]);
     }
 
@@ -954,9 +926,9 @@ class AiSmartTalk extends Module
         if (!\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
             return;
         }
-        
+
         $customer = $params['customer'];
-        $sync = new CustomerSync();
+        $sync = new CustomerSync($this->context);
         $sync->exportCustomerBatch([$customer]);
     }
 

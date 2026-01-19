@@ -16,7 +16,6 @@
  * @copyright 2026 AI SmartTalk
  * @license   http://opensource.org/licenses/afl-3.0.php  Academic Free License (AFL 3.0)
  */
-
 if (!defined('_PS_VERSION_')) {
     exit;
 }
@@ -34,7 +33,7 @@ class AismarttalkOauthcallbackModuleFrontController extends ModuleFrontControlle
     public function initContent()
     {
         parent::initContent();
-        
+
         // Get the authorization code and state from the callback
         $code = Tools::getValue('code');
         $state = Tools::getValue('state');
@@ -55,17 +54,17 @@ class AismarttalkOauthcallbackModuleFrontController extends ModuleFrontControlle
                 null,
                 true
             );
-            
+
             // Try to get return URL from stored state
             $storedState = OAuthHandler::getStoredOAuthState();
             if ($storedState && !empty($storedState['return_url'])) {
                 $redirectUrl = $storedState['return_url'];
             }
             OAuthHandler::clearOAuthState();
-            
+
             // Store error message in configuration to display in admin
             Configuration::updateValue('AI_SMART_TALK_OAUTH_ERROR', $message);
-            
+
             Tools::redirect($redirectUrl);
             exit;
         }
@@ -78,14 +77,14 @@ class AismarttalkOauthcallbackModuleFrontController extends ModuleFrontControlle
                 $redirectUrl = $storedState['return_url'];
             }
             OAuthHandler::clearOAuthState();
-            
+
             Configuration::updateValue('AI_SMART_TALK_OAUTH_ERROR', 'Missing authorization code or state parameter.');
             Tools::redirect($redirectUrl);
             exit;
         }
 
         // Handle the OAuth callback
-        $result = OAuthHandler::handleCallback($code, $state);
+        $result = OAuthHandler::handleCallback($this->context, $code, $state);
 
         // Use the return URL from the result
         if (!empty($result['return_url'])) {
@@ -104,4 +103,3 @@ class AismarttalkOauthcallbackModuleFrontController extends ModuleFrontControlle
         Tools::redirect($redirectUrl);
     }
 }
-

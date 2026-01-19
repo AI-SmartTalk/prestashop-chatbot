@@ -1,7 +1,7 @@
 <?php
 /**
  * Copyright (c) 2026 AI SmartTalk
- * 
+ *
  * NOTICE OF LICENSE
  * This source file is subject to the Academic Free License (AFL 3.0)
  * It is available through the world-wide-web at this URL:
@@ -27,14 +27,6 @@ if (!defined('_PS_VERSION_')) {
 // If your module folder is named "aismarttalk", you can do:
 require_once _PS_MODULE_DIR_ . 'aismarttalk/vendor/autoload.php';
 
-use Context;
-use Configuration;
-use PrestaShopException;
-use PrestaShopLogger;
-use Customer;
-use Order;
-use PrestaShop\AiSmartTalk\OAuthHandler;
-
 /**
  * Class CustomerSync
  * Handles batch exporting of PrestaShop customers to AI SmartTalk
@@ -50,40 +42,58 @@ class CustomerSync
     /** @var int Number of customers processed so far */
     private $processedCustomers = 0;
 
-    /** @var Context PrestaShop context */
+    /** @var \Context PrestaShop context */
     private $context;
 
     /**
      * CustomerSync constructor.
+     *
+     * @param \Context|null $context PrestaShop context (injected dependency)
      */
-    public function __construct()
+    public function __construct(\Context $context = null)
     {
-        $this->context = Context::getContext();
+        $this->context = $context;
+    }
+
+    /**
+     * Get the injected context
+     *
+     * @return \Context
+     *
+     * @throws \RuntimeException if context was not injected
+     */
+    private function getContext()
+    {
+        if ($this->context === null) {
+            throw new \RuntimeException('Context must be injected via constructor');
+        }
+
+        return $this->context;
     }
 
     /**
      * Export a batch of customers to AI SmartTalk.
      *
-     * @param Customer[] $customers Array of PrestaShop Customer objects
+     * @param \Customer[] $customers Array of PrestaShop Customer objects
      *
      * @return bool True on success, false otherwise
      */
     public function exportCustomerBatch(array $customers)
     {
         // Use OAuthHandler for backend API URL and credentials
-        $aiSmartTalkUrl   = OAuthHandler::getBackendApiUrl();
-        $chatModelId      = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken   = OAuthHandler::getAccessToken() ?? Configuration::get('CHAT_MODEL_TOKEN');
+        $aiSmartTalkUrl = OAuthHandler::getBackendApiUrl();
+        $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
 
         // Map PrestaShop customer data to the expected AI SmartTalk format
         $customerData = array_map([$this, 'mapCustomerData'], $customers);
 
         // Prepare the payload
         $payload = [
-            'customers'       => $customerData,
-            'chatModelId'     => $chatModelId,
-            'chatModelToken'  => $chatModelToken,
-            'source'          => 'PRESTASHOP',
+            'customers' => $customerData,
+            'chatModelId' => $chatModelId,
+            'chatModelToken' => $chatModelToken,
+            'source' => 'PRESTASHOP',
         ];
 
         $ch = curl_init();
@@ -96,14 +106,14 @@ class CustomerSync
         curl_setopt($ch, CURLOPT_TIMEOUT, 30);
         // curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
 
-        $result   = curl_exec($ch);
-        $error    = curl_error($ch);
+        $result = curl_exec($ch);
+        $error = curl_error($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         // Check for cURL execution errors
         if ($result === false || !empty($error)) {
-            PrestaShopLogger::addLog(
+            \PrestaShopLogger::addLog(
                 'AI SmartTalk customer sync cURL error: ' . $error,
                 3,
                 null,
@@ -111,12 +121,13 @@ class CustomerSync
                 null,
                 true
             );
+
             return false;
         }
 
         // Check the HTTP status code (consider 2xx as success)
         if ($httpCode < 200 || $httpCode > 299) {
-            PrestaShopLogger::addLog(
+            \PrestaShopLogger::addLog(
                 'AI SmartTalk customer sync failed. HTTP code: ' . $httpCode . ' - Response: ' . $result,
                 3,
                 null,
@@ -124,6 +135,7 @@ class CustomerSync
                 null,
                 true
             );
+
             return false;
         }
 
@@ -134,27 +146,27 @@ class CustomerSync
     /**
      * Map a PrestaShop Customer object to AI SmartTalk format
      *
-     * @param Customer $customer
+     * @param \Customer $customer The customer object to map
      *
-     * @return array
+     * @return array The mapped customer data
      */
-    private function mapCustomerData(Customer $customer)
+    private function mapCustomerData(\Customer $customer)
     {
         // Get addresses associated with this customer
-        $addresses = $customer->getAddresses((int)$this->context->language->id);
-        
+        $addresses = $customer->getAddresses((int) $this->getContext()->language->id);
+
         // Get the first address if available
         $firstAddress = !empty($addresses) ? reset($addresses) : null;
-        
+
         $mappedData = [
-            'externalId' => (string)$customer->id,
-            'email'      => $customer->email,
-            'firstname'  => $customer->firstname,
-            'lastname'   => $customer->lastname,
-            'phone'      => $firstAddress ? $firstAddress['phone'] : null,
-            'address'    => $firstAddress ? $firstAddress['address1'] : null,
-            'city'       => $firstAddress ? $firstAddress['city'] : null,
-            'country'    => $firstAddress ? $firstAddress['country'] : null,
+            'externalId' => (string) $customer->id,
+            'email' => $customer->email,
+            'firstname' => $customer->firstname,
+            'lastname' => $customer->lastname,
+            'phone' => $firstAddress ? $firstAddress['phone'] : null,
+            'address' => $firstAddress ? $firstAddress['address1'] : null,
+            'city' => $firstAddress ? $firstAddress['city'] : null,
+            'country' => $firstAddress ? $firstAddress['country'] : null,
             'postalCode' => $firstAddress ? $firstAddress['postcode'] : null,
         ];
 
@@ -163,20 +175,14 @@ class CustomerSync
 
     /**
      * Export all customers in batches to AI SmartTalk.
-     * 
-     * @return array Status of the export:
-     *               [
-     *                  'success' => bool,
-     *                  'total' => int,
-     *                  'processed' => int,
-     *                  'errors' => array
-     *               ]
+     *
+     * @return array Status of the export with keys: success, total, processed, errors
      */
     public function exportAllCustomers()
     {
         try {
             // Retrieve all customers in PrestaShop
-            $customers = Customer::getCustomers(true);
+            $customers = \Customer::getCustomers(true);
             $this->totalCustomers = count($customers);
             $this->processedCustomers = 0;
             $offset = 0;
@@ -185,10 +191,10 @@ class CustomerSync
             // Process in batches
             while ($customerBatch = array_slice($customers, $offset, $this->batchSize)) {
                 // Convert each array-of-data to a Customer object
-                // (Alternatively, getCustomers() already returns arrays; 
-                //  you might need to re-instantiate Customer objects if required)
+                // (Alternatively, getCustomers() already returns arrays;
+                // you might need to re-instantiate Customer objects if required)
                 $customerObjects = array_map(function ($cData) {
-                    return new Customer((int)$cData['id_customer']);
+                    return new \Customer((int) $cData['id_customer']);
                 }, $customerBatch);
 
                 if (!$this->exportCustomerBatch($customerObjects)) {
@@ -200,13 +206,13 @@ class CustomerSync
             }
 
             return [
-                'success'   => empty($errors),
-                'total'     => $this->totalCustomers,
+                'success' => empty($errors),
+                'total' => $this->totalCustomers,
                 'processed' => $this->processedCustomers,
-                'errors'    => $errors,
+                'errors' => $errors,
             ];
-        } catch (PrestaShopException $e) {
-            PrestaShopLogger::addLog(
+        } catch (\PrestaShopException $e) {
+            \PrestaShopLogger::addLog(
                 'AI SmartTalk customer sync exception: ' . $e->getMessage(),
                 3,
                 null,
@@ -214,13 +220,14 @@ class CustomerSync
                 null,
                 true
             );
+
             return [
                 'success' => false,
-                'errors'  => [$e->getMessage()],
+                'errors' => [$e->getMessage()],
             ];
         } catch (\Exception $e) {
             // Catch any other exceptions
-            PrestaShopLogger::addLog(
+            \PrestaShopLogger::addLog(
                 'AI SmartTalk customer sync general exception: ' . $e->getMessage(),
                 3,
                 null,
@@ -228,9 +235,10 @@ class CustomerSync
                 null,
                 true
             );
+
             return [
                 'success' => false,
-                'errors'  => [$e->getMessage()],
+                'errors' => [$e->getMessage()],
             ];
         }
     }
@@ -238,17 +246,13 @@ class CustomerSync
     /**
      * Get current export progress in terms of total customers and processed customers.
      *
-     * @return array [
-     *   'total'      => int,
-     *   'processed'  => int,
-     *   'percentage' => float
-     * ]
+     * @return array Progress with keys: total, processed, percentage
      */
     public function getProgress()
     {
         return [
-            'total'      => $this->totalCustomers,
-            'processed'  => $this->processedCustomers,
+            'total' => $this->totalCustomers,
+            'processed' => $this->processedCustomers,
             'percentage' => $this->totalCustomers > 0
                 ? round(($this->processedCustomers / $this->totalCustomers) * 100)
                 : 0,

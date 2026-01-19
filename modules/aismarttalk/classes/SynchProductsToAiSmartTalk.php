@@ -23,12 +23,22 @@ if (!defined('_PS_VERSION_')) {
 require_once dirname(__FILE__) . '/../vendor/autoload.php';
 
 use PrestaShop\PrestaShop\Adapter\Module\Module;
-use PrestaShop\AiSmartTalk\OAuthHandler;
 
 class SynchProductsToAiSmartTalk extends Module
 {
     private $forceSync = false;
     private $productIds = [];
+
+    /** @var \Context */
+    private $context;
+
+    /**
+     * @param \Context|null $context PrestaShop context (injected dependency)
+     */
+    public function __construct(\Context $context = null)
+    {
+        $this->context = $context;
+    }
 
     public function __invoke($args = [])
     {
@@ -47,6 +57,22 @@ class SynchProductsToAiSmartTalk extends Module
         return $this->sendProductsToApi();
     }
 
+    /**
+     * Get the injected context
+     *
+     * @return \Context
+     *
+     * @throws \RuntimeException if context was not injected
+     */
+    private function getContext()
+    {
+        if ($this->context === null) {
+            throw new \RuntimeException('Context must be injected via constructor');
+        }
+
+        return $this->context;
+    }
+
     private function sendProductsToApi()
     {
         $products = $this->getProductsToSynchronize();
@@ -54,9 +80,9 @@ class SynchProductsToAiSmartTalk extends Module
         $baseLink = \Tools::getHttpHost(true) . __PS_BASE_URI__;
 
         // Get default currency information
-        $defaultCurrencyId = (int)\Configuration::get('PS_CURRENCY_DEFAULT');
+        $defaultCurrencyId = (int) \Configuration::get('PS_CURRENCY_DEFAULT');
         $defaultCurrency = new \Currency($defaultCurrencyId);
-        $currencySign = $defaultCurrency->sign ?? '€';
+        $currencySign = $defaultCurrency->sign ?: '€';
 
         $documentDatas = [];
         $synchronizedProductIds = [];
@@ -67,13 +93,13 @@ class SynchProductsToAiSmartTalk extends Module
             $imageUrl = null;
             if (!empty($product['id_image'])) {
                 $defaultLangId = \Configuration::get('PS_LANG_DEFAULT');
-                $imageUrl = \Context::getContext()->link->getImageLink($psProduct->link_rewrite[$defaultLangId], $product['id_image']);
+                $imageUrl = $this->getContext()->link->getImageLink($psProduct->link_rewrite[$defaultLangId], $product['id_image']);
             }
 
             // Calculate final price considering specific prices (promotions)
             $finalPrice = $psProduct->getPrice();
             $hasSpecialPrice = !empty($product['specific_price']) || !empty($product['price_reduction']);
-            
+
             // Format dates
             $priceFrom = !empty($product['price_from']) && $product['price_from'] !== '0000-00-00 00:00:00' ? $product['price_from'] : null;
             $priceTo = !empty($product['price_to']) && $product['price_to'] !== '0000-00-00 00:00:00' ? $product['price_to'] : null;
@@ -121,6 +147,7 @@ class SynchProductsToAiSmartTalk extends Module
         if (count($documentDatas) > 0 && false === $this->postToApi($documentDatas)) {
             return false;
         }
+
         return true;
     }
 
@@ -128,6 +155,7 @@ class SynchProductsToAiSmartTalk extends Module
     {
         $ids = implode(',', array_map('intval', $productIds));
         $sql = 'UPDATE ' . _DB_PREFIX_ . 'product SET aismarttalk_synch = 1 WHERE id_product IN (' . $ids . ')';
+
         return \Db::getInstance()->execute($sql);
     }
 
@@ -162,6 +190,7 @@ class SynchProductsToAiSmartTalk extends Module
         $response = json_decode($result, true);
         if (isset($response['status']) && $response['status'] == 'error') {
             \Configuration::updateValue('AI_SMART_TALK_ERROR', $response['message']);
+
             return false;
         }
 
@@ -170,10 +199,10 @@ class SynchProductsToAiSmartTalk extends Module
 
     private function getProductsToSynchronize()
     {
-        $defaultLangId = (int)\Configuration::get('PS_LANG_DEFAULT');
-        $defaultShopId = (int)\Context::getContext()->shop->id;
-        $defaultCurrencyId = (int)\Configuration::get('PS_CURRENCY_DEFAULT');
-        
+        $defaultLangId = (int) \Configuration::get('PS_LANG_DEFAULT');
+        $defaultShopId = (int) $this->getContext()->shop->id;
+        $defaultCurrencyId = (int) \Configuration::get('PS_CURRENCY_DEFAULT');
+
         $sql = 'SELECT p.id_product, pl.name, pl.description, pl.description_short,
                    p.reference, p.price, cl.link_rewrite, i.id_image,
                    sa.quantity as stock_quantity,
@@ -185,16 +214,16 @@ class SynchProductsToAiSmartTalk extends Module
                    sp.to as price_to,
                    sp.reduction as price_reduction,
                    sp.reduction_type
-            FROM ' . _DB_PREFIX_ . 'product p 
-            JOIN ' . _DB_PREFIX_ . 'product_lang pl ON p.id_product = pl.id_product 
-            JOIN ' . _DB_PREFIX_ . 'category_lang cl ON p.id_category_default = cl.id_category 
+            FROM ' . _DB_PREFIX_ . 'product p
+            JOIN ' . _DB_PREFIX_ . 'product_lang pl ON p.id_product = pl.id_product
+            JOIN ' . _DB_PREFIX_ . 'category_lang cl ON p.id_category_default = cl.id_category
             LEFT JOIN ' . _DB_PREFIX_ . 'image i ON p.id_product = i.id_product AND i.cover = 1
-            LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa ON p.id_product = sa.id_product 
-                AND sa.id_product_attribute = 0 
+            LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa ON p.id_product = sa.id_product
+                AND sa.id_product_attribute = 0
                 AND sa.id_shop = ' . $defaultShopId . '
             LEFT JOIN ' . _DB_PREFIX_ . 'currency c ON c.id_currency = ' . $defaultCurrencyId . '
-            LEFT JOIN ' . _DB_PREFIX_ . 'specific_price sp ON p.id_product = sp.id_product 
-                AND (sp.from = "0000-00-00 00:00:00" OR sp.from <= NOW()) 
+            LEFT JOIN ' . _DB_PREFIX_ . 'specific_price sp ON p.id_product = sp.id_product
+                AND (sp.from = "0000-00-00 00:00:00" OR sp.from <= NOW())
                 AND (sp.to = "0000-00-00 00:00:00" OR sp.to >= NOW())
                 AND sp.id_shop = ' . $defaultShopId . '
             WHERE pl.id_lang = ' . $defaultLangId . ' AND cl.id_lang = ' . $defaultLangId . ' AND p.active = 1
@@ -212,26 +241,26 @@ class SynchProductsToAiSmartTalk extends Module
      */
     private function cleanOutOfStockProducts()
     {
-        $defaultShopId = (int)\Context::getContext()->shop->id;
-        
+        $defaultShopId = (int) $this->getContext()->shop->id;
+
         // Récupérer tous les produits qui ont été synchronisés mais qui ont maintenant stock <= 0
         $sql = 'SELECT p.id_product
-                FROM ' . _DB_PREFIX_ . 'product p 
-                LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa ON p.id_product = sa.id_product 
-                    AND sa.id_product_attribute = 0 
+                FROM ' . _DB_PREFIX_ . 'product p
+                LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa ON p.id_product = sa.id_product
+                    AND sa.id_product_attribute = 0
                     AND sa.id_shop = ' . $defaultShopId . '
-                WHERE p.aismarttalk_synch = 1 
+                WHERE p.aismarttalk_synch = 1
                     AND COALESCE(sa.quantity, 0) <= 0';
-        
+
         $outOfStockProducts = \Db::getInstance()->executeS($sql);
-        
+
         if (!empty($outOfStockProducts)) {
             $productIds = array_column($outOfStockProducts, 'id_product');
-            
+
             // Utiliser CleanProductDocuments pour supprimer ces produits d'AI SmartTalk
             $cleanProductDocuments = new \PrestaShop\AiSmartTalk\CleanProductDocuments();
             $cleanProductDocuments(['productIds' => array_map('strval', $productIds)]);
-            
+
             // Marquer ces produits comme non synchronisés dans la base de données
             $ids = implode(',', array_map('intval', $productIds));
             $sql = 'UPDATE ' . _DB_PREFIX_ . 'product SET aismarttalk_synch = 0 WHERE id_product IN (' . $ids . ')';

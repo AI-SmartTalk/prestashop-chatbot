@@ -29,24 +29,26 @@ class OAuthHandler
 {
     private const CLIENT_ID = 'prestashop';
     private const OAUTH_SCOPES = 'embed chat sync:products sync:categories';
-    
+
     /**
      * Get the callback URL for OAuth
-     * 
+     *
+     * @param \Context $context PrestaShop context (injected dependency, required)
+     *
      * @return string
      */
-    public static function getCallbackUrl(): string
+    public static function getCallbackUrl(\Context $context): string
     {
         // Use PrestaShop's front controller URL (not direct PHP file access which gets 403)
         // Use current protocol (HTTP/HTTPS) to avoid mismatch between authorization and token exchange
-        $context = \Context::getContext();
         $useSsl = \Tools::usingSecureMode();
+
         return $context->link->getModuleLink('aismarttalk', 'oauthcallback', [], $useSsl);
     }
-    
+
     /**
      * Get the frontend-facing API URL (for browser redirects)
-     * 
+     *
      * @return string
      */
     public static function getFrontendApiUrl(): string
@@ -58,12 +60,13 @@ class OAuthHandler
         if (empty($frontUrl)) {
             $frontUrl = 'https://aismarttalk.tech';
         }
+
         return rtrim($frontUrl, '/');
     }
-    
+
     /**
      * Get the backend API URL (for server-to-server calls)
-     * 
+     *
      * @return string
      */
     public static function getBackendApiUrl(): string
@@ -72,44 +75,47 @@ class OAuthHandler
         if (empty($url)) {
             $url = 'https://aismarttalk.tech';
         }
+
         return rtrim($url, '/');
     }
-    
+
     /**
      * Generate a PKCE code verifier (random string, 43-128 chars)
-     * 
+     *
      * @return string
      */
     public static function generateCodeVerifier(): string
     {
         return bin2hex(random_bytes(32)); // 64 chars
     }
-    
+
     /**
      * Generate a PKCE code challenge from the verifier using SHA256
-     * 
+     *
      * @param string $codeVerifier
+     *
      * @return string
      */
     public static function generateCodeChallenge(string $codeVerifier): string
     {
         $hash = hash('sha256', $codeVerifier, true);
+
         return rtrim(strtr(base64_encode($hash), '+/', '-_'), '=');
     }
-    
+
     /**
      * Generate a state token for CSRF protection
-     * 
+     *
      * @return string
      */
     public static function generateState(): string
     {
         return bin2hex(random_bytes(16));
     }
-    
+
     /**
      * Store OAuth state in Configuration (works across admin/front contexts)
-     * 
+     *
      * @param string $state
      * @param string $codeVerifier
      * @param string $returnUrl URL to redirect back to after OAuth
@@ -126,39 +132,40 @@ class OAuthHandler
         ]);
         \Configuration::updateValue('AI_SMART_TALK_OAUTH_PENDING', $data);
     }
-    
+
     /**
      * Get stored OAuth state
-     * 
+     *
      * @return array|null
      */
     public static function getStoredOAuthState(): ?array
     {
         $data = \Configuration::get('AI_SMART_TALK_OAUTH_PENDING');
-        
+
         if (empty($data)) {
             return null;
         }
-        
+
         $parsed = json_decode($data, true);
-        
+
         if (!$parsed || !isset($parsed['state']) || !isset($parsed['code_verifier'])) {
             return null;
         }
-        
+
         // Check expiry
         if (isset($parsed['expires']) && $parsed['expires'] < time()) {
             self::clearOAuthState();
+
             return null;
         }
-        
+
         return [
             'state' => $parsed['state'],
             'code_verifier' => $parsed['code_verifier'],
             'return_url' => $parsed['return_url'] ?? '',
         ];
     }
-    
+
     /**
      * Clear stored OAuth state
      */
@@ -166,19 +173,21 @@ class OAuthHandler
     {
         \Configuration::deleteByName('AI_SMART_TALK_OAUTH_PENDING');
     }
-    
+
     /**
      * Register the redirect URI with AI SmartTalk
      * This should be called during plugin installation or first setup
-     * 
+     *
+     * @param \Context $context PrestaShop context (injected dependency)
+     *
      * @return bool
      */
-    public static function registerRedirectUri(): bool
+    public static function registerRedirectUri(\Context $context): bool
     {
-        $callbackUrl = self::getCallbackUrl();
+        $callbackUrl = self::getCallbackUrl($context);
         $apiUrl = self::getBackendApiUrl();
         $shopUrl = \Tools::getShopDomainSsl(true) . __PS_BASE_URI__;
-        
+
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $apiUrl . '/api/oauth/aist/clients/register',
@@ -194,11 +203,11 @@ class OAuthHandler
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 30,
         ]);
-        
+
         $result = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
+
         if ($httpCode >= 200 && $httpCode < 300) {
             \PrestaShopLogger::addLog(
                 'AI SmartTalk: OAuth redirect URI registered successfully',
@@ -208,9 +217,10 @@ class OAuthHandler
                 null,
                 true
             );
+
             return true;
         }
-        
+
         \PrestaShopLogger::addLog(
             'AI SmartTalk: Failed to register OAuth redirect URI. HTTP Code: ' . $httpCode . ' Response: ' . $result,
             3,
@@ -219,55 +229,59 @@ class OAuthHandler
             null,
             true
         );
-        
+
         return false;
     }
-    
+
     /**
      * Build the authorization URL for OAuth flow
-     * 
-     * @param string $returnUrl URL to redirect back to after OAuth completion
+     *
+     * @param \Context $context   PrestaShop context (injected dependency)
+     * @param string   $returnUrl URL to redirect back to after OAuth completion
+     *
      * @return string
      */
-    public static function buildAuthorizationUrl(string $returnUrl = ''): string
+    public static function buildAuthorizationUrl(\Context $context, string $returnUrl = ''): string
     {
         // Generate PKCE values
         $codeVerifier = self::generateCodeVerifier();
         $codeChallenge = self::generateCodeChallenge($codeVerifier);
         $state = self::generateState();
-        
+
         // Store for callback validation (including return URL)
         self::storeOAuthState($state, $codeVerifier, $returnUrl);
-        
+
         // Build authorization URL using frontend URL (for browser redirect)
         $frontendUrl = self::getFrontendApiUrl();
-        
+
         $params = [
             'client_id' => self::CLIENT_ID,
-            'redirect_uri' => self::getCallbackUrl(),
+            'redirect_uri' => self::getCallbackUrl($context),
             'response_type' => 'code',
             'scope' => self::OAUTH_SCOPES,
             'state' => $state,
             'code_challenge' => $codeChallenge,
             'code_challenge_method' => 'S256',
         ];
-        
+
         return $frontendUrl . '/api/oauth/aist/authorize?' . http_build_query($params);
     }
-    
+
     /**
      * Exchange authorization code for access token
-     * 
-     * @param string $code The authorization code
-     * @param string $codeVerifier The PKCE code verifier
+     *
+     * @param \Context $context      PrestaShop context (injected dependency)
+     * @param string   $code         The authorization code
+     * @param string   $codeVerifier The PKCE code verifier
+     *
      * @return array|null Token data or null on failure
      */
-    public static function exchangeCodeForToken(string $code, string $codeVerifier): ?array
+    public static function exchangeCodeForToken(\Context $context, string $code, string $codeVerifier): ?array
     {
         $apiUrl = self::getBackendApiUrl();
-        $callbackUrl = self::getCallbackUrl();
+        $callbackUrl = self::getCallbackUrl($context);
         $tokenEndpoint = $apiUrl . '/api/oauth/aist/token';
-        
+
         $payload = [
             'grant_type' => 'authorization_code',
             'code' => $code,
@@ -275,7 +289,7 @@ class OAuthHandler
             'client_id' => self::CLIENT_ID,
             'code_verifier' => $codeVerifier,
         ];
-        
+
         // Log the request for debugging
         \PrestaShopLogger::addLog(
             'AI SmartTalk: Token exchange request to ' . $tokenEndpoint . ' with redirect_uri: ' . $callbackUrl,
@@ -285,7 +299,7 @@ class OAuthHandler
             null,
             true
         );
-        
+
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $tokenEndpoint,
@@ -295,12 +309,12 @@ class OAuthHandler
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 30,
         ]);
-        
+
         $result = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         $curlError = curl_error($ch);
         curl_close($ch);
-        
+
         if ($curlError) {
             \PrestaShopLogger::addLog(
                 'AI SmartTalk: cURL error during token exchange: ' . $curlError,
@@ -310,9 +324,10 @@ class OAuthHandler
                 null,
                 true
             );
+
             return null;
         }
-        
+
         if ($httpCode !== 200 || empty($result)) {
             \PrestaShopLogger::addLog(
                 'AI SmartTalk: Failed to exchange code for token. HTTP Code: ' . $httpCode . ' Response: ' . $result,
@@ -322,11 +337,12 @@ class OAuthHandler
                 null,
                 true
             );
+
             return null;
         }
-        
+
         $tokenData = json_decode($result, true);
-        
+
         if (!isset($tokenData['access_token']) || !isset($tokenData['chat_model_id'])) {
             \PrestaShopLogger::addLog(
                 'AI SmartTalk: Token response missing required fields. Response: ' . $result,
@@ -336,24 +352,27 @@ class OAuthHandler
                 null,
                 true
             );
+
             return null;
         }
-        
+
         return $tokenData;
     }
-    
+
     /**
      * Handle the OAuth callback
-     * 
-     * @param string $code The authorization code
-     * @param string $state The state for CSRF validation
+     *
+     * @param \Context $context PrestaShop context (injected dependency)
+     * @param string   $code    The authorization code
+     * @param string   $state   The state for CSRF validation
+     *
      * @return array Result with success status, message, and return_url
      */
-    public static function handleCallback(string $code, string $state): array
+    public static function handleCallback(\Context $context, string $code, string $state): array
     {
         // Validate state
         $storedState = self::getStoredOAuthState();
-        
+
         if ($storedState === null) {
             return [
                 'success' => false,
@@ -361,25 +380,26 @@ class OAuthHandler
                 'return_url' => '',
             ];
         }
-        
+
         if ($storedState['state'] !== $state) {
             $returnUrl = $storedState['return_url'] ?? '';
             self::clearOAuthState();
+
             return [
                 'success' => false,
                 'message' => 'Invalid OAuth state (CSRF validation failed). Please try again.',
                 'return_url' => $returnUrl,
             ];
         }
-        
+
         $returnUrl = $storedState['return_url'] ?? '';
-        
+
         // Exchange code for token
-        $tokenData = self::exchangeCodeForToken($code, $storedState['code_verifier']);
-        
+        $tokenData = self::exchangeCodeForToken($context, $code, $storedState['code_verifier']);
+
         // Clear OAuth state regardless of result
         self::clearOAuthState();
-        
+
         if ($tokenData === null) {
             return [
                 'success' => false,
@@ -387,17 +407,17 @@ class OAuthHandler
                 'return_url' => $returnUrl,
             ];
         }
-        
+
         // Store the credentials in PrestaShop configuration
         \Configuration::updateValue('AI_SMART_TALK_ACCESS_TOKEN', $tokenData['access_token']);
         \Configuration::updateValue('AI_SMART_TALK_CHAT_MODEL_ID', $tokenData['chat_model_id']);
         \Configuration::updateValue('AI_SMART_TALK_OAUTH_SCOPE', $tokenData['scope'] ?? self::OAUTH_SCOPES);
         \Configuration::updateValue('AI_SMART_TALK_OAUTH_CONNECTED', true);
-        
+
         // For backward compatibility, also update the old config keys
         \Configuration::updateValue('CHAT_MODEL_ID', $tokenData['chat_model_id']);
         \Configuration::updateValue('CHAT_MODEL_TOKEN', $tokenData['access_token']);
-        
+
         \PrestaShopLogger::addLog(
             'AI SmartTalk: OAuth connection successful. Chat Model ID: ' . $tokenData['chat_model_id'],
             1,
@@ -406,7 +426,7 @@ class OAuthHandler
             null,
             true
         );
-        
+
         return [
             'success' => true,
             'message' => 'Successfully connected to AI SmartTalk!',
@@ -414,20 +434,20 @@ class OAuthHandler
             'return_url' => $returnUrl,
         ];
     }
-    
+
     /**
      * Revoke the current OAuth token and disconnect
-     * 
+     *
      * @return bool
      */
     public static function disconnect(): bool
     {
         $accessToken = \Configuration::get('AI_SMART_TALK_ACCESS_TOKEN');
-        
+
         if (!empty($accessToken)) {
             // Revoke token on the server
             $apiUrl = self::getBackendApiUrl();
-            
+
             $ch = curl_init();
             curl_setopt_array($ch, [
                 CURLOPT_URL => $apiUrl . '/api/oauth/aist/revoke',
@@ -439,11 +459,11 @@ class OAuthHandler
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_TIMEOUT => 10,
             ]);
-            
+
             curl_exec($ch);
             curl_close($ch);
         }
-        
+
         // Clear local credentials
         \Configuration::deleteByName('AI_SMART_TALK_ACCESS_TOKEN');
         \Configuration::deleteByName('AI_SMART_TALK_CHAT_MODEL_ID');
@@ -451,7 +471,7 @@ class OAuthHandler
         \Configuration::deleteByName('AI_SMART_TALK_OAUTH_CONNECTED');
         \Configuration::deleteByName('CHAT_MODEL_ID');
         \Configuration::deleteByName('CHAT_MODEL_TOKEN');
-        
+
         \PrestaShopLogger::addLog(
             'AI SmartTalk: OAuth disconnected',
             1,
@@ -460,13 +480,13 @@ class OAuthHandler
             null,
             true
         );
-        
+
         return true;
     }
-    
+
     /**
      * Check if the module is connected via OAuth
-     * 
+     *
      * @return bool
      */
     public static function isConnected(): bool
@@ -475,44 +495,46 @@ class OAuthHandler
             && !empty(\Configuration::get('AI_SMART_TALK_ACCESS_TOKEN'))
             && !empty(\Configuration::get('AI_SMART_TALK_CHAT_MODEL_ID'));
     }
-    
+
     /**
      * Get the current access token
-     * 
+     *
      * @return string|null
      */
     public static function getAccessToken(): ?string
     {
         $token = \Configuration::get('AI_SMART_TALK_ACCESS_TOKEN');
+
         return !empty($token) ? $token : null;
     }
-    
+
     /**
      * Get the current chat model ID
-     * 
+     *
      * @return string|null
      */
     public static function getChatModelId(): ?string
     {
         $id = \Configuration::get('AI_SMART_TALK_CHAT_MODEL_ID');
+
         return !empty($id) ? $id : null;
     }
-    
+
     /**
      * Introspect the current token to verify it's still valid
-     * 
+     *
      * @return array|null Token info or null if invalid
      */
     public static function introspectToken(): ?array
     {
         $accessToken = self::getAccessToken();
-        
+
         if (empty($accessToken)) {
             return null;
         }
-        
+
         $apiUrl = self::getBackendApiUrl();
-        
+
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $apiUrl . '/api/oauth/aist/introspect',
@@ -524,23 +546,21 @@ class OAuthHandler
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 10,
         ]);
-        
+
         $result = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
-        
+
         if ($httpCode !== 200) {
             return null;
         }
-        
+
         $data = json_decode($result, true);
-        
+
         if (!isset($data['active']) || !$data['active']) {
             return null;
         }
-        
+
         return $data;
     }
 }
-
-
