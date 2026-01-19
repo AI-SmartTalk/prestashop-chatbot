@@ -185,7 +185,20 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_OAUTH_SCOPE')
             && Configuration::deleteByName('AI_SMART_TALK_OAUTH_CONNECTED')
             && Configuration::deleteByName('CHAT_MODEL_ID')
-            && Configuration::deleteByName('CHAT_MODEL_TOKEN');
+            && Configuration::deleteByName('CHAT_MODEL_TOKEN')
+            // Chatbot customization settings
+            && Configuration::deleteByName('AI_SMART_TALK_BUTTON_TEXT')
+            && Configuration::deleteByName('AI_SMART_TALK_BUTTON_TYPE')
+            && Configuration::deleteByName('AI_SMART_TALK_AVATAR_URL')
+            && Configuration::deleteByName('AI_SMART_TALK_COLOR_MODE')
+            && Configuration::deleteByName('AI_SMART_TALK_PRIMARY_COLOR')
+            && Configuration::deleteByName('AI_SMART_TALK_SECONDARY_COLOR')
+            && Configuration::deleteByName('AI_SMART_TALK_CHAT_SIZE')
+            && Configuration::deleteByName('AI_SMART_TALK_BUTTON_POSITION')
+            && Configuration::deleteByName('AI_SMART_TALK_ENABLE_ATTACHMENT')
+            && Configuration::deleteByName('AI_SMART_TALK_ENABLE_FEEDBACK')
+            && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_INPUT')
+            && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_MODE');
     }
 
     public function hookActionAuthentication($params)
@@ -391,6 +404,113 @@ class AiSmartTalk extends Module
             $output .= $this->displayConfirmation($this->trans('Chatbot settings saved.', [], 'Modules.Aismarttalk.Admin'));
         }
 
+        // Handle chatbot customization form
+        if (Tools::isSubmit('submitChatbotCustomization')) {
+            // Button settings
+            $buttonText = Tools::getValue('AI_SMART_TALK_BUTTON_TEXT', '');
+            $buttonType = Tools::getValue('AI_SMART_TALK_BUTTON_TYPE', '');
+            $buttonPosition = Tools::getValue('AI_SMART_TALK_BUTTON_POSITION', '');
+
+            // Validate button type
+            $validButtonTypes = ['', 'default', 'icon', 'avatar', 'minimal'];
+            if (!in_array($buttonType, $validButtonTypes)) {
+                $buttonType = '';
+            }
+
+            // Handle avatar file upload
+            $avatarUrl = Configuration::get('AI_SMART_TALK_AVATAR_URL') ?: '';
+            if (isset($_FILES['AI_SMART_TALK_AVATAR_FILE']) && $_FILES['AI_SMART_TALK_AVATAR_FILE']['error'] === UPLOAD_ERR_OK) {
+                $uploadResult = $this->uploadChatModelAvatarFile($_FILES['AI_SMART_TALK_AVATAR_FILE']);
+                if ($uploadResult['success']) {
+                    $avatarUrl = $uploadResult['avatarUrl'];
+                    $output .= $this->displayConfirmation($this->trans('Avatar uploaded successfully.', [], 'Modules.Aismarttalk.Admin'));
+                } else {
+                    $output .= $this->displayError($this->trans('Avatar upload failed: ', [], 'Modules.Aismarttalk.Admin') . $uploadResult['message']);
+                }
+            }
+
+            // Validate button position
+            $validPositions = ['', 'bottom-right', 'bottom-left'];
+            if (!in_array($buttonPosition, $validPositions)) {
+                $buttonPosition = '';
+            }
+
+            // Layout settings
+            $chatSize = Tools::getValue('AI_SMART_TALK_CHAT_SIZE', '');
+            $validSizes = ['', 'small', 'medium', 'large'];
+            if (!in_array($chatSize, $validSizes)) {
+                $chatSize = '';
+            }
+
+            // Color settings
+            $colorMode = Tools::getValue('AI_SMART_TALK_COLOR_MODE', '');
+            $validColorModes = ['', 'light', 'dark', 'auto'];
+            if (!in_array($colorMode, $validColorModes)) {
+                $colorMode = '';
+            }
+
+            $primaryColor = Tools::getValue('AI_SMART_TALK_PRIMARY_COLOR', '');
+            $secondaryColor = Tools::getValue('AI_SMART_TALK_SECONDARY_COLOR', '');
+
+            // Validate hex colors
+            if (!empty($primaryColor) && !preg_match('/^#[a-fA-F0-9]{6}$/', $primaryColor)) {
+                $primaryColor = '';
+            }
+            if (!empty($secondaryColor) && !preg_match('/^#[a-fA-F0-9]{6}$/', $secondaryColor)) {
+                $secondaryColor = '';
+            }
+
+            // Feature toggles (empty = API default, 'on' = enabled, 'off' = disabled)
+            $enableAttachment = Tools::getValue('AI_SMART_TALK_ENABLE_ATTACHMENT', '');
+            $enableFeedback = Tools::getValue('AI_SMART_TALK_ENABLE_FEEDBACK', '');
+            $enableVoiceInput = Tools::getValue('AI_SMART_TALK_ENABLE_VOICE_INPUT', '');
+            $enableVoiceMode = Tools::getValue('AI_SMART_TALK_ENABLE_VOICE_MODE', '');
+
+            // Validate feature toggles
+            $validToggleValues = ['', 'on', 'off'];
+            if (!in_array($enableAttachment, $validToggleValues)) {
+                $enableAttachment = '';
+            }
+            if (!in_array($enableFeedback, $validToggleValues)) {
+                $enableFeedback = '';
+            }
+            if (!in_array($enableVoiceInput, $validToggleValues)) {
+                $enableVoiceInput = '';
+            }
+            if (!in_array($enableVoiceMode, $validToggleValues)) {
+                $enableVoiceMode = '';
+            }
+
+            // If avatar URL is provided and different from current, upload it to AI SmartTalk
+            $currentAvatarUrl = Configuration::get('AI_SMART_TALK_AVATAR_URL');
+            if (!empty($avatarUrl) && $avatarUrl !== $currentAvatarUrl) {
+                $uploadResult = $this->uploadChatModelAvatar($avatarUrl);
+                if ($uploadResult['success']) {
+                    // Use the CDN URL returned by the API
+                    $avatarUrl = $uploadResult['avatarUrl'];
+                    $output .= $this->displayConfirmation($this->trans('Avatar uploaded successfully to AI SmartTalk.', [], 'Modules.Aismarttalk.Admin'));
+                } else {
+                    $output .= $this->displayWarning($this->trans('Avatar could not be uploaded to AI SmartTalk. Using local URL.', [], 'Modules.Aismarttalk.Admin'));
+                }
+            }
+
+            // Save all customization settings
+            Configuration::updateValue('AI_SMART_TALK_BUTTON_TEXT', pSQL($buttonText));
+            Configuration::updateValue('AI_SMART_TALK_BUTTON_TYPE', $buttonType);
+            Configuration::updateValue('AI_SMART_TALK_AVATAR_URL', pSQL($avatarUrl));
+            Configuration::updateValue('AI_SMART_TALK_BUTTON_POSITION', $buttonPosition);
+            Configuration::updateValue('AI_SMART_TALK_CHAT_SIZE', $chatSize);
+            Configuration::updateValue('AI_SMART_TALK_COLOR_MODE', $colorMode);
+            Configuration::updateValue('AI_SMART_TALK_PRIMARY_COLOR', $primaryColor);
+            Configuration::updateValue('AI_SMART_TALK_SECONDARY_COLOR', $secondaryColor);
+            Configuration::updateValue('AI_SMART_TALK_ENABLE_ATTACHMENT', $enableAttachment);
+            Configuration::updateValue('AI_SMART_TALK_ENABLE_FEEDBACK', $enableFeedback);
+            Configuration::updateValue('AI_SMART_TALK_ENABLE_VOICE_INPUT', $enableVoiceInput);
+            Configuration::updateValue('AI_SMART_TALK_ENABLE_VOICE_MODE', $enableVoiceMode);
+
+            $output .= $this->displayConfirmation($this->trans('Chatbot customization saved.', [], 'Modules.Aismarttalk.Admin'));
+        }
+
         // Handle combined sync settings form
         if (Tools::isSubmit('submitSyncSettings')) {
             $productSyncEnabled = (bool) Tools::getValue('AI_SMART_TALK_PRODUCT_SYNC');
@@ -441,7 +561,7 @@ class AiSmartTalk extends Module
             'source' => 'PRESTASHOP',
         ];
 
-        // Fetch and merge embed config
+        // Fetch and merge embed config from API (as base defaults)
         $embedConfig = $this->fetchEmbedConfig();
         if ($embedConfig && is_array($embedConfig)) {
             $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang'];
@@ -451,6 +571,9 @@ class AiSmartTalk extends Module
                 }
             }
         }
+
+        // Apply PrestaShop customization overrides (these take priority over API defaults)
+        $chatbotSettings = $this->applyCustomizationOverrides($chatbotSettings);
 
         $this->context->smarty->assign([
             'isConnected' => $isConnected,
@@ -471,6 +594,21 @@ class AiSmartTalk extends Module
             'apiUrl' => Configuration::get('AI_SMART_TALK_URL') ?: 'https://aismarttalk.tech',
             'cdnUrl' => $cdnUrl,
             'wsUrl' => $wsUrl,
+
+            // Chatbot customization settings
+            'buttonText' => Configuration::get('AI_SMART_TALK_BUTTON_TEXT') ?: '',
+            'buttonType' => Configuration::get('AI_SMART_TALK_BUTTON_TYPE') ?: '',
+            'avatarUrl' => Configuration::get('AI_SMART_TALK_AVATAR_URL') ?: '',
+            'chatModelAvatarUrl' => $this->fetchChatModelAvatar() ?: '',
+            'buttonPosition' => Configuration::get('AI_SMART_TALK_BUTTON_POSITION') ?: '',
+            'chatSize' => Configuration::get('AI_SMART_TALK_CHAT_SIZE') ?: '',
+            'colorMode' => Configuration::get('AI_SMART_TALK_COLOR_MODE') ?: '',
+            'primaryColor' => Configuration::get('AI_SMART_TALK_PRIMARY_COLOR') ?: '',
+            'secondaryColor' => Configuration::get('AI_SMART_TALK_SECONDARY_COLOR') ?: '',
+            'enableAttachment' => Configuration::get('AI_SMART_TALK_ENABLE_ATTACHMENT') ?: '',
+            'enableFeedback' => Configuration::get('AI_SMART_TALK_ENABLE_FEEDBACK') ?: '',
+            'enableVoiceInput' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_INPUT') ?: '',
+            'enableVoiceMode' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_MODE') ?: '',
 
             // Chatbot embed (base64 encoded for security)
             'chatbotSettingsEncoded' => base64_encode(json_encode($chatbotSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
@@ -658,6 +796,130 @@ class AiSmartTalk extends Module
     }
 
     /**
+     * Fetch the chat model avatar from the API
+     *
+     * @return string|null The avatar URL or null if not available
+     */
+    private function fetchChatModelAvatar()
+    {
+        $chatModelId = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = OAuthHandler::getAccessToken() ?? Configuration::get('CHAT_MODEL_TOKEN');
+        $apiUrl = OAuthHandler::getBackendApiUrl();
+
+        if (empty($chatModelId) || empty($chatModelToken) || empty($apiUrl)) {
+            return null;
+        }
+
+        $avatarUrl = rtrim($apiUrl, '/') . '/api/v1/chatModel/' . urlencode($chatModelId) . '/avatar';
+
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $avatarUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $chatModelToken,
+                'Content-Type: application/json',
+                'x-chat-model-id: ' . $chatModelId,
+            ],
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || empty($response)) {
+            return null;
+        }
+
+        $data = json_decode($response, true);
+
+        if (isset($data['data']['avatarUrl'])) {
+            return $data['data']['avatarUrl'];
+        }
+
+        return null;
+    }
+
+    /**
+     * Upload an avatar file to the chat model
+     *
+     * @param array $file The uploaded file from $_FILES
+     * @return array Result with success status and avatar URL
+     */
+    private function uploadChatModelAvatarFile(array $file): array
+    {
+        $chatModelId = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = OAuthHandler::getAccessToken() ?? Configuration::get('CHAT_MODEL_TOKEN');
+        $apiUrl = OAuthHandler::getBackendApiUrl();
+
+        if (empty($chatModelId) || empty($chatModelToken) || empty($apiUrl)) {
+            return ['success' => false, 'message' => 'Missing credentials'];
+        }
+
+        // Validate file
+        if ($file['error'] !== UPLOAD_ERR_OK) {
+            return ['success' => false, 'message' => 'File upload error: ' . $file['error']];
+        }
+
+        $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+        if (!in_array($file['type'], $allowedTypes)) {
+            return ['success' => false, 'message' => 'Invalid file type. Allowed: JPEG, PNG, GIF, WebP'];
+        }
+
+        $maxSize = 10 * 1024 * 1024; // 10MB
+        if ($file['size'] > $maxSize) {
+            return ['success' => false, 'message' => 'File too large. Maximum size: 10MB'];
+        }
+
+        $avatarApiUrl = rtrim($apiUrl, '/') . '/api/v1/chatModel/' . urlencode($chatModelId) . '/avatar';
+
+        // Prepare multipart form data
+        $cfile = new \CURLFile($file['tmp_name'], $file['type'], $file['name']);
+
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $avatarApiUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 60,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => ['file' => $cfile],
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $chatModelToken,
+                'x-chat-model-id: ' . $chatModelId,
+            ],
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || empty($response)) {
+            PrestaShopLogger::addLog(
+                'AI SmartTalk: Failed to upload avatar. HTTP Code: ' . $httpCode . ' Error: ' . $curlError,
+                3,
+                null,
+                'AiSmartTalk',
+                null,
+                true
+            );
+            return ['success' => false, 'message' => 'Failed to upload avatar: ' . $curlError];
+        }
+
+        $data = json_decode($response, true);
+
+        if (isset($data['success']) && $data['success'] && isset($data['data']['avatarUrl'])) {
+            return [
+                'success' => true,
+                'avatarUrl' => $data['data']['avatarUrl'],
+            ];
+        }
+
+        return ['success' => false, 'message' => $data['message'] ?? 'Unknown error'];
+    }
+
+    /**
      * Render the chatbot using the universal embed script
      *
      * @return string The HTML/JS code to embed the chatbot
@@ -710,8 +972,7 @@ class AiSmartTalk extends Module
             $chatbotSettings['userToken'] = $userToken;
         }
 
-        // Merge with API embed config if available
-        // Automatically merge all settings from API, except critical ones that must not be overridden
+        // Merge with API embed config if available (as base defaults)
         if ($embedConfig && is_array($embedConfig)) {
             $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang'];
 
@@ -723,6 +984,9 @@ class AiSmartTalk extends Module
             }
         }
 
+        // Apply PrestaShop customization overrides (these take priority over API defaults)
+        $chatbotSettings = $this->applyCustomizationOverrides($chatbotSettings);
+
         // Assign variables to Smarty (base64 encoded for security)
         $this->context->smarty->assign([
             'chatbotSettingsEncoded' => base64_encode(json_encode($chatbotSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
@@ -730,6 +994,97 @@ class AiSmartTalk extends Module
         ]);
 
         return $this->display(__FILE__, 'views/templates/hook/footer.tpl');
+    }
+
+    /**
+     * Apply PrestaShop customization overrides to chatbot settings
+     * These settings take priority over API defaults when configured
+     *
+     * @param array $chatbotSettings The base chatbot settings
+     * @return array The settings with PrestaShop overrides applied
+     */
+    private function applyCustomizationOverrides(array $chatbotSettings): array
+    {
+        // Get PrestaShop customization settings
+        $buttonText = Configuration::get('AI_SMART_TALK_BUTTON_TEXT');
+        $buttonType = Configuration::get('AI_SMART_TALK_BUTTON_TYPE');
+        $avatarUrl = Configuration::get('AI_SMART_TALK_AVATAR_URL');
+        $buttonPosition = Configuration::get('AI_SMART_TALK_BUTTON_POSITION');
+        $chatSize = Configuration::get('AI_SMART_TALK_CHAT_SIZE');
+        $colorMode = Configuration::get('AI_SMART_TALK_COLOR_MODE');
+        $primaryColor = Configuration::get('AI_SMART_TALK_PRIMARY_COLOR');
+        $secondaryColor = Configuration::get('AI_SMART_TALK_SECONDARY_COLOR');
+        $enableAttachment = Configuration::get('AI_SMART_TALK_ENABLE_ATTACHMENT');
+        $enableFeedback = Configuration::get('AI_SMART_TALK_ENABLE_FEEDBACK');
+        $enableVoiceInput = Configuration::get('AI_SMART_TALK_ENABLE_VOICE_INPUT');
+        $enableVoiceMode = Configuration::get('AI_SMART_TALK_ENABLE_VOICE_MODE');
+
+        // Apply text/select overrides (only if non-empty, meaning user has configured them)
+        if (!empty($buttonText)) {
+            $chatbotSettings['buttonText'] = $buttonText;
+        }
+        if (!empty($buttonType)) {
+            $chatbotSettings['buttonType'] = $buttonType;
+        }
+        if (!empty($avatarUrl)) {
+            $chatbotSettings['avatarUrl'] = $avatarUrl;
+        }
+        if (!empty($buttonPosition)) {
+            $chatbotSettings['position'] = $buttonPosition;
+        }
+        if (!empty($chatSize)) {
+            $chatbotSettings['chatSize'] = $chatSize;
+        }
+        if (!empty($colorMode)) {
+            $chatbotSettings['initialColorMode'] = $colorMode;
+        }
+
+        // Apply boolean overrides (only if explicitly 'on' or 'off')
+        if ($enableAttachment === 'on') {
+            $chatbotSettings['enableAttachment'] = true;
+        } elseif ($enableAttachment === 'off') {
+            $chatbotSettings['enableAttachment'] = false;
+        }
+
+        if ($enableFeedback === 'on') {
+            $chatbotSettings['enableFeedback'] = true;
+        } elseif ($enableFeedback === 'off') {
+            $chatbotSettings['enableFeedback'] = false;
+        }
+
+        if ($enableVoiceInput === 'on') {
+            $chatbotSettings['enableVoiceInput'] = true;
+        } elseif ($enableVoiceInput === 'off') {
+            $chatbotSettings['enableVoiceInput'] = false;
+        }
+
+        if ($enableVoiceMode === 'on') {
+            $chatbotSettings['enableVoiceMode'] = true;
+        } elseif ($enableVoiceMode === 'off') {
+            $chatbotSettings['enableVoiceMode'] = false;
+        }
+
+        // Apply color theme overrides (build nested theme structure)
+        if (!empty($primaryColor) || !empty($secondaryColor)) {
+            if (!isset($chatbotSettings['theme'])) {
+                $chatbotSettings['theme'] = [];
+            }
+            if (!isset($chatbotSettings['theme']['colors'])) {
+                $chatbotSettings['theme']['colors'] = [];
+            }
+            if (!isset($chatbotSettings['theme']['colors']['brand'])) {
+                $chatbotSettings['theme']['colors']['brand'] = [];
+            }
+
+            if (!empty($primaryColor)) {
+                $chatbotSettings['theme']['colors']['brand']['500'] = $primaryColor;
+            }
+            if (!empty($secondaryColor)) {
+                $chatbotSettings['theme']['colors']['brand']['200'] = $secondaryColor;
+            }
+        }
+
+        return $chatbotSettings;
     }
 
     public function hookActionProductUpdate($params)
