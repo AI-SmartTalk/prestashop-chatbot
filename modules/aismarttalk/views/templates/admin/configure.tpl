@@ -724,15 +724,66 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // Avatar file preview
+    // Avatar file preview with validation
     var avatarFileInput = document.getElementById('avatar-file-input');
     var avatarFilePreview = document.getElementById('avatar-file-preview');
     var avatarFilePreviewImg = document.getElementById('avatar-file-preview-img');
 
+    // Avatar validation constants
+    var AVATAR_MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    var AVATAR_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
+    function formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    function showAvatarError(message) {
+        // Remove existing error
+        var existingError = document.getElementById('avatar-validation-error');
+        if (existingError) existingError.remove();
+
+        // Create error element
+        var errorDiv = document.createElement('div');
+        errorDiv.id = 'avatar-validation-error';
+        errorDiv.className = 'alert alert-danger';
+        errorDiv.style.marginTop = '10px';
+        errorDiv.innerHTML = '<i class="icon icon-warning"></i> ' + message;
+
+        avatarFileInput.parentNode.parentNode.appendChild(errorDiv);
+    }
+
+    function clearAvatarError() {
+        var existingError = document.getElementById('avatar-validation-error');
+        if (existingError) existingError.remove();
+    }
+
     if (avatarFileInput && avatarFilePreview && avatarFilePreviewImg) {
         avatarFileInput.addEventListener('change', function(e) {
             var file = e.target.files[0];
+            clearAvatarError();
+
             if (file) {
+                // Validate file type
+                if (AVATAR_ALLOWED_TYPES.indexOf(file.type) === -1) {
+                    showAvatarError('{l s='Invalid file type. Allowed formats: JPEG, PNG, GIF, WebP' mod='aismarttalk' js=1}');
+                    avatarFileInput.value = '';
+                    avatarFilePreview.style.display = 'none';
+                    avatarFilePreviewImg.src = '';
+                    return;
+                }
+
+                // Validate file size
+                if (file.size > AVATAR_MAX_SIZE) {
+                    showAvatarError('{l s='File too large. Maximum size: 10MB. Your file:' mod='aismarttalk' js=1} ' + formatFileSize(file.size));
+                    avatarFileInput.value = '';
+                    avatarFilePreview.style.display = 'none';
+                    avatarFilePreviewImg.src = '';
+                    return;
+                }
+
+                // Show preview
                 var reader = new FileReader();
                 reader.onload = function(e) {
                     avatarFilePreviewImg.src = e.target.result;

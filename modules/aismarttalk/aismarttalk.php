@@ -481,18 +481,8 @@ class AiSmartTalk extends Module
                 $enableVoiceMode = '';
             }
 
-            // If avatar URL is provided and different from current, upload it to AI SmartTalk
-            $currentAvatarUrl = Configuration::get('AI_SMART_TALK_AVATAR_URL');
-            if (!empty($avatarUrl) && $avatarUrl !== $currentAvatarUrl) {
-                $uploadResult = $this->uploadChatModelAvatar($avatarUrl);
-                if ($uploadResult['success']) {
-                    // Use the CDN URL returned by the API
-                    $avatarUrl = $uploadResult['avatarUrl'];
-                    $output .= $this->displayConfirmation($this->trans('Avatar uploaded successfully to AI SmartTalk.', [], 'Modules.Aismarttalk.Admin'));
-                } else {
-                    $output .= $this->displayWarning($this->trans('Avatar could not be uploaded to AI SmartTalk. Using local URL.', [], 'Modules.Aismarttalk.Admin'));
-                }
-            }
+            // Note: Avatar URL is already uploaded via uploadChatModelAvatarFile above
+            // No need for a second upload - the $avatarUrl already contains the CDN URL
 
             // Save all customization settings
             Configuration::updateValue('AI_SMART_TALK_BUTTON_TEXT', pSQL($buttonText));
@@ -896,6 +886,17 @@ class AiSmartTalk extends Module
         curl_close($ch);
 
         if ($httpCode !== 200 || empty($response)) {
+            $errorMessage = $curlError;
+            if ($httpCode === 413) {
+                $errorMessage = 'File too large for server. Try a smaller image (max 10MB).';
+            } elseif ($httpCode === 400) {
+                $errorMessage = 'Invalid file format. Allowed: JPEG, PNG, GIF, WebP.';
+            } elseif ($httpCode === 401 || $httpCode === 403) {
+                $errorMessage = 'Authentication failed. Please reconnect your AI SmartTalk account.';
+            } elseif ($httpCode === 500) {
+                $errorMessage = 'Server error. Please try again later.';
+            }
+
             PrestaShopLogger::addLog(
                 'AI SmartTalk: Failed to upload avatar. HTTP Code: ' . $httpCode . ' Error: ' . $curlError,
                 3,
@@ -904,7 +905,7 @@ class AiSmartTalk extends Module
                 null,
                 true
             );
-            return ['success' => false, 'message' => 'Failed to upload avatar: ' . $curlError];
+            return ['success' => false, 'message' => $errorMessage];
         }
 
         $data = json_decode($response, true);
