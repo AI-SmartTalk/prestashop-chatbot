@@ -551,8 +551,15 @@ class AiSmartTalk extends Module
             'source' => 'PRESTASHOP',
         ];
 
+        // Get or refresh employee token for auto-login in back-office
+        $employeeToken = OAuthTokenHandler::getOrRefreshEmployeeToken();
+        if ($employeeToken) {
+            $chatbotSettings['userToken'] = $employeeToken;
+        }
+
         // Fetch and merge embed config from API (as base defaults)
         $embedConfig = $this->fetchEmbedConfig();
+        $embedConfigAvatarUrl = '';
         if ($embedConfig && is_array($embedConfig)) {
             $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang'];
             foreach ($embedConfig as $key => $value) {
@@ -560,10 +567,20 @@ class AiSmartTalk extends Module
                     $chatbotSettings[$key] = $value;
                 }
             }
+            // Extract avatarUrl from embed config for display in admin
+            if (isset($embedConfig['avatarUrl']) && !empty($embedConfig['avatarUrl'])) {
+                $embedConfigAvatarUrl = $embedConfig['avatarUrl'];
+            }
         }
 
         // Apply PrestaShop customization overrides (these take priority over API defaults)
         $chatbotSettings = $this->applyCustomizationOverrides($chatbotSettings);
+
+        // Get local avatar URL (user uploaded)
+        $localAvatarUrl = Configuration::get('AI_SMART_TALK_AVATAR_URL') ?: '';
+
+        // Determine effective avatar URL: local override > embed config
+        $effectiveAvatarUrl = !empty($localAvatarUrl) ? $localAvatarUrl : $embedConfigAvatarUrl;
 
         $this->context->smarty->assign([
             'isConnected' => $isConnected,
@@ -588,7 +605,9 @@ class AiSmartTalk extends Module
             // Chatbot customization settings
             'buttonText' => Configuration::get('AI_SMART_TALK_BUTTON_TEXT') ?: '',
             'buttonType' => Configuration::get('AI_SMART_TALK_BUTTON_TYPE') ?: '',
-            'avatarUrl' => Configuration::get('AI_SMART_TALK_AVATAR_URL') ?: '',
+            'avatarUrl' => $localAvatarUrl,
+            'embedConfigAvatarUrl' => $embedConfigAvatarUrl,
+            'effectiveAvatarUrl' => $effectiveAvatarUrl,
             'chatModelAvatarUrl' => $this->fetchChatModelAvatar() ?: '',
             'buttonPosition' => Configuration::get('AI_SMART_TALK_BUTTON_POSITION') ?: '',
             'chatSize' => Configuration::get('AI_SMART_TALK_CHAT_SIZE') ?: '',

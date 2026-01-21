@@ -399,7 +399,7 @@
                     </label>
                     <label class="button-type-card {if $buttonType == 'avatar'}selected{/if}">
                         <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="avatar" {if $buttonType == 'avatar'}checked{/if}>
-                        <div class="preview"><img src="https://aismarttalk.tech/images/favicons/favicon-128.png" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%;"></div>
+                        <div class="preview"><img src="{if $effectiveAvatarUrl}{$effectiveAvatarUrl|escape:'html':'UTF-8'}{else}https://aismarttalk.tech/images/favicons/favicon-128.png{/if}" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%;"></div>
                         <div class="label">{l s='Avatar' mod='aismarttalk'}</div>
                     </label>
                     <label class="button-type-card {if $buttonType == 'minimal'}selected{/if}">
@@ -420,13 +420,17 @@
                 <div class="form-group avatar-upload-group" id="avatar-upload-group" style="{if $buttonType != 'avatar'}display: none;{/if}">
                     <label class="control-label">{l s='Avatar Image' mod='aismarttalk'}</label>
 
-                    {* Show current chat model avatar *}
-                    {if $chatModelAvatarUrl || $avatarUrl}
+                    {* Show current avatar (from embed config or local upload) *}
+                    {if $effectiveAvatarUrl}
                     <div class="alert alert-info" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                        <img src="{if $avatarUrl}{$avatarUrl|escape:'html':'UTF-8'}{else}{$chatModelAvatarUrl|escape:'html':'UTF-8'}{/if}" alt="Current avatar" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #667eea;">
+                        <img src="{$effectiveAvatarUrl|escape:'html':'UTF-8'}" alt="Current avatar" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #667eea;">
                         <div>
                             <strong>{l s='Current Avatar' mod='aismarttalk'}</strong>
-                            <p style="margin: 0; font-size: 12px; opacity: 0.8;">{l s='Upload a new image below to change the avatar.' mod='aismarttalk'}</p>
+                            {if $avatarUrl}
+                            <p style="margin: 0; font-size: 12px; opacity: 0.8;">{l s='Custom avatar uploaded. Upload a new image to replace it.' mod='aismarttalk'}</p>
+                            {else}
+                            <p style="margin: 0; font-size: 12px; opacity: 0.8;">{l s='Using avatar from AI SmartTalk. Upload an image to customize.' mod='aismarttalk'}</p>
+                            {/if}
                         </div>
                     </div>
                     {/if}
