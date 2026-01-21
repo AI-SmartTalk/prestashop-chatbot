@@ -585,9 +585,11 @@ class AiSmartTalk extends Module
         $this->context->smarty->assign([
             'isConnected' => $isConnected,
             'chatModelId' => $chatModelId,
+            'accessToken' => OAuthHandler::getAccessToken() ?? '',
             'moduleLink' => $currentIndex . '&token=' . $token,
             'formAction' => $_SERVER['REQUEST_URI'],
             'backofficeUrl' => $backofficeUrl,
+            'currentLang' => substr($this->context->language->iso_code, 0, 2),
 
             // Chatbot settings
             'chatbotEnabled' => (bool) Configuration::get('AI_SMART_TALK_ENABLED'),
