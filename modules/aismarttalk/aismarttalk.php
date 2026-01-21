@@ -857,9 +857,9 @@ class AiSmartTalk extends Module
             return ['success' => false, 'message' => 'Invalid file type. Allowed: JPEG, PNG, GIF, WebP'];
         }
 
-        $maxSize = 10 * 1024 * 1024; // 10MB
+        $maxSize = 5 * 1024 * 1024; // 5MB
         if ($file['size'] > $maxSize) {
-            return ['success' => false, 'message' => 'File too large. Maximum size: 10MB'];
+            return ['success' => false, 'message' => 'File too large. Maximum size: 5MB'];
         }
 
         $avatarApiUrl = rtrim($apiUrl, '/') . '/api/v1/chatModel/' . urlencode($chatModelId) . '/avatar';
@@ -888,7 +888,7 @@ class AiSmartTalk extends Module
         if ($httpCode !== 200 || empty($response)) {
             $errorMessage = $curlError;
             if ($httpCode === 413) {
-                $errorMessage = 'File too large for server. Try a smaller image (max 10MB).';
+                $errorMessage = 'File too large for server. Try a smaller image (max 5MB).';
             } elseif ($httpCode === 400) {
                 $errorMessage = 'Invalid file format. Allowed: JPEG, PNG, GIF, WebP.';
             } elseif ($httpCode === 401 || $httpCode === 403) {
@@ -953,7 +953,9 @@ class AiSmartTalk extends Module
         }
 
         $lang = $this->context->language->iso_code;
-        $userToken = isset($_COOKIE['ai_smarttalk_oauth_token']) ? $_COOKIE['ai_smarttalk_oauth_token'] : null;
+
+        // Get or refresh user token for auto-login (handles cookie check + API refresh)
+        $userToken = OAuthTokenHandler::getOrRefreshUserToken();
 
         // Fetch embed config from API
         $embedConfig = $this->fetchEmbedConfig();

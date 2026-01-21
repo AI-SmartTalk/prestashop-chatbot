@@ -435,7 +435,7 @@
                         <span class="input-group-addon"><i class="icon icon-upload"></i></span>
                         <input type="file" name="AI_SMART_TALK_AVATAR_FILE" id="avatar-file-input" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" style="padding: 6px;">
                     </div>
-                    <p class="help-block">{l s='Upload an image for the chatbot avatar. Accepted formats: JPEG, PNG, GIF, WebP. Recommended size: 60x60px. Max: 10MB.' mod='aismarttalk'}</p>
+                    <p class="help-block">{l s='Upload an image for the chatbot avatar. Accepted formats: JPEG, PNG, GIF, WebP. Recommended size: 60x60px. Max: 5MB.' mod='aismarttalk'}</p>
 
                     {* Preview for new file selection *}
                     <div id="avatar-file-preview" style="margin-top: 10px; display: none;">
@@ -730,7 +730,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var avatarFilePreviewImg = document.getElementById('avatar-file-preview-img');
 
     // Avatar validation constants
-    var AVATAR_MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    var AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5MB
     var AVATAR_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
     function formatFileSize(bytes) {
@@ -776,7 +776,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Validate file size
                 if (file.size > AVATAR_MAX_SIZE) {
-                    showAvatarError('{l s='File too large. Maximum size: 10MB. Your file:' mod='aismarttalk' js=1} ' + formatFileSize(file.size));
+                    showAvatarError('{l s='File too large. Maximum size: 5MB. Your file:' mod='aismarttalk' js=1} ' + formatFileSize(file.size));
                     avatarFileInput.value = '';
                     avatarFilePreview.style.display = 'none';
                     avatarFilePreviewImg.src = '';
