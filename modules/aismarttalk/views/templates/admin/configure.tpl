@@ -685,6 +685,11 @@
     opacity: 0.7;
 }
 
+/* Manual workflow card styling */
+.aismarttalk-skill-card.is-manual {
+    border-left: 3px solid rgba(139, 92, 246, 0.5);
+}
+
 .aismarttalk-skill-icon {
     font-size: 32px;
     line-height: 1;
@@ -1231,6 +1236,12 @@
     background: #f3f4f6;
     color: #6b7280;
     border: 1px solid #e5e7eb;
+}
+
+.aismarttalk-skill-type-badge.aismarttalk-skill-type-custom {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.15) 100%);
+    color: #7c3aed;
+    border: 1px solid rgba(139, 92, 246, 0.3);
 }
 
 /* =============================================
@@ -1973,17 +1984,32 @@
                     <div class="aismarttalk-marketplace-filters">
                         <div class="aismarttalk-filter-item">
                             <label>{l s='Platform' mod='aismarttalk'}</label>
-                            <select id="aismarttalk-filter-integration" class="aismarttalk-filter-select">
+                            <select id="aismarttalk-filter-platform" class="aismarttalk-filter-select">
                                 <option value="">{l s='All platforms' mod='aismarttalk'}</option>
+                                <option value="prestashop" selected>🛒 {l s='PrestaShop' mod='aismarttalk'}</option>
+                                <option value="wordpress">🌐 {l s='WordPress' mod='aismarttalk'}</option>
+                                <option value="shopify">🛍️ {l s='Shopify' mod='aismarttalk'}</option>
+                                <option value="joomla">📦 {l s='Joomla' mod='aismarttalk'}</option>
+                                <option value="webflow">🎨 {l s='Webflow' mod='aismarttalk'}</option>
+                                <option value="docusaurus">📚 {l s='Docusaurus' mod='aismarttalk'}</option>
+                            </select>
+                        </div>
+                        <div class="aismarttalk-filter-item">
+                            <label>{l s='Integration' mod='aismarttalk'}</label>
+                            <select id="aismarttalk-filter-integration" class="aismarttalk-filter-select">
+                                <option value="">{l s='All integrations' mod='aismarttalk'}</option>
                             </select>
                         </div>
                         <div class="aismarttalk-filter-item">
                             <label>{l s='Skill type' mod='aismarttalk'}</label>
                             <select id="aismarttalk-filter-trigger" class="aismarttalk-filter-select">
                                 <option value="">{l s='All types' mod='aismarttalk'}</option>
-                                <option value="CHAT_SERVICE">🔧 {l s='AI Tool' mod='aismarttalk'}</option>
-                                <option value="NAVIGATION_EVENT">👋 {l s='Automatic' mod='aismarttalk'}</option>
-                                <option value="WEBHOOK">🔗 {l s='Connection' mod='aismarttalk'}</option>
+                                <option value="CONVERSATION_TOOL">🤖 {l s='Conversation tool' mod='aismarttalk'}</option>
+                                <option value="WEBHOOK">🔗 {l s='Webhook' mod='aismarttalk'}</option>
+                                <option value="SMART_FORM_WORKFLOW">📝 {l s='SmartForm' mod='aismarttalk'}</option>
+                                <option value="NAVIGATION_EVENT">🧭 {l s='Navigation' mod='aismarttalk'}</option>
+                                <option value="CHAT_SERVICE">💬 {l s='Chat' mod='aismarttalk'}</option>
+                                <option value="SCHEDULE_WORKFLOW">⏰ {l s='Scheduled' mod='aismarttalk'}</option>
                             </select>
                         </div>
                         <div class="aismarttalk-filter-item">
@@ -2353,6 +2379,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // DOM Elements - Search & Filters
     var searchInput = document.getElementById('aismarttalk-templates-search-input');
+    var filterPlatform = document.getElementById('aismarttalk-filter-platform');
     var filterIntegration = document.getElementById('aismarttalk-filter-integration');
     var filterTrigger = document.getElementById('aismarttalk-filter-trigger');
     var filterStatus = document.getElementById('aismarttalk-filter-status');
@@ -2376,6 +2403,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Current filters state
     var currentFilters = {
         search: '',
+        platform: 'prestashop',
         integration: '',
         triggerType: '',
         installed: null,
@@ -2440,6 +2468,10 @@ document.addEventListener('DOMContentLoaded', function() {
     // Build query string from filters
     function buildQueryString() {
         var params = [];
+        // Only add platform filter if a specific platform is selected
+        if (currentFilters.platform) {
+            params.push('platform=' + encodeURIComponent(currentFilters.platform));
+        }
         params.push('lang=' + encodeURIComponent(currentLang));
         params.push('limit=' + currentFilters.limit);
         params.push('page=' + currentFilters.page);
@@ -2762,26 +2794,36 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Store for reference - map by templateId for quick lookup
+        // Store for reference - map by workflowId for quick lookup (works for both template-based and manual)
         installed.forEach(function(item) {
-            installedTemplatesData[item.templateId] = item;
+            installedTemplatesData[item.workflowId] = item;
+            // Also map by templateId for backwards compatibility
+            if (item.templateId) {
+                installedTemplatesData[item.templateId] = item;
+            }
         });
 
         var html = '';
         installed.forEach(function(skill) {
-            var hasUpdate = skill.hasUpdate || (skill.installedVersion !== skill.currentVersion);
+            var isManual = skill.isManual || !skill.templateId;
+            var hasUpdate = !isManual && (skill.hasUpdate || (skill.installedVersion !== skill.currentVersion));
             var statusClass = skill.isActive ? 'active' : 'paused';
             var typeBadge = getSkillTypeBadge(skill.triggerType);
+            var skillId = skill.workflowId;
 
-            html += '<div class="aismarttalk-skill-card' + (hasUpdate ? ' has-update' : '') + ' ' + statusClass + '" data-template-id="' + skill.templateId + '">';
+            html += '<div class="aismarttalk-skill-card' + (hasUpdate ? ' has-update' : '') + (isManual ? ' is-manual' : '') + ' ' + statusClass + '" data-workflow-id="' + skillId + '" data-template-id="' + (skill.templateId || '') + '" data-is-manual="' + (isManual ? 'true' : 'false') + '">';
 
-            // Type badge
-            html += '<div class="aismarttalk-skill-type-badge ' + typeBadge.class + '">' + typeBadge.emoji + ' ' + typeBadge.label + '</div>';
+            // Type badge - show "Custom" for manual workflows
+            if (isManual) {
+                html += '<div class="aismarttalk-skill-type-badge aismarttalk-skill-type-custom">🛠️ {l s='Custom' mod='aismarttalk' js=1}</div>';
+            } else {
+                html += '<div class="aismarttalk-skill-type-badge ' + typeBadge.class + '">' + typeBadge.emoji + ' ' + typeBadge.label + '</div>';
+            }
 
             // Skill header with icon and name
             html += '<div class="aismarttalk-skill-header-row">';
             html += '<span class="aismarttalk-skill-icon">' + (skill.icon || '⚡') + '</span>';
-            html += '<h4 class="aismarttalk-skill-name">' + (skill.workflowName || 'Skill') + '</h4>';
+            html += '<h4 class="aismarttalk-skill-name">' + (skill.workflowName || skill.templateName || 'Skill') + '</h4>';
             if (hasUpdate) {
                 html += '<span class="aismarttalk-skill-update-badge" title="v' + skill.currentVersion + ' {l s='available' mod='aismarttalk' js=1}">🔄</span>';
             }
@@ -2789,24 +2831,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Skill meta
             html += '<div class="aismarttalk-skill-meta">';
-            html += '<span class="aismarttalk-skill-version">v' + (skill.installedVersion || '1.0.0') + '</span>';
+            if (isManual) {
+                html += '<span class="aismarttalk-skill-version">{l s='Custom' mod='aismarttalk' js=1}</span>';
+            } else {
+                html += '<span class="aismarttalk-skill-version">v' + (skill.installedVersion || '1.0.0') + '</span>';
+            }
             html += '<span class="aismarttalk-skill-status ' + statusClass + '">';
             html += skill.isActive ? '🟢 {l s='Active' mod='aismarttalk' js=1}' : '⏸️ {l s='Paused' mod='aismarttalk' js=1}';
             html += '</span>';
             html += '</div>';
 
             // Description if available
-            if (skill.description) {
-                html += '<p class="aismarttalk-skill-desc">' + skill.description + '</p>';
+            var description = skill.templateDescription || skill.description;
+            if (description) {
+                html += '<p class="aismarttalk-skill-desc">' + description + '</p>';
             }
 
             // Skill actions
             html += '<div class="aismarttalk-skill-actions">';
-            if (hasUpdate) {
-                html += '<button type="button" class="aismarttalk-skill-btn aismarttalk-skill-btn-update" data-template-id="' + skill.templateId + '" title="{l s='Update to' mod='aismarttalk' js=1} v' + skill.currentVersion + '">🔄</button>';
+            // Update button only for template-based workflows with updates
+            if (hasUpdate && skill.templateId) {
+                html += '<button type="button" class="aismarttalk-skill-btn aismarttalk-skill-btn-update" data-template-id="' + skill.templateId + '" title="{l s='Update to' mod='aismarttalk' js=1} v' + skill.currentVersion + '">🔄 {l s='Update' mod='aismarttalk' js=1}</button>';
             }
-            html += '<a href="' + getConfigureUrl(skill.workflowId) + '" target="_blank" class="aismarttalk-skill-btn aismarttalk-skill-btn-configure" title="{l s='Configure' mod='aismarttalk' js=1}">⚙️</a>';
-            html += '<button type="button" class="aismarttalk-skill-btn aismarttalk-skill-btn-remove" data-template-id="' + skill.templateId + '" title="{l s='Remove' mod='aismarttalk' js=1}">🗑️</button>';
+            html += '<a href="' + getConfigureUrl(skill.workflowId) + '" target="_blank" class="aismarttalk-skill-btn aismarttalk-skill-btn-configure">⚙️ {l s='Edit' mod='aismarttalk' js=1}</a>';
+            // Remove button only for template-based workflows (not manual)
+            if (!isManual && skill.templateId) {
+                html += '<button type="button" class="aismarttalk-skill-btn aismarttalk-skill-btn-remove" data-template-id="' + skill.templateId + '" title="{l s='Remove' mod='aismarttalk' js=1}">🗑️</button>';
+            }
             html += '</div>';
 
             html += '</div>';
@@ -2995,6 +3046,26 @@ document.addEventListener('DOMContentLoaded', function() {
         nextBtn.disabled = paginationState.page >= paginationState.totalPages;
     }
 
+    // Fetch all workflows (both manual and template-based)
+    function fetchInstalledTemplates() {
+        if (smartflowsLoading) smartflowsLoading.style.display = 'flex';
+        if (smartflowsGrid) smartflowsGrid.style.display = 'none';
+        if (smartflowsEmpty) smartflowsEmpty.style.display = 'none';
+
+        // Don't filter by platform - show ALL installed workflows (both template-based and manual)
+        console.log('[AI SmartTalk] Fetching all workflows with chatModelId:', chatModelId);
+        apiRequest('GET', '/api/v1/smartflow-templates/installed?lang=' + currentLang)
+        .then(function(data) {
+            console.log('[AI SmartTalk] Installed workflows response:', data);
+            renderInstalledSmartflows(data);
+        })
+        .catch(function(error) {
+            console.error('Error fetching installed workflows:', error);
+            if (smartflowsLoading) smartflowsLoading.style.display = 'none';
+            if (smartflowsEmpty) smartflowsEmpty.style.display = 'flex';
+        });
+    }
+
     // Fetch templates with current filters
     function fetchTemplates() {
         if (templatesLoading) templatesLoading.style.display = 'flex';
@@ -3025,6 +3096,13 @@ document.addEventListener('DOMContentLoaded', function() {
             currentFilters.search = e.target.value.trim();
             onFilterChange();
         }, 300));
+    }
+
+    if (filterPlatform) {
+        filterPlatform.addEventListener('change', function(e) {
+            currentFilters.platform = e.target.value;
+            onFilterChange();
+        });
     }
 
     if (filterIntegration) {
@@ -3173,27 +3251,12 @@ document.addEventListener('DOMContentLoaded', function() {
         // Load filters first
         loadFilters();
 
-        // Fetch installed templates from new API endpoint
-        apiRequest('GET', '/api/v1/smartflow-templates/installed?lang=' + currentLang)
-        .then(function(data) {
-            renderInstalledSmartflows(data);
+        // Fetch installed templates and marketplace templates
+        fetchInstalledTemplates();
+        fetchTemplates();
 
-            // Fetch available templates from store
-            return fetchTemplates();
-        })
-        .then(function() {
-            // Fetch integrations
-            loadIntegrations();
-        })
-        .catch(function(error) {
-            console.error('Error fetching SmartFlow data:', error);
-            if (smartflowsLoading) smartflowsLoading.style.display = 'none';
-            if (smartflowsEmpty) smartflowsEmpty.style.display = 'flex';
-            if (templatesLoading) templatesLoading.style.display = 'none';
-            if (templatesEmpty) templatesEmpty.style.display = 'flex';
-            // Still try to load integrations
-            loadIntegrations();
-        });
+        // Fetch integrations
+        loadIntegrations();
     }
 
     // Handle hash navigation - scroll to AI Skills section if hash is #smartflow
