@@ -69,9 +69,13 @@ fi
 # 3. Also add to defines.inc.php as fallback (in case .htaccess doesn't work)
 DEFINES_FILE="/var/www/html/config/defines.inc.php"
 if [ -f "$DEFINES_FILE" ]; then
+    # Remove any broken proxy config first
+    sed -i '/proxy_prepend/d' "$DEFINES_FILE"
+    sed -i '/Include proxy configuration/d' "$DEFINES_FILE"
+    
     if ! grep -q "proxy_prepend.php" "$DEFINES_FILE" 2>/dev/null; then
-        # Add include at the very beginning after <?php
-        sed -i '1a\/* Include proxy configuration */\nif (file_exists(_PS_ROOT_DIR_.\"/config/proxy_prepend.php\")) { require_once(_PS_ROOT_DIR_.\"/config/proxy_prepend.php\"); }' "$DEFINES_FILE"
+        # Add include using __DIR__ which is always available
+        sed -i '2i\/* Include proxy configuration */ if (file_exists(__DIR__."/proxy_prepend.php")) { require_once(__DIR__."/proxy_prepend.php"); }' "$DEFINES_FILE"
         echo "Updated $DEFINES_FILE with proxy include"
     else
         echo "$DEFINES_FILE already configured"
