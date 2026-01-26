@@ -43,8 +43,12 @@ jobs:
               \"
             "
 
-            # Clear cache
+            # Clear all caches
             docker compose -f docker-compose.prod.yml exec -T prestashop rm -rf /var/www/html/var/cache/*
+            docker compose -f docker-compose.prod.yml exec -T prestashop rm -rf /var/www/html/app/cache/*
+
+            # Reload Apache to apply PHP configuration changes
+            docker compose -f docker-compose.prod.yml exec -T prestashop apache2ctl graceful || true
 
             echo "Deployment completed successfully"
           EOF
