@@ -16,6 +16,8 @@ services:
       - PS_LANGUAGE=fr
       - PS_COUNTRY=FR
       - ADMIN_PASSWD=Ds1J1umhy'l3~F%!b){1
+      - TRUSTED_PROXIES=REMOTE_ADDR
+      - PS_ENABLE_SSL=0
     volumes:
       - ./modules/aismarttalk:/var/www/html/modules/aismarttalk
       - ./config/docker:/tmp/docker-config
