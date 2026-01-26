@@ -10,7 +10,7 @@ services:
       - DB_NAME=prestashop
       - DB_USER=prestashop
       - DB_PASSWD=prestashop
-      - PS_DOMAIN=prestashop
+      - PS_DOMAIN=prestashop.demo.aismarttalk.tech
       - PS_USER=admin
       - PS_PASSWD=admin
       - PS_LANGUAGE=fr
