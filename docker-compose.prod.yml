@@ -18,6 +18,7 @@ services:
       - ADMIN_PASSWD=Ds1J1umhy'l3~F%!b){1
     volumes:
       - ./modules/aismarttalk:/var/www/html/modules/aismarttalk
+      - ./config/docker:/tmp/docker-config
       - psdata:/var/www/html
     restart: always
     networks:
