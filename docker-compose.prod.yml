@@ -1,6 +1,8 @@
 services:
   prestashop:
-    image: prestashop/prestashop:9.0.1
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
     platform: linux/amd64
     ports:
       - "8082:80"
@@ -16,8 +18,7 @@ services:
       - PS_LANGUAGE=fr
       - PS_COUNTRY=FR
       - ADMIN_PASSWD=Ds1J1umhy'l3~F%!b){1
-      - TRUSTED_PROXIES=REMOTE_ADDR
-      - PS_ENABLE_SSL=0
+      - PS_ENABLE_SSL=1
     volumes:
       - ./modules/aismarttalk:/var/www/html/modules/aismarttalk
       - ./config/docker:/tmp/docker-config

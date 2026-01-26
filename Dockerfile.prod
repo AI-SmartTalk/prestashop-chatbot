@@ -1,0 +1,9 @@
+FROM prestashop/prestashop:9.0.1
+
+# Configure Apache to trust reverse proxy headers
+COPY config/docker/reverse-proxy.conf /etc/apache2/conf-available/reverse-proxy.conf
+RUN a2enconf reverse-proxy
+
+# Configure PHP to auto_prepend the proxy file
+COPY config/docker/proxy_prepend.php /opt/proxy_prepend.php
+RUN echo 'auto_prepend_file = /opt/proxy_prepend.php' > /usr/local/etc/php/conf.d/99-proxy.ini

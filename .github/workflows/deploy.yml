@@ -28,12 +28,9 @@ jobs:
 
             # Wait for PrestaShop to be ready
             echo "Waiting for PrestaShop to be ready..."
-            sleep 30
+            sleep 45
 
-            # Apply reverse proxy configuration (trust X-Forwarded-Proto header)
-            docker compose -f docker-compose.prod.yml exec -T prestashop bash /tmp/docker-config/init-proxy.sh
-
-            # Configure domain and enable SSL in database (nginx terminates SSL and sends X-Forwarded-Proto)
+            # Configure domain and SSL in database
             docker compose -f docker-compose.prod.yml exec -T prestashop bash -c "
               mysql -h prestashop_db -u prestashop -pprestashop prestashop -e \"
                 UPDATE ps_shop_url SET domain = 'prestashop.demo.aismarttalk.tech', domain_ssl = 'prestashop.demo.aismarttalk.tech' WHERE id_shop_url = 1;
@@ -43,12 +40,8 @@ jobs:
               \"
             "
 
-            # Clear all caches
-            docker compose -f docker-compose.prod.yml exec -T prestashop rm -rf /var/www/html/var/cache/*
-            docker compose -f docker-compose.prod.yml exec -T prestashop rm -rf /var/www/html/app/cache/*
-
-            # Reload Apache to apply PHP configuration changes
-            docker compose -f docker-compose.prod.yml exec -T prestashop apache2ctl graceful || true
+            # Clear cache
+            docker compose -f docker-compose.prod.yml exec -T prestashop rm -rf /var/www/html/var/cache/* || true
 
             echo "Deployment completed successfully"
           EOF
