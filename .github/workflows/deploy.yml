@@ -33,13 +33,13 @@ jobs:
             # Apply reverse proxy configuration (trust X-Forwarded-Proto header)
             docker compose -f docker-compose.prod.yml exec -T prestashop bash /tmp/docker-config/init-proxy.sh
 
-            # Configure domain and disable SSL redirect in database (nginx handles SSL)
+            # Configure domain and enable SSL in database (nginx terminates SSL and sends X-Forwarded-Proto)
             docker compose -f docker-compose.prod.yml exec -T prestashop bash -c "
               mysql -h prestashop_db -u prestashop -pprestashop prestashop -e \"
                 UPDATE ps_shop_url SET domain = 'prestashop.demo.aismarttalk.tech', domain_ssl = 'prestashop.demo.aismarttalk.tech' WHERE id_shop_url = 1;
                 UPDATE ps_configuration SET value = 'prestashop.demo.aismarttalk.tech' WHERE name IN ('PS_SHOP_DOMAIN', 'PS_SHOP_DOMAIN_SSL');
-                UPDATE ps_configuration SET value = '0' WHERE name = 'PS_SSL_ENABLED';
-                UPDATE ps_configuration SET value = '0' WHERE name = 'PS_SSL_ENABLED_EVERYWHERE';
+                UPDATE ps_configuration SET value = '1' WHERE name = 'PS_SSL_ENABLED';
+                UPDATE ps_configuration SET value = '1' WHERE name = 'PS_SSL_ENABLED_EVERYWHERE';
               \"
             "
 
