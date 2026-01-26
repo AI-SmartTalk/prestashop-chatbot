@@ -1,0 +1,59 @@
+services:
+  prestashop:
+    image: prestashop/prestashop:9.0.1
+    platform: linux/amd64
+    ports:
+      - "8082:80"
+    environment:
+      - DB_SERVER=prestashop_db
+      - PS_INSTALL_AUTO=1
+      - DB_NAME=prestashop
+      - DB_USER=prestashop
+      - DB_PASSWD=prestashop
+      - PS_DOMAIN=prestashop
+      - PS_USER=admin
+      - PS_PASSWD=admin
+      - PS_LANGUAGE=fr
+      - PS_COUNTRY=FR
+      - ADMIN_PASSWD=Ds1J1umhy'l3~F%!b){1
+    volumes:
+      - ./modules/aismarttalk:/var/www/html/modules/aismarttalk
+      - psdata:/var/www/html
+    restart: always
+    networks:
+      - ai-toolkit-network
+
+  prestashop_db:
+    image: mysql:5.7
+    platform: linux/amd64
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin
+      - MYSQL_DATABASE=prestashop
+      - MYSQL_USER=prestashop
+      - MYSQL_PASSWORD=prestashop
+    restart: always
+    networks:
+      - ai-toolkit-network
+    volumes:
+      - prestashop_dbdata:/var/lib/mysql
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    platform: linux/amd64
+    ports:
+      - "8083:80"
+    environment:
+      - PMA_HOST=prestashop_db
+      - PMA_USER=prestashop
+      - PMA_PASSWORD=prestashop
+    restart: always
+    networks:
+      - ai-toolkit-network
+
+networks:
+  ai-toolkit-network:
+    external: true
+
+volumes:
+  prestashop_dbdata:
+  psdata:

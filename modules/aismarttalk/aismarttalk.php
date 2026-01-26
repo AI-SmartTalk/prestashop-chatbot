@@ -551,8 +551,15 @@ class AiSmartTalk extends Module
             'source' => 'PRESTASHOP',
         ];
 
+        // Get or refresh employee token for auto-login in back-office
+        $employeeToken = OAuthTokenHandler::getOrRefreshEmployeeToken();
+        if ($employeeToken) {
+            $chatbotSettings['userToken'] = $employeeToken;
+        }
+
         // Fetch and merge embed config from API (as base defaults)
         $embedConfig = $this->fetchEmbedConfig();
+        $embedConfigAvatarUrl = '';
         if ($embedConfig && is_array($embedConfig)) {
             $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang'];
             foreach ($embedConfig as $key => $value) {
@@ -560,17 +567,29 @@ class AiSmartTalk extends Module
                     $chatbotSettings[$key] = $value;
                 }
             }
+            // Extract avatarUrl from embed config for display in admin
+            if (isset($embedConfig['avatarUrl']) && !empty($embedConfig['avatarUrl'])) {
+                $embedConfigAvatarUrl = $embedConfig['avatarUrl'];
+            }
         }
 
         // Apply PrestaShop customization overrides (these take priority over API defaults)
         $chatbotSettings = $this->applyCustomizationOverrides($chatbotSettings);
 
+        // Get local avatar URL (user uploaded)
+        $localAvatarUrl = Configuration::get('AI_SMART_TALK_AVATAR_URL') ?: '';
+
+        // Determine effective avatar URL: local override > embed config
+        $effectiveAvatarUrl = !empty($localAvatarUrl) ? $localAvatarUrl : $embedConfigAvatarUrl;
+
         $this->context->smarty->assign([
             'isConnected' => $isConnected,
             'chatModelId' => $chatModelId,
+            'accessToken' => OAuthHandler::getAccessToken() ?? '',
             'moduleLink' => $currentIndex . '&token=' . $token,
             'formAction' => $_SERVER['REQUEST_URI'],
             'backofficeUrl' => $backofficeUrl,
+            'currentLang' => substr($this->context->language->iso_code, 0, 2),
 
             // Chatbot settings
             'chatbotEnabled' => (bool) Configuration::get('AI_SMART_TALK_ENABLED'),
@@ -588,7 +607,9 @@ class AiSmartTalk extends Module
             // Chatbot customization settings
             'buttonText' => Configuration::get('AI_SMART_TALK_BUTTON_TEXT') ?: '',
             'buttonType' => Configuration::get('AI_SMART_TALK_BUTTON_TYPE') ?: '',
-            'avatarUrl' => Configuration::get('AI_SMART_TALK_AVATAR_URL') ?: '',
+            'avatarUrl' => $localAvatarUrl,
+            'embedConfigAvatarUrl' => $embedConfigAvatarUrl,
+            'effectiveAvatarUrl' => $effectiveAvatarUrl,
             'chatModelAvatarUrl' => $this->fetchChatModelAvatar() ?: '',
             'buttonPosition' => Configuration::get('AI_SMART_TALK_BUTTON_POSITION') ?: '',
             'chatSize' => Configuration::get('AI_SMART_TALK_CHAT_SIZE') ?: '',
@@ -857,9 +878,9 @@ class AiSmartTalk extends Module
             return ['success' => false, 'message' => 'Invalid file type. Allowed: JPEG, PNG, GIF, WebP'];
         }
 
-        $maxSize = 10 * 1024 * 1024; // 10MB
+        $maxSize = 5 * 1024 * 1024; // 5MB
         if ($file['size'] > $maxSize) {
-            return ['success' => false, 'message' => 'File too large. Maximum size: 10MB'];
+            return ['success' => false, 'message' => 'File too large. Maximum size: 5MB'];
         }
 
         $avatarApiUrl = rtrim($apiUrl, '/') . '/api/v1/chatModel/' . urlencode($chatModelId) . '/avatar';
@@ -888,7 +909,7 @@ class AiSmartTalk extends Module
         if ($httpCode !== 200 || empty($response)) {
             $errorMessage = $curlError;
             if ($httpCode === 413) {
-                $errorMessage = 'File too large for server. Try a smaller image (max 10MB).';
+                $errorMessage = 'File too large for server. Try a smaller image (max 5MB).';
             } elseif ($httpCode === 400) {
                 $errorMessage = 'Invalid file format. Allowed: JPEG, PNG, GIF, WebP.';
             } elseif ($httpCode === 401 || $httpCode === 403) {
@@ -953,7 +974,9 @@ class AiSmartTalk extends Module
         }
 
         $lang = $this->context->language->iso_code;
-        $userToken = isset($_COOKIE['ai_smarttalk_oauth_token']) ? $_COOKIE['ai_smarttalk_oauth_token'] : null;
+
+        // Get or refresh user token for auto-login (handles cookie check + API refresh)
+        $userToken = OAuthTokenHandler::getOrRefreshUserToken();
 
         // Fetch embed config from API
         $embedConfig = $this->fetchEmbedConfig();
