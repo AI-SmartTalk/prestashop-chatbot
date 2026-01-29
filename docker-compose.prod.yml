@@ -41,7 +41,7 @@ services:
     volumes:
       - prestashop_dbdata:/var/lib/mysql
 
-  phpmyadmin:
+  prestashop_phpmyadmin:
     image: phpmyadmin/phpmyadmin
     platform: linux/amd64
     ports:
