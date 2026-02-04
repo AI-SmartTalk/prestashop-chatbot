@@ -53,7 +53,7 @@ class AiSmartTalk extends Module
         parent::__construct();
 
         $this->displayName = $this->trans('AI SmartTalk', [], 'Modules.Aismarttalk.Admin');
-        $this->description = $this->trans('https://aismarttalk.tech/', [], 'Modules.Aismarttalk.Admin');
+        $this->description = $this->trans('Integrate AI SmartTalk chatbot to enhance customer support and engagement.', [], 'Modules.Aismarttalk.Admin');
 
         $this->confirmUninstall = $this->trans('Are you sure you want to uninstall?', [], 'Modules.Aismarttalk.Admin');
 
@@ -856,8 +856,11 @@ class AiSmartTalk extends Module
             return ['success' => false, 'message' => 'File upload error: ' . $file['error']];
         }
 
+        // Validate MIME type using actual file content (not client-provided $_FILES['type'])
         $allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-        if (!in_array($file['type'], $allowedTypes)) {
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+        if (!in_array($mimeType, $allowedTypes)) {
             return ['success' => false, 'message' => 'Invalid file type. Allowed: JPEG, PNG, GIF, WebP'];
         }
 
@@ -868,8 +871,8 @@ class AiSmartTalk extends Module
 
         $avatarApiUrl = rtrim($apiUrl, '/') . '/api/v1/chatModel/' . urlencode($chatModelId) . '/avatar';
 
-        // Prepare multipart form data
-        $cfile = new \CURLFile($file['tmp_name'], $file['type'], $file['name']);
+        // Prepare multipart form data using validated MIME type
+        $cfile = new \CURLFile($file['tmp_name'], $mimeType, $file['name']);
 
         $ch = curl_init();
         curl_setopt_array($ch, [
