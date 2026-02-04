@@ -24,9 +24,7 @@ if (!defined('_PS_VERSION_')) {
 
 require_once dirname(__FILE__) . '/../vendor/autoload.php';
 
-use PrestaShop\PrestaShop\Adapter\Module\Module;
-
-class OAuthTokenHandler extends Module
+class OAuthTokenHandler
 {
     /**
      * Set OAuth token cookie on customer login

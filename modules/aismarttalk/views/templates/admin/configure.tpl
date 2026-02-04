@@ -1649,6 +1649,39 @@
             <h3><i class="icon icon-paint-brush"></i> {l s='Chatbot Customization' mod='aismarttalk'}</h3>
         </div>
         <div class="panel-body">
+            {* Configuration source indicator and sync buttons *}
+            <div class="alert {if $hasLocalOverrides}alert-info{else}alert-success{/if}" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    {if $hasLocalOverrides}
+                        <i class="icon icon-pencil"></i>
+                        <strong>{l s='Using local customizations' mod='aismarttalk'}</strong>
+                        <span style="opacity: 0.8;"> - {l s='Your saved settings override the API defaults.' mod='aismarttalk'}</span>
+                    {else}
+                        <i class="icon icon-cloud-download"></i>
+                        <strong>{l s='Using API defaults' mod='aismarttalk'}</strong>
+                        <span style="opacity: 0.8;"> - {l s='Configuration is synced from AI SmartTalk.' mod='aismarttalk'}</span>
+                    {/if}
+                    {if $cacheMetadata}
+                        <br><small style="opacity: 0.6;">
+                            {l s='Last sync:' mod='aismarttalk'} {$cacheMetadata.created_at|date_format:"%Y-%m-%d %H:%M:%S"}
+                            {if $cacheMetadata.ttl_remaining > 0}
+                                ({l s='refreshes in' mod='aismarttalk'} {($cacheMetadata.ttl_remaining/60)|intval} min)
+                            {/if}
+                        </small>
+                    {/if}
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <a href="{$moduleLink|escape:'html':'UTF-8'}&refreshEmbedConfig=1" class="btn btn-default btn-sm" title="{l s='Fetch latest configuration from AI SmartTalk' mod='aismarttalk'}">
+                        <i class="icon icon-refresh"></i> {l s='Sync from API' mod='aismarttalk'}
+                    </a>
+                    {if $hasLocalOverrides}
+                        <a href="{$moduleLink|escape:'html':'UTF-8'}&resetLocalCustomizations=1" class="btn btn-warning btn-sm" onclick="return confirm('{l s='This will clear all your local customizations and use API defaults. Continue?' mod='aismarttalk'}')" title="{l s='Reset to API defaults' mod='aismarttalk'}">
+                            <i class="icon icon-undo"></i> {l s='Reset to defaults' mod='aismarttalk'}
+                        </a>
+                    {/if}
+                </div>
+            </div>
+
             <form action="{$formAction|escape:'html':'UTF-8'}" method="post" class="form-horizontal" id="chatbot-customization-form" enctype="multipart/form-data">
 
                 {* Button Style Section *}
