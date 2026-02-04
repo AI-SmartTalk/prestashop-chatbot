@@ -14,5 +14,6 @@ return array(
     'PrestaShop\\AiSmartTalk\\CustomerSync' => $baseDir . '/classes/CustomerSync.php',
     'PrestaShop\\AiSmartTalk\\OAuthHandler' => $baseDir . '/classes/OAuthHandler.php',
     'PrestaShop\\AiSmartTalk\\OAuthTokenHandler' => $baseDir . '/classes/OAuthTokenHandler.php',
+    'PrestaShop\\AiSmartTalk\\SyncFilterHelper' => $baseDir . '/classes/SyncFilterHelper.php',
     'PrestaShop\\AiSmartTalk\\SynchProductsToAiSmartTalk' => $baseDir . '/classes/SynchProductsToAiSmartTalk.php',
 );

@@ -238,6 +238,18 @@ class SynchProductsToAiSmartTalk
             $sql .= ' AND p.id_product IN (' . implode(',', $safeIds) . ')';
         }
 
+        // Apply category filters from SyncFilterHelper
+        $categoryFilter = SyncFilterHelper::buildCategoryFilterSQL($defaultShopId);
+        if (!empty($categoryFilter)) {
+            $sql .= $categoryFilter;
+        }
+
+        // Apply product type filters from SyncFilterHelper
+        $typeFilter = SyncFilterHelper::buildProductTypeFilterSQL();
+        if (!empty($typeFilter)) {
+            $sql .= $typeFilter;
+        }
+
         $products = \Db::getInstance()->executeS($sql);
 
         return $products;

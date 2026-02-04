@@ -25,6 +25,7 @@ use PrestaShop\AiSmartTalk\CleanProductDocuments;
 use PrestaShop\AiSmartTalk\CustomerSync;
 use PrestaShop\AiSmartTalk\OAuthHandler;
 use PrestaShop\AiSmartTalk\OAuthTokenHandler;
+use PrestaShop\AiSmartTalk\SyncFilterHelper;
 use PrestaShop\AiSmartTalk\SynchProductsToAiSmartTalk;
 
 class AiSmartTalk extends Module
@@ -41,7 +42,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.1.0';
+        $this->version = '3.2.0';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -170,7 +171,9 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_ATTACHMENT')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_FEEDBACK')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_INPUT')
-            && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_MODE');
+            && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_MODE')
+            // Sync filter settings
+            && SyncFilterHelper::deleteFilterConfig();
     }
 
     public function hookActionAuthentication($params)
@@ -461,6 +464,37 @@ class AiSmartTalk extends Module
             $output .= $this->displayConfirmation($this->trans('Synchronization settings saved.', [], 'Modules.Aismarttalk.Admin'));
         }
 
+        // Handle sync filters form
+        if (Tools::isSubmit('submitSyncFilters')) {
+            $filterConfig = [
+                'mode' => Tools::getValue('sync_filter_mode', SyncFilterHelper::MODE_INCLUDE),
+                'categories' => Tools::getValue('sync_filter_categories', []),
+                'include_subcategories' => (bool) Tools::getValue('sync_filter_include_subcategories'),
+                'product_types' => Tools::getValue('sync_filter_product_types', []),
+            ];
+
+            // Handle categories as JSON string or array
+            if (is_string($filterConfig['categories'])) {
+                $decoded = json_decode($filterConfig['categories'], true);
+                $filterConfig['categories'] = is_array($decoded) ? $decoded : [];
+            }
+
+            // Handle product types - if empty array submitted, keep all types
+            if (empty($filterConfig['product_types'])) {
+                $filterConfig['product_types'] = [
+                    SyncFilterHelper::TYPE_STANDARD,
+                    SyncFilterHelper::TYPE_VIRTUAL,
+                    SyncFilterHelper::TYPE_PACK
+                ];
+            }
+
+            if (SyncFilterHelper::saveFilterConfig($filterConfig)) {
+                $output .= $this->displayConfirmation($this->trans('Sync filters saved successfully.', [], 'Modules.Aismarttalk.Admin'));
+            } else {
+                $output .= $this->displayError($this->trans('Failed to save sync filters.', [], 'Modules.Aismarttalk.Admin'));
+            }
+        }
+
         // Handle legacy form submissions (for backward compatibility)
         $output .= $this->handleForm();
 
@@ -552,6 +586,18 @@ class AiSmartTalk extends Module
             // Sync settings
             'productSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC'),
             'customerSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC'),
+
+            // Sync filter settings
+            'syncFilterConfig' => SyncFilterHelper::getFilterConfig(),
+            'syncFilterCategoryTree' => SyncFilterHelper::flattenCategoryTree(
+                SyncFilterHelper::getCategoryTree(
+                    (int) $this->context->language->id,
+                    (int) $this->context->shop->id
+                )
+            ),
+            'syncFilterProductTypeCounts' => SyncFilterHelper::getProductTypeCounts((int) $this->context->shop->id),
+            'syncFilterSummary' => SyncFilterHelper::getFilterSummary((int) $this->context->language->id),
+            'syncFilterHasActiveFilters' => SyncFilterHelper::hasActiveFilters(),
 
             // Advanced/WhiteLabel settings
             'apiUrl' => Configuration::get('AI_SMART_TALK_URL') ?: self::DEFAULT_API_URL,

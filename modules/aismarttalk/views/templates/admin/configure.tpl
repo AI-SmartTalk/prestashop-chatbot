@@ -124,6 +124,248 @@
     display: block;
 }
 
+/* Sync Filters Styles - Simplified */
+.aismarttalk-config .sync-filters-toggle {
+    cursor: pointer;
+    padding: 12px 16px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    transition: all 0.2s ease;
+}
+.aismarttalk-config .sync-filters-toggle:hover {
+    background: #e9ecef;
+}
+.aismarttalk-config .sync-filters-toggle .toggle-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.aismarttalk-config .sync-filters-toggle .toggle-left i {
+    color: #667eea;
+}
+.aismarttalk-config .sync-filters-toggle .filter-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    background: #28a745;
+    color: #fff;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+.aismarttalk-config .sync-filters-toggle .filter-badge-default {
+    display: inline-flex;
+    padding: 4px 10px;
+    background: #e9ecef;
+    color: #6c757d;
+    border-radius: 12px;
+    font-size: 11px;
+}
+.aismarttalk-config .sync-filters-content {
+    display: none;
+    margin-top: 15px;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+.aismarttalk-config .sync-filters-content.show {
+    display: block;
+}
+.aismarttalk-config .sync-filters-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 15px;
+    background: #e7f3ff;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    font-size: 13px;
+    color: #0056b3;
+}
+.aismarttalk-config .sync-filters-info i {
+    margin-top: 2px;
+}
+.aismarttalk-config .filter-section {
+    margin-bottom: 25px;
+}
+.aismarttalk-config .filter-section h5 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    margin: 0 0 8px 0;
+}
+.aismarttalk-config .filter-help {
+    font-size: 12px;
+    color: #6c757d;
+    margin: 0 0 12px 0;
+}
+/* Product Types - Simple checkboxes */
+.aismarttalk-config .product-types-simple {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.aismarttalk-config .product-type-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+.aismarttalk-config .product-type-checkbox:hover {
+    background: #e9ecef;
+}
+.aismarttalk-config .product-type-checkbox input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+.aismarttalk-config .product-type-checkbox .checkmark {
+    display: none;
+}
+.aismarttalk-config .product-type-checkbox .type-label {
+    flex: 1;
+}
+.aismarttalk-config .product-type-checkbox .type-label strong {
+    color: #333;
+    font-weight: 500;
+}
+.aismarttalk-config .product-type-checkbox .type-label small {
+    color: #6c757d;
+    margin-left: 5px;
+}
+/* Category filter */
+.aismarttalk-config .category-filter-mode {
+    margin-bottom: 15px;
+}
+.aismarttalk-config .radio-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    cursor: pointer;
+}
+.aismarttalk-config .radio-option input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+.aismarttalk-config .radio-option .radio-label {
+    font-weight: 500;
+    color: #333;
+}
+.aismarttalk-config .radio-option .radio-help {
+    color: #6c757d;
+    font-size: 12px;
+}
+.aismarttalk-config .category-selection-box {
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.aismarttalk-config .category-selection-header {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+    align-items: center;
+}
+.aismarttalk-config .category-search-input {
+    flex: 1;
+    min-width: 150px;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 13px;
+}
+.aismarttalk-config .include-subcategories {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #495057;
+    cursor: pointer;
+    white-space: nowrap;
+}
+.aismarttalk-config .include-subcategories input {
+    cursor: pointer;
+}
+.aismarttalk-config .category-list {
+    max-height: 250px;
+    overflow-y: auto;
+    padding: 8px;
+}
+.aismarttalk-config .category-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.1s;
+}
+.aismarttalk-config .category-item:hover {
+    background: #f0f0f0;
+}
+.aismarttalk-config .category-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.aismarttalk-config .category-item .cat-name {
+    flex: 1;
+    font-size: 13px;
+    color: #333;
+}
+.aismarttalk-config .category-item .cat-count {
+    font-size: 11px;
+    color: #888;
+    background: #eee;
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+.aismarttalk-config .category-item.hidden {
+    display: none;
+}
+.aismarttalk-config .category-selection-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+}
+.aismarttalk-config .selected-count {
+    font-size: 12px;
+    color: #6c757d;
+}
+.aismarttalk-config .sync-filters-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+}
+.aismarttalk-config .sync-filters-actions .save-hint {
+    font-size: 12px;
+    color: #6c757d;
+    font-style: italic;
+}
+
 /* Chatbot Customization Styles */
 .aismarttalk-config .button-type-grid {
     display: grid;
@@ -1938,6 +2180,127 @@
                     </button>
                 </div>
             </form>
+
+            {* Advanced Sync Filters - Simplified UI *}
+            {if $productSyncEnabled}
+            <div class="sync-filters-toggle" id="sync-filters-toggle">
+                <div class="toggle-left">
+                    <i class="icon icon-filter"></i>
+                    <span>{l s='Filter which products to sync' mod='aismarttalk'}</span>
+                    {if $syncFilterHasActiveFilters}
+                        <span class="filter-badge">
+                            <i class="icon icon-check"></i> {l s='Filters active' mod='aismarttalk'}
+                        </span>
+                    {else}
+                        <span class="filter-badge-default">{l s='All products' mod='aismarttalk'}</span>
+                    {/if}
+                </div>
+                <i class="icon icon-chevron-down toggle-icon" id="sync-filters-chevron"></i>
+            </div>
+
+            <div class="sync-filters-content" id="sync-filters-content">
+                <form action="{$formAction|escape:'html':'UTF-8'}" method="post" id="sync-filters-form">
+
+                    {* Info banner *}
+                    <div class="sync-filters-info">
+                        <i class="icon icon-info-circle"></i>
+                        <span>{l s='By default, all products are synchronized. Use these filters to limit which products are sent to AI SmartTalk.' mod='aismarttalk'}</span>
+                    </div>
+
+                    {* Product Types - Simple checkboxes *}
+                    <div class="filter-section">
+                        <h5>{l s='Product Types to Sync' mod='aismarttalk'}</h5>
+                        <p class="filter-help">{l s='Uncheck a type to exclude it from synchronization.' mod='aismarttalk'}</p>
+                        <div class="product-types-simple">
+                            <label class="product-type-checkbox">
+                                <input type="checkbox" name="sync_filter_product_types[]" value="standard" {if in_array('standard', $syncFilterConfig.product_types)}checked{/if}>
+                                <span class="checkmark"></span>
+                                <span class="type-label">
+                                    <strong>{l s='Standard Products' mod='aismarttalk'}</strong>
+                                    <small>({$syncFilterProductTypeCounts.standard|intval} {l s='products' mod='aismarttalk'})</small>
+                                </span>
+                            </label>
+                            <label class="product-type-checkbox">
+                                <input type="checkbox" name="sync_filter_product_types[]" value="virtual" {if in_array('virtual', $syncFilterConfig.product_types)}checked{/if}>
+                                <span class="checkmark"></span>
+                                <span class="type-label">
+                                    <strong>{l s='Virtual Products' mod='aismarttalk'}</strong>
+                                    <small>({$syncFilterProductTypeCounts.virtual|intval} {l s='products' mod='aismarttalk'}) - {l s='downloadable, services' mod='aismarttalk'}</small>
+                                </span>
+                            </label>
+                            <label class="product-type-checkbox">
+                                <input type="checkbox" name="sync_filter_product_types[]" value="pack" {if in_array('pack', $syncFilterConfig.product_types)}checked{/if}>
+                                <span class="checkmark"></span>
+                                <span class="type-label">
+                                    <strong>{l s='Product Packs' mod='aismarttalk'}</strong>
+                                    <small>({$syncFilterProductTypeCounts.pack|intval} {l s='products' mod='aismarttalk'}) - {l s='bundles' mod='aismarttalk'}</small>
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    {* Category Filter - Simplified *}
+                    <div class="filter-section">
+                        <h5>{l s='Category Filter' mod='aismarttalk'}</h5>
+
+                        <div class="category-filter-mode">
+                            <label class="radio-option">
+                                <input type="radio" name="sync_filter_mode" value="include" {if $syncFilterConfig.mode == 'include' || empty($syncFilterConfig.categories)}checked{/if}>
+                                <span class="radio-label">{l s='Sync only selected categories' mod='aismarttalk'}</span>
+                                <span class="radio-help">{l s='(leave empty to sync all)' mod='aismarttalk'}</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="sync_filter_mode" value="exclude" {if $syncFilterConfig.mode == 'exclude' && !empty($syncFilterConfig.categories)}checked{/if}>
+                                <span class="radio-label">{l s='Sync all EXCEPT selected categories' mod='aismarttalk'}</span>
+                            </label>
+                        </div>
+
+                        <div class="category-selection-box">
+                            <div class="category-selection-header">
+                                <input type="text" id="category-search-input" class="category-search-input" placeholder="{l s='Search categories...' mod='aismarttalk'}">
+                                <label class="include-subcategories">
+                                    <input type="checkbox" id="sync_filter_include_subcategories" name="sync_filter_include_subcategories" value="1" {if $syncFilterConfig.include_subcategories}checked{/if}>
+                                    {l s='Include subcategories' mod='aismarttalk'}
+                                </label>
+                            </div>
+                            <div class="category-list" id="category-tree-container">
+                                {foreach from=$syncFilterCategoryTree item=category}
+                                    <label class="category-item"
+                                           data-id="{$category.id_category|intval}"
+                                           data-name="{$category.name|escape:'html':'UTF-8'|lower}"
+                                           style="padding-left: {($category.depth * 16 + 12)|intval}px;">
+                                        <input type="checkbox"
+                                               name="sync_filter_categories_checkbox[]"
+                                               value="{$category.id_category|intval}"
+                                               {if in_array($category.id_category, $syncFilterConfig.categories)}checked{/if}>
+                                        <span class="cat-name">{$category.name|escape:'html':'UTF-8'}</span>
+                                        {if $category.product_count > 0}
+                                            <span class="cat-count">{$category.product_count|intval}</span>
+                                        {/if}
+                                    </label>
+                                {/foreach}
+                            </div>
+                            <div class="category-selection-footer">
+                                <button type="button" id="category-select-none" class="btn btn-default btn-xs">
+                                    {l s='Clear selection' mod='aismarttalk'}
+                                </button>
+                                <span class="selected-count" id="selected-categories-count">
+                                    <span id="cat-count-number">0</span> {l s='categories selected' mod='aismarttalk'}
+                                </span>
+                            </div>
+                        </div>
+                        <input type="hidden" name="sync_filter_categories" id="sync_filter_categories" value="{$syncFilterConfig.categories|json_encode}">
+                    </div>
+
+                    <div class="sync-filters-actions">
+                        <button type="submit" name="submitSyncFilters" class="btn btn-primary">
+                            <i class="icon icon-save"></i> {l s='Save Filters' mod='aismarttalk'}
+                        </button>
+                        <span class="save-hint">{l s='Remember to run "Sync All Products" after changing filters.' mod='aismarttalk'}</span>
+                    </div>
+                </form>
+            </div>
+            {/if}
         </div>
     </div>
 
@@ -2380,6 +2743,91 @@ document.addEventListener('DOMContentLoaded', function() {
                 secondaryInput.value = '';
             }
         });
+    }
+
+    // ============================
+    // Sync Filters Controller
+    // ============================
+    var syncFiltersToggle = document.getElementById('sync-filters-toggle');
+    var syncFiltersContent = document.getElementById('sync-filters-content');
+    var syncFiltersChevron = document.getElementById('sync-filters-chevron');
+
+    if (syncFiltersToggle && syncFiltersContent) {
+        syncFiltersToggle.addEventListener('click', function() {
+            syncFiltersContent.classList.toggle('show');
+            if (syncFiltersChevron) {
+                syncFiltersChevron.classList.toggle('icon-chevron-down');
+                syncFiltersChevron.classList.toggle('icon-chevron-up');
+            }
+        });
+    }
+
+    // Category Filter Controller
+    var categoryContainer = document.getElementById('category-tree-container');
+    var categorySearchInput = document.getElementById('category-search-input');
+    var categoriesHiddenInput = document.getElementById('sync_filter_categories');
+    var categoryCountDisplay = document.getElementById('cat-count-number');
+
+    if (categoryContainer) {
+        var categoryItems = categoryContainer.querySelectorAll('.category-item');
+
+        // Update hidden input and count
+        function updateCategorySelection() {
+            var selectedIds = [];
+            categoryItems.forEach(function(item) {
+                var checkbox = item.querySelector('input[type="checkbox"]');
+                if (checkbox && checkbox.checked) {
+                    selectedIds.push(parseInt(item.dataset.id));
+                }
+            });
+            if (categoriesHiddenInput) {
+                categoriesHiddenInput.value = JSON.stringify(selectedIds);
+            }
+            if (categoryCountDisplay) {
+                categoryCountDisplay.textContent = selectedIds.length;
+            }
+        }
+
+        // Listen for checkbox changes
+        categoryItems.forEach(function(item) {
+            var checkbox = item.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.addEventListener('change', updateCategorySelection);
+            }
+        });
+
+        // Search functionality
+        if (categorySearchInput) {
+            categorySearchInput.addEventListener('input', function() {
+                var searchTerm = this.value.toLowerCase().trim();
+                categoryItems.forEach(function(item) {
+                    var name = item.dataset.name || '';
+                    if (searchTerm === '' || name.indexOf(searchTerm) !== -1) {
+                        item.classList.remove('hidden');
+                    } else {
+                        item.classList.add('hidden');
+                    }
+                });
+            });
+        }
+
+        // Clear selection button
+        var selectNoneBtn = document.getElementById('category-select-none');
+        if (selectNoneBtn) {
+            selectNoneBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                categoryItems.forEach(function(item) {
+                    var checkbox = item.querySelector('input[type="checkbox"]');
+                    if (checkbox) {
+                        checkbox.checked = false;
+                    }
+                });
+                updateCategorySelection();
+            });
+        }
+
+        // Initialize
+        updateCategorySelection();
     }
 });
 </script>
