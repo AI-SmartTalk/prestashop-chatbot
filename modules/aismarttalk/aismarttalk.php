@@ -27,6 +27,7 @@ use PrestaShop\AiSmartTalk\OAuthHandler;
 use PrestaShop\AiSmartTalk\OAuthTokenHandler;
 use PrestaShop\AiSmartTalk\SyncFilterHelper;
 use PrestaShop\AiSmartTalk\SynchProductsToAiSmartTalk;
+use PrestaShop\AiSmartTalk\WebhookHandler;
 
 class AiSmartTalk extends Module
 {
@@ -111,11 +112,21 @@ class AiSmartTalk extends Module
             'actionProductCreate',
             'actionProductDelete',
             'actionUpdateQuantity',
+            'actionProductQuantityUpdate', // Alternative stock hook for PS 9
             'actionAuthentication',
             'actionCustomerLogout',
             'actionCustomerAccountAdd',
             'actionCustomerAccountUpdate',
             'actionCustomerDelete',
+            // Webhook triggers
+            'actionOrderStatusPostUpdate',
+            'actionPaymentConfirmation',
+            'actionValidateOrder',
+            'actionOrderReturn',
+            'actionObjectProductCommentValidateAfter',
+            'actionCartSave',
+            'actionOrderSlipAdd',
+            'actionProductAdd',
         ];
 
         foreach ($hooks as $hook) {
@@ -127,6 +138,15 @@ class AiSmartTalk extends Module
         }
 
         return true;
+    }
+
+    /**
+     * Ensure all hooks are registered.
+     * Called from getContent() to auto-register missing hooks for existing installations.
+     */
+    public function ensureHooksRegistered(): void
+    {
+        $this->registerAiSmartTalkHooks();
     }
 
     public function uninstall()
@@ -144,8 +164,20 @@ class AiSmartTalk extends Module
             && $this->unregisterHook('actionProductCreate')
             && $this->unregisterHook('actionProductDelete')
             && $this->unregisterHook('actionUpdateQuantity')
+            && $this->unregisterHook('actionProductQuantityUpdate')
             && $this->unregisterHook('actionAuthentication')
             && $this->unregisterHook('actionCustomerLogout')
+            // Webhook triggers
+            && $this->unregisterHook('actionOrderStatusPostUpdate')
+            && $this->unregisterHook('actionPaymentConfirmation')
+            && $this->unregisterHook('actionValidateOrder')
+            && $this->unregisterHook('actionOrderReturn')
+            && $this->unregisterHook('actionObjectProductCommentValidateAfter')
+            && $this->unregisterHook('actionCartSave')
+            && $this->unregisterHook('actionOrderSlipAdd')
+            && $this->unregisterHook('actionProductAdd')
+            && Configuration::deleteByName('AI_SMART_TALK_WEBHOOKS_ENABLED')
+            && Configuration::deleteByName('AI_SMART_TALK_WEBHOOKS_TRIGGERS')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLED')
             && Configuration::deleteByName('AI_SMART_TALK_URL')
             && Configuration::deleteByName('AI_SMART_TALK_FRONT_URL')
@@ -190,6 +222,9 @@ class AiSmartTalk extends Module
     public function getContent()
     {
         $output = '';
+
+        // Ensure all hooks are registered (for existing installations that may miss new hooks)
+        $this->ensureHooksRegistered();
 
         // Ensure default URLs are always available
         $this->ensureDefaultUrls();
@@ -451,6 +486,24 @@ class AiSmartTalk extends Module
             Configuration::updateValue('AI_SMART_TALK_ENABLE_VOICE_INPUT', $enableVoiceInput);
             Configuration::updateValue('AI_SMART_TALK_ENABLE_VOICE_MODE', $enableVoiceMode);
 
+            // GDPR settings
+            $gdprEnabled = Tools::getValue('AI_SMART_TALK_GDPR_ENABLED', '');
+            $gdprPrivacyUrl = Tools::getValue('AI_SMART_TALK_GDPR_PRIVACY_URL', '');
+
+            // Validate GDPR toggle
+            if (!in_array($gdprEnabled, $validToggleValues)) {
+                $gdprEnabled = '';
+            }
+
+            // Validate privacy URL (must be valid URL or empty)
+            if (!empty($gdprPrivacyUrl) && !filter_var($gdprPrivacyUrl, FILTER_VALIDATE_URL)) {
+                $gdprPrivacyUrl = '';
+                $output .= $this->displayWarning($this->trans('Invalid privacy policy URL - must be a valid URL starting with http:// or https://', [], 'Modules.Aismarttalk.Admin'));
+            }
+
+            Configuration::updateValue('AI_SMART_TALK_GDPR_ENABLED', $gdprEnabled);
+            Configuration::updateValue('AI_SMART_TALK_GDPR_PRIVACY_URL', pSQL($gdprPrivacyUrl));
+
             $output .= $this->displayConfirmation($this->trans('Chatbot customization saved.', [], 'Modules.Aismarttalk.Admin'));
         }
 
@@ -493,6 +546,15 @@ class AiSmartTalk extends Module
             } else {
                 $output .= $this->displayError($this->trans('Failed to save sync filters.', [], 'Modules.Aismarttalk.Admin'));
             }
+        }
+
+        // Handle webhooks settings form
+        if (Tools::isSubmit('submitWebhooksSettings')) {
+            $enabledTriggers = Tools::getValue('webhooks_triggers', []);
+
+            WebhookHandler::saveEnabledTriggers(is_array($enabledTriggers) ? $enabledTriggers : []);
+
+            $output .= $this->displayConfirmation($this->trans('Webhooks settings saved.', [], 'Modules.Aismarttalk.Admin'));
         }
 
         // Handle legacy form submissions (for backward compatibility)
@@ -621,10 +683,25 @@ class AiSmartTalk extends Module
             'enableVoiceInput' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_INPUT') ?: '',
             'enableVoiceMode' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_MODE') ?: '',
 
+            // GDPR settings
+            'gdprEnabled' => Configuration::get('AI_SMART_TALK_GDPR_ENABLED') ?: '',
+            'gdprPrivacyUrl' => Configuration::get('AI_SMART_TALK_GDPR_PRIVACY_URL') ?: '',
+
             // Cache and override status
             'hasLocalOverrides' => $hasLocalOverrides,
             'cacheMetadata' => $cacheMetadata,
             'embedConfig' => $embedConfig,
+
+            // AI Skills (loaded client-side via JavaScript API calls)
+
+            // Plan usage and credits information
+            'planUsage' => $this->fetchPlanUsage(),
+            'pricingPlans' => $this->fetchPricingPlans(),
+
+            // Webhooks/Triggers settings
+            'webhooksEnabled' => WebhookHandler::isEnabled(),
+            'webhooksEnabledTriggers' => WebhookHandler::getEnabledTriggers(),
+            'webhooksAvailableTriggers' => WebhookHandler::getAvailableTriggers(),
 
             // Chatbot embed (base64 encoded for security)
             'chatbotSettingsEncoded' => base64_encode(json_encode($chatbotSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
@@ -882,6 +959,237 @@ class AiSmartTalk extends Module
     }
 
     /**
+     * Fetch plan usage and credits information from the API
+     * Returns current usage, plan limits, and upgrade links
+     *
+     * @param bool $forceRefresh Force refresh from API (bypass cache)
+     * @return array|null The plan usage data or null if failed
+     */
+    private function fetchPlanUsage(bool $forceRefresh = false): ?array
+    {
+        $chatModelId = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = OAuthHandler::getAccessToken() ?? Configuration::get('CHAT_MODEL_TOKEN');
+        $apiUrl = OAuthHandler::getBackendApiUrl();
+
+        if (empty($chatModelId) || empty($chatModelToken) || empty($apiUrl)) {
+            return null;
+        }
+
+        // Check cache first (unless forcing refresh) - cache for 5 minutes
+        if (!$forceRefresh) {
+            $cached = AiSmartTalkCache::get('plan_usage');
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
+        // Build the API URL for plan usage
+        $planUsageUrl = rtrim($apiUrl, '/') . '/api/v1/plan/usage';
+
+        // Initialize cURL
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $planUsageUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $chatModelToken,
+                'x-chat-model-id: ' . $chatModelId,
+                'Content-Type: application/json',
+            ],
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || empty($response)) {
+            // On error, try to return stale cache if available
+            $staleCache = AiSmartTalkCache::get('plan_usage');
+            return $staleCache;
+        }
+
+        $data = json_decode($response, true);
+
+        if ($data && isset($data['plan'])) {
+            // Cache for 5 minutes (300 seconds) - shorter than embed config as usage changes
+            AiSmartTalkCache::set('plan_usage', $data, 300);
+            return $data;
+        }
+
+        return null;
+    }
+
+    /**
+     * Fetch available pricing plans from the public API
+     * No authentication required
+     *
+     * @param bool $forceRefresh Force refresh from API (bypass cache)
+     * @return array The pricing plans or empty array if failed
+     */
+    private function fetchPricingPlans(bool $forceRefresh = false): array
+    {
+        $apiUrl = OAuthHandler::getBackendApiUrl();
+
+        if (empty($apiUrl)) {
+            return [];
+        }
+
+        // Check cache first (unless forcing refresh) - cache for 1 hour
+        if (!$forceRefresh) {
+            $cached = AiSmartTalkCache::get('pricing_plans');
+            if ($cached !== null) {
+                return $cached;
+            }
+        }
+
+        // Build the API URL for pricing
+        $pricingUrl = rtrim($apiUrl, '/') . '/api/stripe/pricing';
+
+        // Initialize cURL (public endpoint, no auth needed)
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $pricingUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => [
+                'Content-Type: application/json',
+            ],
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || empty($response)) {
+            $staleCache = AiSmartTalkCache::get('pricing_plans');
+            return $staleCache ?: [];
+        }
+
+        $data = json_decode($response, true);
+
+        if ($data && isset($data['data']['plans'])) {
+            // Cache for 1 hour (3600 seconds)
+            AiSmartTalkCache::set('pricing_plans', $data['data']['plans'], 3600);
+            return $data['data']['plans'];
+        }
+
+        return [];
+    }
+
+    /**
+     * Fetch AI Skills (SmartFlows) from the API
+     * Server-side loading to avoid CORS issues
+     *
+     * @return array The skills array or empty array if failed
+     */
+    private function fetchSkills(): array
+    {
+        $chatModelId = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = OAuthHandler::getAccessToken() ?? Configuration::get('CHAT_MODEL_TOKEN');
+        $apiUrl = OAuthHandler::getBackendApiUrl();
+
+        if (empty($chatModelId) || empty($chatModelToken) || empty($apiUrl)) {
+            return [];
+        }
+
+        // Check cache first
+        $cached = AiSmartTalkCache::get('skills_' . $chatModelId);
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $lang = substr($this->context->language->iso_code, 0, 2);
+        $skillsUrl = rtrim($apiUrl, '/') . '/api/v1/smartflow-templates/installed?lang=' . urlencode($lang);
+
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $skillsUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $chatModelToken,
+                'Content-Type: application/json',
+                'x-chat-model-id: ' . $chatModelId,
+            ],
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || empty($response)) {
+            return [];
+        }
+
+        $data = json_decode($response, true);
+
+        if (isset($data['installed']) && is_array($data['installed'])) {
+            // Cache for 5 minutes
+            AiSmartTalkCache::set('skills_' . $chatModelId, $data['installed'], 300);
+            return $data['installed'];
+        }
+
+        return [];
+    }
+
+    /**
+     * Fetch marketplace templates from the API
+     * Server-side loading to avoid CORS issues
+     *
+     * @return array The templates array or empty array if failed
+     */
+    private function fetchMarketplaceTemplates(): array
+    {
+        $chatModelId = OAuthHandler::getChatModelId() ?? Configuration::get('CHAT_MODEL_ID');
+        $chatModelToken = OAuthHandler::getAccessToken() ?? Configuration::get('CHAT_MODEL_TOKEN');
+        $apiUrl = OAuthHandler::getBackendApiUrl();
+
+        if (empty($chatModelId) || empty($chatModelToken) || empty($apiUrl)) {
+            return [];
+        }
+
+        // Check cache first
+        $cached = AiSmartTalkCache::get('marketplace_templates');
+        if ($cached !== null) {
+            return $cached;
+        }
+
+        $lang = substr($this->context->language->iso_code, 0, 2);
+        $templatesUrl = rtrim($apiUrl, '/') . '/api/v1/smartflow-templates?platform=prestashop&limit=20&lang=' . urlencode($lang);
+
+        $ch = curl_init();
+        curl_setopt_array($ch, [
+            CURLOPT_URL => $templatesUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 10,
+            CURLOPT_HTTPHEADER => [
+                'Authorization: Bearer ' . $chatModelToken,
+                'Content-Type: application/json',
+                'x-chat-model-id: ' . $chatModelId,
+            ],
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode !== 200 || empty($response)) {
+            return [];
+        }
+
+        $data = json_decode($response, true);
+
+        if (isset($data['templates']) && is_array($data['templates'])) {
+            // Cache for 30 minutes
+            AiSmartTalkCache::set('marketplace_templates', $data['templates'], 1800);
+            return $data['templates'];
+        }
+
+        return [];
+    }
+
+    /**
      * Upload an avatar file to the chat model
      *
      * @param array $file The uploaded file from $_FILES
@@ -1067,6 +1375,8 @@ class AiSmartTalk extends Module
         $enableVoiceInput = Configuration::get('AI_SMART_TALK_ENABLE_VOICE_INPUT');
         $enableVoiceMode = Configuration::get('AI_SMART_TALK_ENABLE_VOICE_MODE');
 
+        // Note: GDPR settings come from AI SmartTalk backend, not overridden locally
+
         // Apply text/select overrides (only if non-empty, meaning user has configured them)
         if (!empty($buttonText)) {
             $chatbotSettings['buttonText'] = $buttonText;
@@ -1132,6 +1442,33 @@ class AiSmartTalk extends Module
             }
         }
 
+        // GDPR settings (override API defaults if configured locally)
+        $gdprEnabled = Configuration::get('AI_SMART_TALK_GDPR_ENABLED');
+        $gdprPrivacyUrl = Configuration::get('AI_SMART_TALK_GDPR_PRIVACY_URL');
+
+        // Build default privacy policy URL from AI SmartTalk
+        $apiUrl = Configuration::get('AI_SMART_TALK_URL') ?: self::DEFAULT_API_URL;
+        $currentLang = isset($this->context->language) ? substr($this->context->language->iso_code, 0, 2) : 'en';
+        $defaultPrivacyUrl = rtrim($apiUrl, '/') . '/' . $currentLang . '/privacy-policy';
+
+        if ($gdprEnabled === 'on' || $gdprEnabled === 'off' || !empty($gdprPrivacyUrl)) {
+            if (!isset($chatbotSettings['gdprConsent'])) {
+                $chatbotSettings['gdprConsent'] = [];
+            }
+
+            if ($gdprEnabled === 'on') {
+                $chatbotSettings['gdprConsent']['enabled'] = true;
+                // Use default AI SmartTalk privacy URL if none configured
+                $chatbotSettings['gdprConsent']['privacyPolicyUrl'] = !empty($gdprPrivacyUrl) ? $gdprPrivacyUrl : $defaultPrivacyUrl;
+            } elseif ($gdprEnabled === 'off') {
+                $chatbotSettings['gdprConsent']['enabled'] = false;
+            }
+
+            if (!empty($gdprPrivacyUrl)) {
+                $chatbotSettings['gdprConsent']['privacyPolicyUrl'] = $gdprPrivacyUrl;
+            }
+        }
+
         return $chatbotSettings;
     }
 
@@ -1185,35 +1522,79 @@ class AiSmartTalk extends Module
         $api(['productIds' => [(string) $idProduct]]);
     }
 
+    /**
+     * Hook: actionProductQuantityUpdate (PrestaShop 9 alternative)
+     * This hook is called when product quantity is updated
+     *
+     * @param array $params Hook parameters
+     */
+    public function hookActionProductQuantityUpdate($params)
+    {
+        $this->handleQuantityUpdate($params);
+    }
+
     public function hookActionUpdateQuantity($params)
     {
-        // Check if product sync is enabled
-        if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
-            return;
-        }
+        $this->handleQuantityUpdate($params);
+    }
 
-        if (!isset($params['id_product']) || !isset($params['quantity'])) {
+    /**
+     * Shared handler for stock quantity updates
+     * Used by both actionUpdateQuantity and actionProductQuantityUpdate hooks
+     *
+     * @param array $params Hook parameters
+     */
+    protected function handleQuantityUpdate(array $params): void
+    {
+        if (!isset($params['id_product'])) {
             return;
         }
 
         $idProduct = (int) $params['id_product'];
-        $newQuantity = $params['quantity'];
+        $idProductAttribute = isset($params['id_product_attribute']) ? (int) $params['id_product_attribute'] : 0;
 
-        // Récupérer la quantité actuelle (avant mise à jour)
-        $currentQuantity = (int) StockAvailable::getQuantityAvailableByProduct($idProduct);
+        // Get the NEW quantity - could be in 'quantity' or 'new_quantity' depending on hook
+        $newQuantity = null;
+        if (isset($params['quantity'])) {
+            $newQuantity = (int) $params['quantity'];
+        } elseif (isset($params['new_quantity'])) {
+            $newQuantity = (int) $params['new_quantity'];
+        } else {
+            $newQuantity = (int) \StockAvailable::getQuantityAvailableByProduct($idProduct, $idProductAttribute);
+        }
 
-        // Si le produit passe à 0 stock (rupture), le supprimer d'AI SmartTalk
-        if ($newQuantity === 0) {
-            $api = new CleanProductDocuments();
-            $api(['productIds' => [(string) $idProduct]]);
-            // Mark as not synced since it's removed
-            AiSmartTalkProductSync::markAsNotSynced($idProduct);
-        } elseif ($currentQuantity == 0 && $newQuantity > 0) {
-            // Si le produit passe de 0 à >0 (réapprovisionnement), le synchroniser
-            $api = new SynchProductsToAiSmartTalk($this->context);
-            $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
-            // Update last sync time in dedicated table
-            AiSmartTalkProductSync::updateLastSyncTime($idProduct);
+        // Use a cache key to track previous stock levels across requests
+        $cacheKey = 'ast_stock_' . $idProduct . '_' . $idProductAttribute;
+        $wasOutOfStock = Configuration::get($cacheKey) === 'out_of_stock';
+
+        // Product is now out of stock
+        if ($newQuantity <= 0) {
+            // Only trigger webhook if it wasn't already out of stock
+            if (!$wasOutOfStock) {
+                Configuration::updateValue($cacheKey, 'out_of_stock');
+
+                $this->triggerOutOfStockWebhook($idProduct, $idProductAttribute, 1);
+
+                // Product sync: remove from AI SmartTalk
+                if ((bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+                    $api = new CleanProductDocuments();
+                    $api(['productIds' => [(string) $idProduct]]);
+                    AiSmartTalkProductSync::markAsNotSynced($idProduct);
+                }
+            }
+        } else {
+            // Product is now in stock
+            if ($wasOutOfStock) {
+                // Clear the out of stock flag
+                Configuration::deleteByName($cacheKey);
+
+                // Product sync: re-sync when restocked
+                if ((bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+                    $api = new SynchProductsToAiSmartTalk($this->context);
+                    $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
+                    AiSmartTalkProductSync::updateLastSyncTime($idProduct);
+                }
+            }
         }
     }
 
@@ -1311,13 +1692,19 @@ class AiSmartTalk extends Module
 
     public function hookActionCustomerAccountAdd($params)
     {
-        if (!\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
-            return;
+        $customer = $params['newCustomer'];
+
+        // Customer sync
+        if (\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
+            $sync = new CustomerSync($this->context);
+            $sync->exportCustomerBatch([$customer]);
         }
 
-        $customer = $params['newCustomer'];
-        $sync = new CustomerSync($this->context);
-        $sync->exportCustomerBatch([$customer]);
+        // Webhook: customer registered
+        if (WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_CUSTOMER_REGISTERED)) {
+            $webhookHandler = new WebhookHandler($this->context);
+            $webhookHandler->triggerCustomerRegistered($customer);
+        }
     }
 
     public function hookActionCustomerAccountUpdate($params)
@@ -1335,6 +1722,244 @@ class AiSmartTalk extends Module
     {
         // Implementation for customer deletion sync
         // This would call a different API endpoint to remove the customer from AI SmartTalk
+    }
+
+    // =========================================================================
+    // WEBHOOK TRIGGERS FOR SMARTFLOW
+    // =========================================================================
+
+    /**
+     * Hook: Order status changed
+     * Triggers when an order status is updated
+     *
+     * @param array $params Hook parameters
+     */
+    public function hookActionOrderStatusPostUpdate($params)
+    {
+        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_ORDER_STATUS_CHANGED)) {
+            return;
+        }
+
+        $newOrderState = $params['newOrderStatus'] ?? null;
+        $oldOrderState = $params['oldOrderStatus'] ?? null;
+        $orderId = $params['id_order'] ?? null;
+
+        if (!$newOrderState || !$orderId) {
+            return;
+        }
+
+        $order = new \Order((int) $orderId);
+        if (!\Validate::isLoadedObject($order)) {
+            return;
+        }
+
+        $webhookHandler = new WebhookHandler($this->context);
+        $webhookHandler->triggerOrderStatusChanged($order, $newOrderState, $oldOrderState);
+    }
+
+    /**
+     * Hook: Payment confirmation
+     * Triggers when a payment is confirmed
+     *
+     * @param array $params Hook parameters
+     */
+    public function hookActionPaymentConfirmation($params)
+    {
+        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_PAYMENT_RECEIVED)) {
+            return;
+        }
+
+        $orderId = $params['id_order'] ?? null;
+        if (!$orderId) {
+            return;
+        }
+
+        $order = new \Order((int) $orderId);
+        if (!\Validate::isLoadedObject($order)) {
+            return;
+        }
+
+        $webhookHandler = new WebhookHandler($this->context);
+        $webhookHandler->triggerPaymentReceived($order, $order->payment);
+    }
+
+    /**
+     * Hook: Order validated
+     * Params: cart, order, customer, currency, orderStatus
+     *
+     * @param array $params Hook parameters
+     */
+    public function hookActionValidateOrder($params)
+    {
+        $order = $params['order'] ?? null;
+        $customer = $params['customer'] ?? null;
+        $orderStatus = $params['orderStatus'] ?? null;
+
+        if (!$order || !\Validate::isLoadedObject($order)) {
+            return;
+        }
+
+        $webhookHandler = new WebhookHandler($this->context);
+
+        // Webhook: new order
+        if (WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_NEW_ORDER)) {
+            if (!$customer) {
+                $customer = new \Customer((int) $order->id_customer);
+            }
+            $webhookHandler->triggerNewOrder($order, $customer, $orderStatus);
+        }
+
+        // Webhook: payment received (only if order is already paid)
+        if (WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_PAYMENT_RECEIVED)) {
+            $state = $orderStatus ?? new \OrderState((int) $order->current_state);
+            if ($state->paid) {
+                $webhookHandler->triggerPaymentReceived($order, $order->payment);
+            }
+        }
+    }
+
+    /**
+     * Hook: Order return requested
+     * Triggers when a customer requests a return
+     *
+     * @param array $params Hook parameters
+     */
+    public function hookActionOrderReturn($params)
+    {
+        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_RETURN_REQUESTED)) {
+            return;
+        }
+
+        $orderReturn = $params['orderReturn'] ?? null;
+        if (!$orderReturn || !\Validate::isLoadedObject($orderReturn)) {
+            return;
+        }
+
+        $webhookHandler = new WebhookHandler($this->context);
+        $webhookHandler->triggerReturnRequested($orderReturn);
+    }
+
+    /**
+     * Hook: Product comment/review validated
+     * Triggers when a review is validated by the productcomments module.
+     * Uses actionObjectProductCommentValidateAfter (Doctrine-compatible hook
+     * explicitly dispatched by ProductComment.php).
+     *
+     * @see https://devdocs.prestashop-project.org/9/modules/concepts/hooks/list-of-hooks/actionobjectproductcommentvalidateafter/
+     * @param array $params ['object' => ProductComment]
+     */
+    public function hookActionObjectProductCommentValidateAfter($params)
+    {
+        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_REVIEW_POSTED)) {
+            return;
+        }
+
+        $productComment = $params['object'] ?? null;
+        if (!$productComment) {
+            return;
+        }
+
+        $commentData = [
+            'id_product' => $productComment->id_product ?? 0,
+            'id_customer' => $productComment->id_customer ?? 0,
+            'customer_name' => $productComment->customer_name ?? '',
+            'grade' => $productComment->grade ?? 0,
+            'title' => $productComment->title ?? '',
+            'content' => $productComment->content ?? '',
+            'date_add' => $productComment->date_add ?? date('Y-m-d H:i:s'),
+            'validate' => $productComment->validate ?? false,
+        ];
+
+        $webhookHandler = new WebhookHandler($this->context);
+        $webhookHandler->triggerReviewPosted($commentData);
+    }
+
+    /**
+     * Hook: actionProductAdd
+     * Triggers when a new product is added to the catalog.
+     * Params: id_product_old, id_product, product
+     *
+     * @param array $params Hook parameters
+     */
+    public function hookActionProductAdd($params)
+    {
+        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_PRODUCT_CREATED)) {
+            return;
+        }
+
+        $productId = (int) ($params['id_product'] ?? 0);
+        if (!$productId) {
+            return;
+        }
+
+        $product = $params['product'] ?? null;
+        $webhookHandler = new WebhookHandler($this->context);
+        $webhookHandler->triggerProductCreated($productId, $product);
+    }
+
+    /**
+     * Hook: actionCartSave
+     * Triggers when a cart is created or modified.
+     * Params: cart
+     *
+     * @param array $params Hook parameters
+     */
+    public function hookActionCartSave($params)
+    {
+        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_CART_UPDATED)) {
+            return;
+        }
+
+        $cart = $params['cart'] ?? null;
+        if (!$cart || !\Validate::isLoadedObject($cart)) {
+            return;
+        }
+
+        // Only trigger for carts with products and a customer
+        if (!$cart->id_customer || count($cart->getProducts()) === 0) {
+            return;
+        }
+
+        $webhookHandler = new WebhookHandler($this->context);
+        $webhookHandler->triggerCartUpdated($cart);
+    }
+
+    /**
+     * Hook: actionOrderSlipAdd
+     * Triggers when a credit slip (refund) is created.
+     * Params: order, productList, qtyList
+     *
+     * @param array $params Hook parameters
+     */
+    public function hookActionOrderSlipAdd($params)
+    {
+        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_REFUND_CREATED)) {
+            return;
+        }
+
+        $order = $params['order'] ?? null;
+        if (!$order || !\Validate::isLoadedObject($order)) {
+            return;
+        }
+
+        $productList = $params['productList'] ?? [];
+        $qtyList = $params['qtyList'] ?? [];
+
+        $webhookHandler = new WebhookHandler($this->context);
+        $webhookHandler->triggerRefundCreated($order, $productList, $qtyList);
+    }
+
+    /**
+     * Trigger product out of stock webhook
+     */
+    private function triggerOutOfStockWebhook(int $productId, int $combinationId = 0, int $previousQuantity = 0): void
+    {
+        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_PRODUCT_OUT_OF_STOCK)) {
+            return;
+        }
+
+        $webhookHandler = new WebhookHandler($this->context);
+        $webhookHandler->triggerProductOutOfStock($productId, $combinationId, $previousQuantity);
     }
 
     /**

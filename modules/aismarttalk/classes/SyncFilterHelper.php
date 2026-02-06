@@ -103,22 +103,51 @@ class SyncFilterHelper
      *
      * @param array $tree Category tree
      * @param int $depth Current depth
+     * @param int|null $parentId Parent category ID
      * @return array Flat list with depth information
      */
-    public static function flattenCategoryTree(array $tree, int $depth = 0): array
+    public static function flattenCategoryTree(array $tree, int $depth = 0, ?int $parentId = null): array
     {
         $flat = [];
         foreach ($tree as $category) {
             $children = $category['children'] ?? [];
+            $childIds = array_map(function ($c) {
+                return (int) $c['id_category'];
+            }, $children);
             unset($category['children']);
             $category['depth'] = $depth;
             $category['has_children'] = !empty($children);
+            $category['child_ids'] = $childIds;
+            $category['parent_id'] = $parentId;
             $flat[] = $category;
             if (!empty($children)) {
-                $flat = array_merge($flat, self::flattenCategoryTree($children, $depth + 1));
+                $flat = array_merge($flat, self::flattenCategoryTree($children, $depth + 1, (int) $category['id_category']));
             }
         }
         return $flat;
+    }
+
+    /**
+     * Get all descendant category IDs for a given category
+     *
+     * @param int $categoryId Category ID
+     * @return array List of descendant IDs (including the category itself)
+     */
+    public static function getAllDescendantIds(int $categoryId): array
+    {
+        $sql = 'SELECT c2.id_category
+                FROM ' . _DB_PREFIX_ . 'category c1
+                INNER JOIN ' . _DB_PREFIX_ . 'category c2 ON c2.nleft >= c1.nleft AND c2.nright <= c1.nright
+                WHERE c1.id_category = ' . (int) $categoryId;
+
+        $result = \Db::getInstance()->executeS($sql);
+        if (!$result) {
+            return [$categoryId];
+        }
+
+        return array_map(function ($row) {
+            return (int) $row['id_category'];
+        }, $result);
     }
 
     /**
