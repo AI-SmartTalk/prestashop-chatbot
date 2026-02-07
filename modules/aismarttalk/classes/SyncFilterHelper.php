@@ -448,4 +448,125 @@ class SyncFilterHelper
         $success = $success && \Configuration::deleteByName(self::CONFIG_PRODUCT_TYPES);
         return $success;
     }
+
+    /**
+     * Check if a specific product should be synced based on current filters
+     *
+     * @param int $productId Product ID
+     * @param int $shopId Shop ID
+     * @return bool True if product matches filters and should be synced
+     */
+    public static function shouldProductBeSynced(int $productId, int $shopId): bool
+    {
+        $config = self::getFilterConfig();
+
+        // Check product type filter
+        if (!self::productMatchesTypeFilter($productId, $config['product_types'])) {
+            return false;
+        }
+
+        // Check category filter
+        if (!self::productMatchesCategoryFilter($productId, $shopId, $config)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Check if product matches the configured product type filter
+     *
+     * @param int $productId Product ID
+     * @param array $allowedTypes Allowed product types
+     * @return bool True if product type is allowed
+     */
+    private static function productMatchesTypeFilter(int $productId, array $allowedTypes): bool
+    {
+        // All types allowed = no filter
+        $allTypes = [self::TYPE_STANDARD, self::TYPE_VIRTUAL, self::TYPE_PACK];
+        if (count(array_intersect($allowedTypes, $allTypes)) === count($allTypes)) {
+            return true;
+        }
+
+        // No types allowed = nothing matches
+        if (empty($allowedTypes)) {
+            return false;
+        }
+
+        // Get product type info
+        $sql = 'SELECT p.is_virtual, p.cache_is_pack
+                FROM ' . _DB_PREFIX_ . 'product p
+                WHERE p.id_product = ' . (int) $productId;
+        $product = \Db::getInstance()->getRow($sql);
+
+        if (!$product) {
+            return false;
+        }
+
+        $isVirtual = (bool) $product['is_virtual'];
+        $isPack = (bool) $product['cache_is_pack'];
+
+        // Determine product type
+        if ($isPack && in_array(self::TYPE_PACK, $allowedTypes)) {
+            return true;
+        }
+        if ($isVirtual && in_array(self::TYPE_VIRTUAL, $allowedTypes)) {
+            return true;
+        }
+        if (!$isVirtual && !$isPack && in_array(self::TYPE_STANDARD, $allowedTypes)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if product matches the configured category filter
+     *
+     * @param int $productId Product ID
+     * @param int $shopId Shop ID
+     * @param array $config Filter configuration
+     * @return bool True if product matches category filter
+     */
+    private static function productMatchesCategoryFilter(int $productId, int $shopId, array $config): bool
+    {
+        // No categories selected = no filter (all products match)
+        if (empty($config['categories'])) {
+            return true;
+        }
+
+        $categoryIds = array_map('intval', $config['categories']);
+        $categoryList = implode(',', $categoryIds);
+        $isExclude = $config['mode'] === self::MODE_EXCLUDE;
+
+        if ($config['include_subcategories']) {
+            // Check with subcategories using nested set model
+            $sql = 'SELECT 1 FROM ' . _DB_PREFIX_ . 'category_product cp
+                    INNER JOIN ' . _DB_PREFIX_ . 'category c ON cp.id_category = c.id_category
+                    WHERE cp.id_product = ' . (int) $productId . '
+                    AND EXISTS (
+                        SELECT 1 FROM ' . _DB_PREFIX_ . 'category c_parent
+                        WHERE c_parent.id_category IN (' . $categoryList . ')
+                        AND c.nleft >= c_parent.nleft
+                        AND c.nright <= c_parent.nright
+                    )
+                    LIMIT 1';
+        } else {
+            // Direct category match only
+            $sql = 'SELECT 1 FROM ' . _DB_PREFIX_ . 'category_product cp
+                    WHERE cp.id_product = ' . (int) $productId . '
+                    AND cp.id_category IN (' . $categoryList . ')
+                    LIMIT 1';
+        }
+
+        $isInCategories = (bool) \Db::getInstance()->getValue($sql);
+
+        // In exclude mode: product should NOT be in the selected categories
+        // In include mode: product should BE in the selected categories
+        if ($isExclude) {
+            return !$isInCategories;
+        } else {
+            return $isInCategories;
+        }
+    }
 }
