@@ -173,10 +173,14 @@ class SynchProductsToAiSmartTalk
         ]));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type:application/json']);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
         $result = curl_exec($ch);
         if ($result === false) {
             \Configuration::updateValue('AI_SMART_TALK_ERROR', curl_error($ch));
+            curl_close($ch);
+
+            return false;
         } else {
             \Configuration::deleteByName('AI_SMART_TALK_ERROR');
         }

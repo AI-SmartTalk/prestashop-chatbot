@@ -167,6 +167,9 @@ class AiSmartTalk extends Module
             && $this->unregisterHook('actionProductQuantityUpdate')
             && $this->unregisterHook('actionAuthentication')
             && $this->unregisterHook('actionCustomerLogout')
+            && $this->unregisterHook('actionCustomerAccountAdd')
+            && $this->unregisterHook('actionCustomerAccountUpdate')
+            && $this->unregisterHook('actionCustomerDelete')
             // Webhook triggers
             && $this->unregisterHook('actionOrderStatusPostUpdate')
             && $this->unregisterHook('actionPaymentConfirmation')
@@ -204,19 +207,41 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_FEEDBACK')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_INPUT')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_MODE')
+            // Customer sync
+            && Configuration::deleteByName('AI_SMART_TALK_CUSTOMER_SYNC')
+            // GDPR settings
+            && Configuration::deleteByName('AI_SMART_TALK_GDPR_ENABLED')
+            && Configuration::deleteByName('AI_SMART_TALK_GDPR_PRIVACY_URL')
+            // Temporary/error config keys
+            && Configuration::deleteByName('AI_SMART_TALK_ERROR')
+            && Configuration::deleteByName('AI_SMART_TALK_OAUTH_ERROR')
+            && Configuration::deleteByName('AI_SMART_TALK_OAUTH_SUCCESS')
+            && Configuration::deleteByName('AI_SMART_TALK_OAUTH_PENDING')
+            && Configuration::deleteByName('CLEAN_PRODUCT_DOCUMENTS_ERROR')
             // Sync filter settings
             && SyncFilterHelper::deleteFilterConfig();
     }
 
     public function hookActionAuthentication($params)
     {
-        $customer = $params['customer'];
-        OAuthTokenHandler::setOAuthTokenCookie($customer);
+        try {
+            if (!isset($params['customer'])) {
+                return;
+            }
+            $customer = $params['customer'];
+            OAuthTokenHandler::setOAuthTokenCookie($customer);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionAuthentication error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     public function hookActionCustomerLogout($params)
     {
-        OAuthTokenHandler::unsetOAuthTokenCookie();
+        try {
+            OAuthTokenHandler::unsetOAuthTokenCookie();
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionCustomerLogout error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     public function getContent()
@@ -812,9 +837,13 @@ class AiSmartTalk extends Module
 
     public function hookDisplayFooter($params)
     {
-        $position = Configuration::get('AI_SMART_TALK_IFRAME_POSITION');
-        if ($position === 'footer') {
-            return $this->renderChatbot();
+        try {
+            $position = Configuration::get('AI_SMART_TALK_IFRAME_POSITION');
+            if ($position === 'footer') {
+                return $this->renderChatbot();
+            }
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookDisplayFooter error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
 
         return '';
@@ -822,9 +851,13 @@ class AiSmartTalk extends Module
 
     public function hookDisplayBeforeBodyClosingTag($params)
     {
-        $position = Configuration::get('AI_SMART_TALK_IFRAME_POSITION');
-        if ($position === 'before_footer') {
-            return $this->renderChatbot();
+        try {
+            $position = Configuration::get('AI_SMART_TALK_IFRAME_POSITION');
+            if ($position === 'before_footer') {
+                return $this->renderChatbot();
+            }
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookDisplayBeforeBodyClosingTag error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
 
         return '';
@@ -858,12 +891,13 @@ class AiSmartTalk extends Module
         // Build the API URL for embed config
         $embedConfigUrl = rtrim($apiUrl, '/') . '/api/public/chatModel/' . urlencode($chatModelId) . '/embed-config?integrationType=PRESTASHOP';
 
-        // Initialize cURL
+        // Initialize cURL (short timeout for front-end rendering)
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $embedConfigUrl,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => 10,
+            CURLOPT_TIMEOUT => 3,
+            CURLOPT_CONNECTTIMEOUT => 2,
             CURLOPT_HTTPHEADER => [
                 'Authorization: Bearer ' . $chatModelToken,
                 'Content-Type: application/json',
@@ -1474,52 +1508,72 @@ class AiSmartTalk extends Module
 
     public function hookActionProductUpdate($params)
     {
-        // Check if product sync is enabled
-        if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
-            return;
+        try {
+            // Check if product sync is enabled
+            if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+                return;
+            }
+
+            $idProduct = (int) $params['id_product'];
+            $currentQuantity = (int) StockAvailable::getQuantityAvailableByProduct($idProduct);
+
+            if ($currentQuantity == 0) {
+                return;
+            }
+
+            // Use dedicated sync table for debounce check (3 seconds)
+            if (!AiSmartTalkProductSync::canSync($idProduct, 3)) {
+                return;
+            }
+
+            $api = new SynchProductsToAiSmartTalk($this->context);
+            $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
+
+            // Update last sync time in dedicated table
+            AiSmartTalkProductSync::updateLastSyncTime($idProduct);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionProductUpdate error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
-
-        $idProduct = (int) $params['id_product'];
-        $currentQuantity = (int) StockAvailable::getQuantityAvailableByProduct($idProduct);
-
-        if ($currentQuantity == 0) {
-            return;
-        }
-
-        // Use dedicated sync table for debounce check (3 seconds)
-        if (!AiSmartTalkProductSync::canSync($idProduct, 3)) {
-            return;
-        }
-
-        $api = new SynchProductsToAiSmartTalk($this->context);
-        $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
-
-        // Update last sync time in dedicated table
-        AiSmartTalkProductSync::updateLastSyncTime($idProduct);
     }
 
     public function hookActionProductCreate($params)
     {
-        // Check if product sync is enabled
-        if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
-            return;
-        }
+        try {
+            // Check if product sync is enabled
+            if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+                return;
+            }
 
-        $idProduct = $params['id_product'];
-        $api = new SynchProductsToAiSmartTalk($this->context);
-        $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
+            $idProduct = $params['id_product'];
+            $api = new SynchProductsToAiSmartTalk($this->context);
+            $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionProductCreate error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     public function hookActionProductDelete($params)
     {
-        // Check if product sync is enabled
-        if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
-            return;
-        }
+        try {
+            // Check if product sync is enabled
+            if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+                return;
+            }
 
-        $idProduct = $params['id_product'];
-        $api = new CleanProductDocuments();
-        $api(['productIds' => [(string) $idProduct]]);
+            $idProduct = (int) $params['id_product'];
+            $shopId = (int) $this->context->shop->id;
+
+            // Only delete from AI SmartTalk if product matched sync filters
+            // (otherwise it was never synced in the first place)
+            if (!SyncFilterHelper::shouldProductBeSynced($idProduct, $shopId)) {
+                return;
+            }
+
+            $api = new CleanProductDocuments();
+            $api(['productIds' => [(string) $idProduct]]);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionProductDelete error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     /**
@@ -1530,12 +1584,20 @@ class AiSmartTalk extends Module
      */
     public function hookActionProductQuantityUpdate($params)
     {
-        $this->handleQuantityUpdate($params);
+        try {
+            $this->handleQuantityUpdate($params);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionProductQuantityUpdate error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     public function hookActionUpdateQuantity($params)
     {
-        $this->handleQuantityUpdate($params);
+        try {
+            $this->handleQuantityUpdate($params);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionUpdateQuantity error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     /**
@@ -1575,11 +1637,15 @@ class AiSmartTalk extends Module
 
                 $this->triggerOutOfStockWebhook($idProduct, $idProductAttribute, 1);
 
-                // Product sync: remove from AI SmartTalk
+                // Product sync: remove from AI SmartTalk if it matched filters
                 if ((bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
-                    $api = new CleanProductDocuments();
-                    $api(['productIds' => [(string) $idProduct]]);
-                    AiSmartTalkProductSync::markAsNotSynced($idProduct);
+                    $shopId = (int) $this->context->shop->id;
+                    // Only delete if product matched sync filters (was actually synced)
+                    if (SyncFilterHelper::shouldProductBeSynced($idProduct, $shopId)) {
+                        $api = new CleanProductDocuments();
+                        $api(['productIds' => [(string) $idProduct]]);
+                        AiSmartTalkProductSync::markAsNotSynced($idProduct);
+                    }
                 }
             }
         } else {
@@ -1692,36 +1758,54 @@ class AiSmartTalk extends Module
 
     public function hookActionCustomerAccountAdd($params)
     {
-        $customer = $params['newCustomer'];
+        try {
+            if (!isset($params['newCustomer'])) {
+                return;
+            }
+            $customer = $params['newCustomer'];
 
-        // Customer sync
-        if (\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
-            $sync = new CustomerSync($this->context);
-            $sync->exportCustomerBatch([$customer]);
-        }
+            // Customer sync
+            if (\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
+                $sync = new CustomerSync($this->context);
+                $sync->exportCustomerBatch([$customer]);
+            }
 
-        // Webhook: customer registered
-        if (WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_CUSTOMER_REGISTERED)) {
-            $webhookHandler = new WebhookHandler($this->context);
-            $webhookHandler->triggerCustomerRegistered($customer);
+            // Webhook: customer registered
+            if (WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_CUSTOMER_REGISTERED)) {
+                $webhookHandler = new WebhookHandler($this->context);
+                $webhookHandler->triggerCustomerRegistered($customer);
+            }
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionCustomerAccountAdd error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
     }
 
     public function hookActionCustomerAccountUpdate($params)
     {
-        if (!\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
-            return;
-        }
+        try {
+            if (!\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
+                return;
+            }
 
-        $customer = $params['customer'];
-        $sync = new CustomerSync($this->context);
-        $sync->exportCustomerBatch([$customer]);
+            if (!isset($params['customer'])) {
+                return;
+            }
+            $customer = $params['customer'];
+            $sync = new CustomerSync($this->context);
+            $sync->exportCustomerBatch([$customer]);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionCustomerAccountUpdate error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     public function hookActionCustomerDelete($params)
     {
-        // Implementation for customer deletion sync
-        // This would call a different API endpoint to remove the customer from AI SmartTalk
+        try {
+            // Implementation for customer deletion sync
+            // This would call a different API endpoint to remove the customer from AI SmartTalk
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionCustomerDelete error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     // =========================================================================
@@ -1736,25 +1820,29 @@ class AiSmartTalk extends Module
      */
     public function hookActionOrderStatusPostUpdate($params)
     {
-        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_ORDER_STATUS_CHANGED)) {
-            return;
+        try {
+            if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_ORDER_STATUS_CHANGED)) {
+                return;
+            }
+
+            $newOrderState = $params['newOrderStatus'] ?? null;
+            $oldOrderState = $params['oldOrderStatus'] ?? null;
+            $orderId = $params['id_order'] ?? null;
+
+            if (!$newOrderState || !$orderId) {
+                return;
+            }
+
+            $order = new \Order((int) $orderId);
+            if (!\Validate::isLoadedObject($order)) {
+                return;
+            }
+
+            $webhookHandler = new WebhookHandler($this->context);
+            $webhookHandler->triggerOrderStatusChanged($order, $newOrderState, $oldOrderState);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionOrderStatusPostUpdate error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
-
-        $newOrderState = $params['newOrderStatus'] ?? null;
-        $oldOrderState = $params['oldOrderStatus'] ?? null;
-        $orderId = $params['id_order'] ?? null;
-
-        if (!$newOrderState || !$orderId) {
-            return;
-        }
-
-        $order = new \Order((int) $orderId);
-        if (!\Validate::isLoadedObject($order)) {
-            return;
-        }
-
-        $webhookHandler = new WebhookHandler($this->context);
-        $webhookHandler->triggerOrderStatusChanged($order, $newOrderState, $oldOrderState);
     }
 
     /**
@@ -1765,22 +1853,26 @@ class AiSmartTalk extends Module
      */
     public function hookActionPaymentConfirmation($params)
     {
-        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_PAYMENT_RECEIVED)) {
-            return;
-        }
+        try {
+            if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_PAYMENT_RECEIVED)) {
+                return;
+            }
 
-        $orderId = $params['id_order'] ?? null;
-        if (!$orderId) {
-            return;
-        }
+            $orderId = $params['id_order'] ?? null;
+            if (!$orderId) {
+                return;
+            }
 
-        $order = new \Order((int) $orderId);
-        if (!\Validate::isLoadedObject($order)) {
-            return;
-        }
+            $order = new \Order((int) $orderId);
+            if (!\Validate::isLoadedObject($order)) {
+                return;
+            }
 
-        $webhookHandler = new WebhookHandler($this->context);
-        $webhookHandler->triggerPaymentReceived($order, $order->payment);
+            $webhookHandler = new WebhookHandler($this->context);
+            $webhookHandler->triggerPaymentReceived($order, $order->payment);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionPaymentConfirmation error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     /**
@@ -1791,30 +1883,34 @@ class AiSmartTalk extends Module
      */
     public function hookActionValidateOrder($params)
     {
-        $order = $params['order'] ?? null;
-        $customer = $params['customer'] ?? null;
-        $orderStatus = $params['orderStatus'] ?? null;
+        try {
+            $order = $params['order'] ?? null;
+            $customer = $params['customer'] ?? null;
+            $orderStatus = $params['orderStatus'] ?? null;
 
-        if (!$order || !\Validate::isLoadedObject($order)) {
-            return;
-        }
-
-        $webhookHandler = new WebhookHandler($this->context);
-
-        // Webhook: new order
-        if (WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_NEW_ORDER)) {
-            if (!$customer) {
-                $customer = new \Customer((int) $order->id_customer);
+            if (!$order || !\Validate::isLoadedObject($order)) {
+                return;
             }
-            $webhookHandler->triggerNewOrder($order, $customer, $orderStatus);
-        }
 
-        // Webhook: payment received (only if order is already paid)
-        if (WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_PAYMENT_RECEIVED)) {
-            $state = $orderStatus ?? new \OrderState((int) $order->current_state);
-            if ($state->paid) {
-                $webhookHandler->triggerPaymentReceived($order, $order->payment);
+            $webhookHandler = new WebhookHandler($this->context);
+
+            // Webhook: new order
+            if (WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_NEW_ORDER)) {
+                if (!$customer) {
+                    $customer = new \Customer((int) $order->id_customer);
+                }
+                $webhookHandler->triggerNewOrder($order, $customer, $orderStatus);
             }
+
+            // Webhook: payment received (only if order is already paid)
+            if (WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_PAYMENT_RECEIVED)) {
+                $state = $orderStatus ?? new \OrderState((int) $order->current_state);
+                if ($state->paid) {
+                    $webhookHandler->triggerPaymentReceived($order, $order->payment);
+                }
+            }
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionValidateOrder error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
     }
 
@@ -1826,17 +1922,21 @@ class AiSmartTalk extends Module
      */
     public function hookActionOrderReturn($params)
     {
-        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_RETURN_REQUESTED)) {
-            return;
-        }
+        try {
+            if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_RETURN_REQUESTED)) {
+                return;
+            }
 
-        $orderReturn = $params['orderReturn'] ?? null;
-        if (!$orderReturn || !\Validate::isLoadedObject($orderReturn)) {
-            return;
-        }
+            $orderReturn = $params['orderReturn'] ?? null;
+            if (!$orderReturn || !\Validate::isLoadedObject($orderReturn)) {
+                return;
+            }
 
-        $webhookHandler = new WebhookHandler($this->context);
-        $webhookHandler->triggerReturnRequested($orderReturn);
+            $webhookHandler = new WebhookHandler($this->context);
+            $webhookHandler->triggerReturnRequested($orderReturn);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionOrderReturn error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     /**
@@ -1850,28 +1950,32 @@ class AiSmartTalk extends Module
      */
     public function hookActionObjectProductCommentValidateAfter($params)
     {
-        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_REVIEW_POSTED)) {
-            return;
+        try {
+            if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_REVIEW_POSTED)) {
+                return;
+            }
+
+            $productComment = $params['object'] ?? null;
+            if (!$productComment) {
+                return;
+            }
+
+            $commentData = [
+                'id_product' => $productComment->id_product ?? 0,
+                'id_customer' => $productComment->id_customer ?? 0,
+                'customer_name' => $productComment->customer_name ?? '',
+                'grade' => $productComment->grade ?? 0,
+                'title' => $productComment->title ?? '',
+                'content' => $productComment->content ?? '',
+                'date_add' => $productComment->date_add ?? date('Y-m-d H:i:s'),
+                'validate' => $productComment->validate ?? false,
+            ];
+
+            $webhookHandler = new WebhookHandler($this->context);
+            $webhookHandler->triggerReviewPosted($commentData);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionObjectProductCommentValidateAfter error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
-
-        $productComment = $params['object'] ?? null;
-        if (!$productComment) {
-            return;
-        }
-
-        $commentData = [
-            'id_product' => $productComment->id_product ?? 0,
-            'id_customer' => $productComment->id_customer ?? 0,
-            'customer_name' => $productComment->customer_name ?? '',
-            'grade' => $productComment->grade ?? 0,
-            'title' => $productComment->title ?? '',
-            'content' => $productComment->content ?? '',
-            'date_add' => $productComment->date_add ?? date('Y-m-d H:i:s'),
-            'validate' => $productComment->validate ?? false,
-        ];
-
-        $webhookHandler = new WebhookHandler($this->context);
-        $webhookHandler->triggerReviewPosted($commentData);
     }
 
     /**
@@ -1883,18 +1987,22 @@ class AiSmartTalk extends Module
      */
     public function hookActionProductAdd($params)
     {
-        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_PRODUCT_CREATED)) {
-            return;
-        }
+        try {
+            if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_PRODUCT_CREATED)) {
+                return;
+            }
 
-        $productId = (int) ($params['id_product'] ?? 0);
-        if (!$productId) {
-            return;
-        }
+            $productId = (int) ($params['id_product'] ?? 0);
+            if (!$productId) {
+                return;
+            }
 
-        $product = $params['product'] ?? null;
-        $webhookHandler = new WebhookHandler($this->context);
-        $webhookHandler->triggerProductCreated($productId, $product);
+            $product = $params['product'] ?? null;
+            $webhookHandler = new WebhookHandler($this->context);
+            $webhookHandler->triggerProductCreated($productId, $product);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionProductAdd error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     /**
@@ -1906,22 +2014,26 @@ class AiSmartTalk extends Module
      */
     public function hookActionCartSave($params)
     {
-        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_CART_UPDATED)) {
-            return;
-        }
+        try {
+            if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_CART_UPDATED)) {
+                return;
+            }
 
-        $cart = $params['cart'] ?? null;
-        if (!$cart || !\Validate::isLoadedObject($cart)) {
-            return;
-        }
+            $cart = $params['cart'] ?? null;
+            if (!$cart || !\Validate::isLoadedObject($cart)) {
+                return;
+            }
 
-        // Only trigger for carts with products and a customer
-        if (!$cart->id_customer || count($cart->getProducts()) === 0) {
-            return;
-        }
+            // Only trigger for carts with products and a customer
+            if (!$cart->id_customer || count($cart->getProducts()) === 0) {
+                return;
+            }
 
-        $webhookHandler = new WebhookHandler($this->context);
-        $webhookHandler->triggerCartUpdated($cart);
+            $webhookHandler = new WebhookHandler($this->context);
+            $webhookHandler->triggerCartUpdated($cart);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionCartSave error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     /**
@@ -1933,20 +2045,24 @@ class AiSmartTalk extends Module
      */
     public function hookActionOrderSlipAdd($params)
     {
-        if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_REFUND_CREATED)) {
-            return;
+        try {
+            if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_REFUND_CREATED)) {
+                return;
+            }
+
+            $order = $params['order'] ?? null;
+            if (!$order || !\Validate::isLoadedObject($order)) {
+                return;
+            }
+
+            $productList = $params['productList'] ?? [];
+            $qtyList = $params['qtyList'] ?? [];
+
+            $webhookHandler = new WebhookHandler($this->context);
+            $webhookHandler->triggerRefundCreated($order, $productList, $qtyList);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionOrderSlipAdd error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
-
-        $order = $params['order'] ?? null;
-        if (!$order || !\Validate::isLoadedObject($order)) {
-            return;
-        }
-
-        $productList = $params['productList'] ?? [];
-        $qtyList = $params['qtyList'] ?? [];
-
-        $webhookHandler = new WebhookHandler($this->context);
-        $webhookHandler->triggerRefundCreated($order, $productList, $qtyList);
     }
 
     /**
