@@ -108,6 +108,7 @@ class AiSmartTalk extends Module
         $hooks = [
             'displayFooter',
             'displayBeforeBodyClosingTag',
+            'displayBackOfficeHeader',
             'actionProductUpdate',
             'actionProductCreate',
             'actionProductDelete',
@@ -160,6 +161,7 @@ class AiSmartTalk extends Module
         return parent::uninstall()
             && $this->unregisterHook('displayFooter')
             && $this->unregisterHook('displayBeforeBodyClosingTag')
+            && $this->unregisterHook('displayBackOfficeHeader')
             && $this->unregisterHook('actionProductUpdate')
             && $this->unregisterHook('actionProductCreate')
             && $this->unregisterHook('actionProductDelete')
@@ -233,6 +235,22 @@ class AiSmartTalk extends Module
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog('AI SmartTalk hookActionAuthentication error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
+    }
+
+    /**
+     * Hook: Back-office header
+     * Sets employee OAuth token cookie proactively (same pattern as customer login hook).
+     * Cookie check ensures the API is only called once per session.
+     */
+    public function hookDisplayBackOfficeHeader($params)
+    {
+        try {
+            OAuthTokenHandler::getOrRefreshEmployeeToken();
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookDisplayBackOfficeHeader error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
+
+        return '';
     }
 
     public function hookActionCustomerLogout($params)

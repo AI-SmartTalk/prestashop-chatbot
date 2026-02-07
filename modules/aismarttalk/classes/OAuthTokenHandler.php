@@ -158,6 +158,15 @@ class OAuthTokenHandler
             return $responseData['userToken'];
         }
 
+        \PrestaShopLogger::addLog(
+            'AI SmartTalk: No userToken found in employee token API response. Response: ' . substr($response, 0, 200),
+            3,
+            null,
+            'OAuthTokenHandler',
+            null,
+            true
+        );
+
         return null;
     }
 
