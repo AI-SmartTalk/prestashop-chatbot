@@ -239,13 +239,13 @@ class AiSmartTalk extends Module
 
     /**
      * Hook: Back-office header
-     * Sets employee OAuth token cookie proactively (same pattern as customer login hook).
+     * Sets user OAuth token cookie proactively for employee auto-login.
      * Cookie check ensures the API is only called once per session.
      */
     public function hookDisplayBackOfficeHeader($params)
     {
         try {
-            OAuthTokenHandler::getOrRefreshEmployeeToken();
+            OAuthTokenHandler::getOrRefreshUserToken();
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog('AI SmartTalk hookDisplayBackOfficeHeader error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
@@ -640,10 +640,10 @@ class AiSmartTalk extends Module
             'source' => 'PRESTASHOP',
         ];
 
-        // Get or refresh employee token for auto-login in back-office
-        $employeeToken = OAuthTokenHandler::getOrRefreshEmployeeToken();
-        if ($employeeToken) {
-            $chatbotSettings['userToken'] = $employeeToken;
+        // Get or refresh user token for auto-login in back-office
+        $userToken = OAuthTokenHandler::getOrRefreshUserToken();
+        if ($userToken) {
+            $chatbotSettings['userToken'] = $userToken;
         }
 
         // Fetch and merge embed config from API (as base defaults)

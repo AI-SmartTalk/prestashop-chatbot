@@ -2915,6 +2915,10 @@ document.addEventListener('DOMContentLoaded', function() {
 <!-- AI SmartTalk Chatbot Preview (Admin) -->
 <script>
 window.chatbotSettings = JSON.parse(atob("{$chatbotSettingsEncoded|escape:'html':'UTF-8'}"));
+window.onChatbotLogout = function() {
+  document.cookie = 'ai_smarttalk_oauth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;';
+  delete window.chatbotSettings.userToken;
+};
 </script>
 <script src="{$cdnUrl|escape:'html':'UTF-8'}/universal-chatbot.js" async></script>
 {/if}

@@ -48,7 +48,7 @@ class OAuthTokenHandler
             $responseData = json_decode($response, true);
             if (isset($responseData['userToken'])) {
                 $loginCookieLifetime = time() + (int) \Configuration::get('PS_COOKIE_LIFETIME_BO') * 3600;
-                setcookie('ai_smarttalk_oauth_token', $responseData['userToken'], $loginCookieLifetime, '/', '', \Tools::usingSecureMode(), true);
+                setcookie('ai_smarttalk_oauth_token', $responseData['userToken'], $loginCookieLifetime, '/', '', \Tools::usingSecureMode(), false);
                 $_COOKIE['ai_smarttalk_oauth_token'] = $responseData['userToken'];
             } else {
                 \PrestaShopLogger::addLog(
@@ -68,13 +68,13 @@ class OAuthTokenHandler
      */
     public static function unsetOAuthTokenCookie()
     {
-        setcookie('ai_smarttalk_oauth_token', '', time() - 3600, '/', '', \Tools::usingSecureMode(), true);
+        setcookie('ai_smarttalk_oauth_token', '', time() - 3600, '/', '', \Tools::usingSecureMode(), false);
         unset($_COOKIE['ai_smarttalk_oauth_token']);
     }
 
     /**
      * Get or refresh user token for chatbot auto-login
-     * Call this on page load to ensure the token is valid
+     * Works for both front-office customers and back-office employees.
      *
      * @return string|null The user token or null if not available
      */
@@ -85,14 +85,21 @@ class OAuthTokenHandler
             return $_COOKIE['ai_smarttalk_oauth_token'];
         }
 
-        // Check if customer is logged in
         $context = \Context::getContext();
-        if (!$context->customer || !$context->customer->isLogged()) {
+
+        // Check if customer is logged in (front-office)
+        if ($context->customer && $context->customer->isLogged()) {
+            $response = self::requestUserToken($context->customer);
+        // Check if employee is logged in (back-office)
+        } elseif ($context->employee && $context->employee->id) {
+            $response = self::requestTokenForUser(
+                $context->employee->email,
+                'employee_' . (string) $context->employee->id,
+                $context->employee->firstname . ' ' . $context->employee->lastname
+            );
+        } else {
             return null;
         }
-
-        // Customer is logged in but no token - request one
-        $response = self::requestUserToken($context->customer);
 
         if ($response === false) {
             \PrestaShopLogger::addLog(
@@ -109,63 +116,10 @@ class OAuthTokenHandler
         $responseData = json_decode($response, true);
         if (isset($responseData['userToken'])) {
             $loginCookieLifetime = time() + (int) \Configuration::get('PS_COOKIE_LIFETIME_BO') * 3600;
-            setcookie('ai_smarttalk_oauth_token', $responseData['userToken'], $loginCookieLifetime, '/', '', \Tools::usingSecureMode(), true);
+            setcookie('ai_smarttalk_oauth_token', $responseData['userToken'], $loginCookieLifetime, '/', '', \Tools::usingSecureMode(), false);
             $_COOKIE['ai_smarttalk_oauth_token'] = $responseData['userToken'];
             return $responseData['userToken'];
         }
-
-        return null;
-    }
-
-    /**
-     * Get or refresh employee token for chatbot auto-login in back-office
-     *
-     * @return string|null The user token or null if not available
-     */
-    public static function getOrRefreshEmployeeToken()
-    {
-        // Check if employee cookie exists and is valid
-        if (isset($_COOKIE['ai_smarttalk_employee_token']) && !empty($_COOKIE['ai_smarttalk_employee_token'])) {
-            return $_COOKIE['ai_smarttalk_employee_token'];
-        }
-
-        // Check if employee is logged in
-        $context = \Context::getContext();
-        if (!$context->employee || !$context->employee->id) {
-            return null;
-        }
-
-        // Employee is logged in but no token - request one
-        $response = self::requestEmployeeToken($context->employee);
-
-        if ($response === false) {
-            \PrestaShopLogger::addLog(
-                'AI SmartTalk: Error refreshing employee token.',
-                3,
-                null,
-                'OAuthTokenHandler',
-                null,
-                true
-            );
-            return null;
-        }
-
-        $responseData = json_decode($response, true);
-        if (isset($responseData['userToken'])) {
-            $loginCookieLifetime = time() + (int) \Configuration::get('PS_COOKIE_LIFETIME_BO') * 3600;
-            setcookie('ai_smarttalk_employee_token', $responseData['userToken'], $loginCookieLifetime, '/', '', \Tools::usingSecureMode(), true);
-            $_COOKIE['ai_smarttalk_employee_token'] = $responseData['userToken'];
-            return $responseData['userToken'];
-        }
-
-        \PrestaShopLogger::addLog(
-            'AI SmartTalk: No userToken found in employee token API response. Response: ' . substr($response, 0, 200),
-            3,
-            null,
-            'OAuthTokenHandler',
-            null,
-            true
-        );
 
         return null;
     }
@@ -180,19 +134,6 @@ class OAuthTokenHandler
     private static function requestUserToken($customer)
     {
         return self::requestTokenForUser($customer->email, (string) $customer->id, $customer->firstname . ' ' . $customer->lastname);
-    }
-
-    /**
-     * Request employee token from AI SmartTalk API
-     * Uses the v1 API endpoint for auto-login
-     *
-     * @param object $employee The employee object
-     * @return string|false The API response or false on error
-     */
-    private static function requestEmployeeToken($employee)
-    {
-        // Use 'employee_' prefix to distinguish from customers
-        return self::requestTokenForUser($employee->email, 'employee_' . (string) $employee->id, $employee->firstname . ' ' . $employee->lastname);
     }
 
     /**
