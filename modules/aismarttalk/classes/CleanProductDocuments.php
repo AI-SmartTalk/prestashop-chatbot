@@ -22,9 +22,7 @@ if (!defined('_PS_VERSION_')) {
 
 require_once dirname(__FILE__) . '/../vendor/autoload.php';
 
-use PrestaShop\PrestaShop\Adapter\Module\Module;
-
-class CleanProductDocuments extends Module
+class CleanProductDocuments
 {
     private $productIds;
 

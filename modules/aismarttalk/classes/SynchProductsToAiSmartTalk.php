@@ -22,9 +22,7 @@ if (!defined('_PS_VERSION_')) {
 
 require_once dirname(__FILE__) . '/../vendor/autoload.php';
 
-use PrestaShop\PrestaShop\Adapter\Module\Module;
-
-class SynchProductsToAiSmartTalk extends Module
+class SynchProductsToAiSmartTalk
 {
     private $forceSync = false;
     private $productIds = [];
@@ -33,9 +31,9 @@ class SynchProductsToAiSmartTalk extends Module
     private $context;
 
     /**
-     * @param \Context|null $context PrestaShop context (injected dependency)
+     * @param \Context $context PrestaShop context (injected dependency)
      */
-    public function __construct(\Context $context = null)
+    public function __construct(\Context $context)
     {
         $this->context = $context;
     }
@@ -153,10 +151,8 @@ class SynchProductsToAiSmartTalk extends Module
 
     public function markProductsAsSynchronized($productIds)
     {
-        $ids = implode(',', array_map('intval', $productIds));
-        $sql = 'UPDATE ' . _DB_PREFIX_ . 'product SET aismarttalk_synch = 1 WHERE id_product IN (' . $ids . ')';
-
-        return \Db::getInstance()->execute($sql);
+        $idShop = (int) $this->getContext()->shop->id;
+        return AiSmartTalkProductSync::markProductsAsSynced($productIds, $idShop);
     }
 
     private function postToApi($documentDatas)
@@ -177,10 +173,14 @@ class SynchProductsToAiSmartTalk extends Module
         ]));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type:application/json']);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
 
         $result = curl_exec($ch);
         if ($result === false) {
             \Configuration::updateValue('AI_SMART_TALK_ERROR', curl_error($ch));
+            curl_close($ch);
+
+            return false;
         } else {
             \Configuration::deleteByName('AI_SMART_TALK_ERROR');
         }
@@ -226,11 +226,34 @@ class SynchProductsToAiSmartTalk extends Module
                 AND (sp.from = "0000-00-00 00:00:00" OR sp.from <= NOW())
                 AND (sp.to = "0000-00-00 00:00:00" OR sp.to >= NOW())
                 AND sp.id_shop = ' . $defaultShopId . '
+            LEFT JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product
+                AND aps.id_shop = ' . $defaultShopId . '
             WHERE pl.id_lang = ' . $defaultLangId . ' AND cl.id_lang = ' . $defaultLangId . ' AND p.active = 1
                 AND COALESCE(sa.quantity, 0) > 0';
 
-        $sql .= $this->forceSync === false ? ' AND p.aismarttalk_synch = 0' : '';
-        $sql .= $this->productIds ? ' AND p.id_product IN (' . implode(',', $this->productIds) . ')' : '';
+        // If not forcing sync, only get products that are not yet synced
+        if ($this->forceSync === false) {
+            $sql .= ' AND (aps.synced IS NULL OR aps.synced = 0)';
+        }
+
+        // Filter by specific product IDs if provided (with proper validation)
+        if (!empty($this->productIds)) {
+            $safeIds = array_map('intval', $this->productIds);
+            $sql .= ' AND p.id_product IN (' . implode(',', $safeIds) . ')';
+        }
+
+        // Apply category filters from SyncFilterHelper
+        $categoryFilter = SyncFilterHelper::buildCategoryFilterSQL($defaultShopId);
+        if (!empty($categoryFilter)) {
+            $sql .= $categoryFilter;
+        }
+
+        // Apply product type filters from SyncFilterHelper
+        $typeFilter = SyncFilterHelper::buildProductTypeFilterSQL();
+        if (!empty($typeFilter)) {
+            $sql .= $typeFilter;
+        }
+
         $products = \Db::getInstance()->executeS($sql);
 
         return $products;
@@ -246,10 +269,12 @@ class SynchProductsToAiSmartTalk extends Module
         // Récupérer tous les produits qui ont été synchronisés mais qui ont maintenant stock <= 0
         $sql = 'SELECT p.id_product
                 FROM ' . _DB_PREFIX_ . 'product p
+                INNER JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product
+                    AND aps.id_shop = ' . $defaultShopId . '
                 LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa ON p.id_product = sa.id_product
                     AND sa.id_product_attribute = 0
                     AND sa.id_shop = ' . $defaultShopId . '
-                WHERE p.aismarttalk_synch = 1
+                WHERE aps.synced = 1
                     AND COALESCE(sa.quantity, 0) <= 0';
 
         $outOfStockProducts = \Db::getInstance()->executeS($sql);
@@ -261,10 +286,8 @@ class SynchProductsToAiSmartTalk extends Module
             $cleanProductDocuments = new \PrestaShop\AiSmartTalk\CleanProductDocuments();
             $cleanProductDocuments(['productIds' => array_map('strval', $productIds)]);
 
-            // Marquer ces produits comme non synchronisés dans la base de données
-            $ids = implode(',', array_map('intval', $productIds));
-            $sql = 'UPDATE ' . _DB_PREFIX_ . 'product SET aismarttalk_synch = 0 WHERE id_product IN (' . $ids . ')';
-            \Db::getInstance()->execute($sql);
+            // Marquer ces produits comme non synchronisés dans la table dédiée
+            AiSmartTalkProductSync::markProductsAsNotSynced($productIds, $defaultShopId);
         }
     }
 }

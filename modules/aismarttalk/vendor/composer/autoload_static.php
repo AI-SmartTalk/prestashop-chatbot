@@ -23,11 +23,15 @@ class ComposerStaticInit1a64e4a2bee93f2d2c517a3b98c5161e
     public static $classMap = array (
         'AiSmartTalk' => __DIR__ . '/../..' . '/aismarttalk.php',
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'PrestaShop\\AiSmartTalk\\AiSmartTalkCache' => __DIR__ . '/../..' . '/classes/AiSmartTalkCache.php',
+        'PrestaShop\\AiSmartTalk\\AiSmartTalkProductSync' => __DIR__ . '/../..' . '/classes/AiSmartTalkProductSync.php',
         'PrestaShop\\AiSmartTalk\\CleanProductDocuments' => __DIR__ . '/../..' . '/classes/CleanProductDocuments.php',
         'PrestaShop\\AiSmartTalk\\CustomerSync' => __DIR__ . '/../..' . '/classes/CustomerSync.php',
         'PrestaShop\\AiSmartTalk\\OAuthHandler' => __DIR__ . '/../..' . '/classes/OAuthHandler.php',
         'PrestaShop\\AiSmartTalk\\OAuthTokenHandler' => __DIR__ . '/../..' . '/classes/OAuthTokenHandler.php',
+        'PrestaShop\\AiSmartTalk\\SyncFilterHelper' => __DIR__ . '/../..' . '/classes/SyncFilterHelper.php',
         'PrestaShop\\AiSmartTalk\\SynchProductsToAiSmartTalk' => __DIR__ . '/../..' . '/classes/SynchProductsToAiSmartTalk.php',
+        'PrestaShop\\AiSmartTalk\\WebhookHandler' => __DIR__ . '/../..' . '/classes/WebhookHandler.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

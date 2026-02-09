@@ -14,3266 +14,3042 @@
  *}
 
 <style>
-.aismarttalk-config .panel {
-    border-radius: 4px;
-    margin-bottom: 20px;
+/* ================================================
+   AI SMART TALK - MODERN ADMIN INTERFACE
+   ================================================ */
+
+/* Reset & Base */
+.ast-app {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+    background: #f5f7fb;
+    min-height: 100vh;
+    margin: -20px;
+    padding: 0;
 }
-.aismarttalk-config .panel-heading {
+
+/* Header */
+.ast-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: #fff;
-    border-radius: 4px 4px 0 0;
-    padding: 15px 20px;
-}
-.aismarttalk-config .panel-heading h3 {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-}
-.aismarttalk-config .panel-heading h3 i {
-    margin-right: 10px;
-}
-.aismarttalk-config .connection-status {
+    padding: 24px 32px;
     display: flex;
+    justify-content: space-between;
     align-items: center;
-    padding: 20px;
-    border-radius: 4px;
-    margin-bottom: 15px;
-}
-.aismarttalk-config .connection-status.connected {
-    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
-    color: #fff;
-}
-.aismarttalk-config .connection-status.disconnected {
-    background: #f8f9fa;
-    border: 2px dashed #dee2e6;
-    color: #495057;
-}
-.aismarttalk-config .connection-status i {
-    font-size: 24px;
-    margin-right: 15px;
-}
-.aismarttalk-config .connection-status .status-text h4 {
-    margin: 0 0 5px 0;
-    font-weight: 600;
-}
-.aismarttalk-config .connection-status .status-text p {
-    margin: 0;
-    opacity: 0.9;
-}
-.aismarttalk-config .btn-connect {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    color: #fff;
-    padding: 12px 30px;
-    font-size: 16px;
-    border-radius: 4px;
-    transition: transform 0.2s, box-shadow 0.2s;
-}
-.aismarttalk-config .btn-connect:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    color: #fff;
-}
-.aismarttalk-config .settings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
-}
-.aismarttalk-config .setting-card {
-    background: #fff;
-    border: 1px solid #e9ecef;
-    border-radius: 4px;
-    padding: 20px;
-}
-.aismarttalk-config .setting-card h4 {
-    margin: 0 0 15px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #495057;
-    display: flex;
-    align-items: center;
-}
-.aismarttalk-config .setting-card h4 i {
-    margin-right: 10px;
-    color: #667eea;
-}
-.aismarttalk-config .sync-actions {
-    display: flex;
     flex-wrap: wrap;
-    gap: 10px;
-    margin-top: 15px;
-}
-.aismarttalk-config .advanced-toggle {
-    cursor: pointer;
-    padding: 15px 20px;
-    background: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 15px;
-}
-.aismarttalk-config .advanced-toggle:hover {
-    background: #e9ecef;
-}
-.aismarttalk-config .advanced-content {
-    display: none;
-}
-.aismarttalk-config .advanced-content.show {
-    display: block;
-}
-
-/* Chatbot Customization Styles */
-.aismarttalk-config .button-type-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
-    margin-bottom: 20px;
-}
-.aismarttalk-config .button-type-card {
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    padding: 15px 10px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    background: #fff;
-}
-.aismarttalk-config .button-type-card:hover {
-    border-color: #667eea;
-    background: #f8f9ff;
-}
-.aismarttalk-config .button-type-card.selected {
-    border-color: #667eea;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
-}
-.aismarttalk-config .button-type-card .preview {
-    font-size: 24px;
-    margin-bottom: 8px;
-}
-.aismarttalk-config .button-type-card .label {
-    font-size: 12px;
-    font-weight: 500;
-    color: #495057;
-}
-.aismarttalk-config .button-type-card input[type="radio"] {
-    display: none;
-}
-
-.aismarttalk-config .layout-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 15px;
-}
-.aismarttalk-config .layout-grid .form-group {
-    margin-bottom: 0;
-}
-.aismarttalk-config .layout-grid label {
-    font-weight: 500;
-    font-size: 13px;
-    color: #495057;
-    margin-bottom: 8px;
-    display: block;
-}
-
-.aismarttalk-config .color-section {
-    background: #f8f9fa;
-    border-radius: 8px;
-    padding: 20px;
-    margin-top: 20px;
-}
-.aismarttalk-config .color-section h5 {
-    margin: 0 0 15px 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #495057;
-}
-.aismarttalk-config .color-inputs {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
 }
-.aismarttalk-config .color-input-group {
+.ast-header-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 16px;
 }
-.aismarttalk-config .color-input-group label {
-    font-weight: 500;
-    font-size: 13px;
-    color: #495057;
-    min-width: 80px;
-}
-.aismarttalk-config .color-input-wrapper {
+.ast-logo {
+    width: 48px;
+    height: 48px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 12px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex: 1;
+    justify-content: center;
+    font-size: 24px;
 }
-.aismarttalk-config .color-input-wrapper input[type="color"] {
-    width: 40px;
-    height: 40px;
-    border: 2px solid #e9ecef;
-    border-radius: 8px;
-    cursor: pointer;
-    padding: 2px;
-}
-.aismarttalk-config .color-input-wrapper input[type="text"] {
-    flex: 1;
-    max-width: 100px;
-}
-.aismarttalk-config .color-input-wrapper input[type="checkbox"] {
-    margin-left: 10px;
-}
-
-.aismarttalk-config .features-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 15px;
-}
-.aismarttalk-config .feature-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 12px 15px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
-}
-.aismarttalk-config .feature-item .feature-label {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-weight: 500;
-    font-size: 13px;
-    color: #495057;
-}
-.aismarttalk-config .feature-item .feature-label i {
-    color: #667eea;
-    width: 20px;
-    text-align: center;
-}
-.aismarttalk-config .feature-item select {
-    width: auto;
-    min-width: 130px;
-}
-.aismarttalk-config .badge-new {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+.ast-header-title h1 {
+    margin: 0;
     color: #fff;
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    margin-left: 5px;
-    font-weight: 600;
+    font-size: 22px;
+    font-weight: 700;
 }
-
-.aismarttalk-config .section-divider {
-    border-top: 1px solid #e9ecef;
-    margin: 25px 0;
-    padding-top: 25px;
+.ast-header-title p {
+    margin: 4px 0 0;
+    color: rgba(255,255,255,0.8);
+    font-size: 13px;
 }
-.aismarttalk-config .section-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 15px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.aismarttalk-config .section-title i {
-    color: #667eea;
-}
-
-/* SmartFlow Styles - Legacy */
-.aismarttalk-smartflows-loading,
-.aismarttalk-smartflows-empty,
-.aismarttalk-templates-loading,
-.aismarttalk-templates-empty {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 8px;
-    color: #6c757d;
-}
-
-.aismarttalk-smartflows-grid,
-.aismarttalk-templates-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 15px;
-}
-
-.aismarttalk-smartflow-card {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    background: #fff;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    transition: all 0.2s ease;
-}
-
-.aismarttalk-smartflow-card:hover {
-    border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-}
-
-.aismarttalk-smartflow-info h5 {
-    margin: 0 0 5px 0;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.aismarttalk-smartflow-info p {
-    margin: 0 0 8px 0;
-    font-size: 12px;
-    color: #6c757d;
-}
-
-.aismarttalk-smartflow-status {
-    display: inline-block;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
-}
-
-.aismarttalk-smartflow-status.active {
-    background: rgba(40, 167, 69, 0.15);
-    color: #28a745;
-}
-
-.aismarttalk-smartflow-status.inactive {
-    background: rgba(108, 117, 125, 0.15);
-    color: #6c757d;
-}
-
-.aismarttalk-template-card {
-    background: #fff;
-    border: 1px solid #e9ecef;
-    border-radius: 8px;
-    overflow: hidden;
-    transition: all 0.2s ease;
-}
-
-.aismarttalk-template-card:hover {
-    border-color: #667eea;
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
-}
-
-.aismarttalk-template-header {
+.ast-header-right {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 15px;
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+}
+.ast-status-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+}
+.ast-status-badge.connected {
+    background: rgba(16, 185, 129, 0.2);
+    color: #fff;
+}
+.ast-status-badge.disconnected {
+    background: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.9);
+}
+.ast-status-badge i {
+    font-size: 10px;
+}
+.ast-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    animation: ast-pulse 2s infinite;
+}
+@keyframes ast-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+.ast-header-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+.ast-header-btn.primary {
+    background: #fff;
+    color: #667eea;
+}
+.ast-header-btn.primary:hover {
+    background: #f0f0f0;
+    transform: translateY(-1px);
+}
+.ast-header-btn.danger {
+    background: rgba(239, 68, 68, 0.2);
+    color: #fff;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+.ast-header-btn.danger:hover {
+    background: rgba(239, 68, 68, 0.3);
 }
 
-.aismarttalk-template-icon {
-    font-size: 28px;
-    width: 48px;
-    height: 48px;
+/* Main Container */
+.ast-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px 40px;
+}
+
+/* Tabs Navigation */
+.ast-tabs {
+    display: flex;
+    gap: 4px;
+    background: #fff;
+    padding: 8px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin-top: 20px;
+    position: relative;
+    z-index: 10;
+    flex-wrap: wrap;
+}
+.ast-tab {
+    flex: 1;
+    min-width: 120px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748b;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    gap: 8px;
 }
-
-.aismarttalk-template-title h5 {
-    margin: 0 0 2px 0;
-    font-size: 14px;
-    font-weight: 600;
+.ast-tab:hover {
+    background: #f1f5f9;
+    color: #334155;
 }
-
-.aismarttalk-template-title span {
-    font-size: 12px;
-    color: #6c757d;
-}
-
-.aismarttalk-template-body {
-    padding: 15px;
-}
-
-.aismarttalk-template-desc {
-    margin: 0 0 10px 0;
-    font-size: 13px;
-    color: #495057;
-    line-height: 1.5;
-}
-
-.aismarttalk-template-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-bottom: 15px;
-}
-
-.aismarttalk-template-tag {
-    padding: 3px 8px;
-    background: #e9ecef;
-    border-radius: 4px;
-    font-size: 11px;
-    color: #495057;
-}
-
-.aismarttalk-template-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-top: 10px;
-    border-top: 1px solid #e9ecef;
-}
-
-.aismarttalk-template-rating {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    font-size: 12px;
-    color: #ffc107;
-}
-
-.aismarttalk-template-install {
-    padding: 8px 16px;
+.ast-tab.active {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    border-radius: 6px;
     color: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.aismarttalk-template-install:hover {
-    transform: scale(1.05);
     box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
 }
-
-.aismarttalk-template-configure {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-    border: none;
-    border-radius: 6px;
-    color: #fff;
-    font-size: 12px;
-    font-weight: 600;
-    text-decoration: none;
-    cursor: pointer;
-    transition: all 0.2s ease;
+.ast-tab i {
+    font-size: 16px;
+}
+.ast-tab-badge {
+    background: rgba(255,255,255,0.3);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+}
+.ast-tab.active .ast-tab-badge {
+    background: rgba(255,255,255,0.3);
 }
 
-.aismarttalk-template-configure:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-    color: #fff;
-    text-decoration: none;
+/* Tab Panels */
+.ast-panel {
+    display: none;
+    animation: ast-fadeIn 0.3s ease;
+}
+.ast-panel.active {
+    display: block;
+}
+@keyframes ast-fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-/* =============================================
-   AI Skills - Modern UI Styles
-   ============================================= */
-
-/* Update Banner */
-.aismarttalk-skills-update-banner {
-    display: flex;
-    align-items: center;
-    padding: 16px 20px;
-    background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%);
-    border: 1px solid rgba(251, 191, 36, 0.3);
-    border-radius: 12px;
-    margin-bottom: 24px;
+/* Content Area */
+.ast-content {
+    margin-top: 24px;
 }
 
-.aismarttalk-update-banner-content {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-}
-
-.aismarttalk-update-banner-icon {
-    font-size: 28px;
-}
-
-.aismarttalk-update-banner-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.aismarttalk-update-banner-text strong {
-    color: #d97706;
-    font-size: 14px;
-}
-
-.aismarttalk-update-banner-text span {
-    color: #78716c;
-    font-size: 13px;
-}
-
-/* Skills Section */
-.aismarttalk-skills-section {
-    margin-bottom: 32px;
-}
-
-.aismarttalk-skills-section-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    margin-bottom: 20px;
-    flex-wrap: wrap;
-    gap: 16px;
-}
-
-.aismarttalk-skills-section-title {
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-}
-
-.aismarttalk-skills-section-icon {
-    font-size: 32px;
-    line-height: 1;
-}
-
-.aismarttalk-skills-section-title h3 {
-    margin: 0 0 4px 0;
-    font-size: 20px;
-    font-weight: 700;
-    color: #1f2937;
-}
-
-.aismarttalk-skills-section-title p {
-    margin: 0;
-    font-size: 14px;
-    color: #6b7280;
-}
-
-/* Skills Stats */
-.aismarttalk-skills-stats {
-    display: flex;
-    gap: 16px;
-}
-
-.aismarttalk-skill-stat {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    background: #f3f4f6;
-    border-radius: 8px;
-    font-size: 13px;
-    font-weight: 500;
-}
-
-.aismarttalk-skill-stat.active {
-    color: #059669;
-    background: rgba(16, 185, 129, 0.1);
-}
-
-.aismarttalk-skill-stat.inactive {
-    color: #6b7280;
-}
-
-/* Skills Container */
-.aismarttalk-skills-container {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
+/* Cards */
+.ast-card {
+    background: #fff;
     border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+.ast-card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.ast-card-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.ast-card-header h3 i {
+    color: #667eea;
+}
+.ast-card-body {
     padding: 24px;
 }
 
-/* Loading State */
-.aismarttalk-skills-loading,
-.aismarttalk-marketplace-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 48px;
-    gap: 16px;
+/* Grid Layout */
+.ast-grid {
+    display: grid;
+    gap: 20px;
+}
+.ast-grid-2 {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+.ast-grid-3 {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
 }
 
-.aismarttalk-loading-spinner {
-    width: 40px;
-    height: 40px;
-    border: 3px solid rgba(102, 126, 234, 0.2);
-    border-top-color: #667eea;
-    border-radius: 50%;
-    animation: aismarttalk-spin 0.8s linear infinite;
+/* Form Elements */
+.ast-form-group {
+    margin-bottom: 20px;
 }
-
-@keyframes aismarttalk-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+.ast-form-group:last-child {
+    margin-bottom: 0;
 }
-
-.aismarttalk-skills-loading p,
-.aismarttalk-marketplace-loading p {
-    color: #6b7280;
+.ast-label {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    margin-bottom: 8px;
+}
+.ast-help {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 6px;
+}
+.ast-input, .ast-select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
     font-size: 14px;
+    transition: all 0.2s;
+    background: #fff;
+}
+.ast-input:focus, .ast-select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+}
+
+/* Toggle Switch */
+.ast-toggle-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: #f8fafc;
+    border-radius: 12px;
+    transition: all 0.2s;
+}
+.ast-toggle-card:hover {
+    background: #f1f5f9;
+}
+.ast-toggle-info h4 {
+    margin: 0 0 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+}
+.ast-toggle-info p {
     margin: 0;
+    font-size: 13px;
+    color: #64748b;
+}
+.ast-switch {
+    position: relative;
+    width: 52px;
+    height: 28px;
+}
+.ast-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+.ast-switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: #cbd5e1;
+    border-radius: 28px;
+    transition: 0.3s;
+}
+.ast-switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 22px;
+    width: 22px;
+    left: 3px;
+    bottom: 3px;
+    background: white;
+    border-radius: 50%;
+    transition: 0.3s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.ast-switch input:checked + .ast-switch-slider {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+.ast-switch input:checked + .ast-switch-slider:before {
+    transform: translateX(24px);
+}
+
+/* Buttons */
+.ast-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+}
+.ast-btn-primary,
+a.ast-btn-primary,
+a.ast-btn-primary:visited {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff !important;
+}
+.ast-btn-primary:hover,
+a.ast-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    color: #fff !important;
+}
+.ast-btn-secondary {
+    background: #f1f5f9;
+    color: #475569;
+}
+.ast-btn-secondary:hover {
+    background: #e2e8f0;
+}
+.ast-btn-warning,
+a.ast-btn-warning,
+a.ast-btn-warning:visited {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #fff !important;
+}
+a.ast-btn-warning:hover {
+    color: #fff !important;
+}
+.ast-btn-sm {
+    padding: 8px 16px;
+    font-size: 13px;
+}
+
+/* Quick Actions */
+.ast-quick-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+}
+
+/* Stat Cards */
+.ast-stat-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+}
+.ast-stat-icon {
+    font-size: 32px;
+    margin-bottom: 12px;
+}
+.ast-stat-value {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1e293b;
+}
+.ast-stat-label {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 4px;
 }
 
 /* Empty State */
-.aismarttalk-empty-state {
+.ast-empty {
     text-align: center;
-    padding: 48px 24px;
+    padding: 60px 20px;
+}
+.ast-empty-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+}
+.ast-empty h3 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    color: #1e293b;
+}
+.ast-empty p {
+    margin: 0 0 24px;
+    color: #64748b;
 }
 
-.aismarttalk-empty-icon {
-    font-size: 48px;
-    display: block;
+/* Filter Section */
+.ast-filter-badge {
+    background: #10b981;
+    color: #fff;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Product Type Chips */
+.ast-types-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: #f8fafc;
+    border-radius: 10px;
+    flex-wrap: wrap;
+}
+.ast-types-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+}
+.ast-types-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ast-type-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    background: #fff;
+    border: 2px solid #e2e8f0;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+    color: #64748b;
+    user-select: none;
+}
+.ast-type-chip:hover {
+    border-color: #cbd5e1;
+}
+.ast-type-chip.checked {
+    border-color: #667eea;
+    background: #f5f3ff;
+    color: #4338ca;
+}
+.ast-type-chip input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: #667eea;
+    margin: 0;
+}
+.ast-type-chip-label {
+    font-weight: 500;
+}
+.ast-type-chip-count {
+    font-size: 11px;
+    color: #94a3b8;
+    background: #f1f5f9;
+    padding: 1px 7px;
+    border-radius: 10px;
+}
+.ast-type-chip.checked .ast-type-chip-count {
+    background: #e0e7ff;
+    color: #6366f1;
+}
+
+/* Filter Warning */
+.ast-filter-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #92400e;
+}
+
+/* Category Mode Selector */
+.ast-category-mode-selector {
+    display: flex;
+    gap: 10px;
     margin-bottom: 16px;
 }
-
-.aismarttalk-empty-state h4 {
-    margin: 0 0 8px 0;
-    font-size: 18px;
+.ast-mode-option {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.ast-mode-option:hover {
+    border-color: #cbd5e1;
+}
+.ast-mode-option.active {
+    border-color: #667eea;
+    background: #f5f3ff;
+}
+.ast-mode-option input[type="radio"] {
+    margin-top: 2px;
+    accent-color: #667eea;
+}
+.ast-mode-content {
+    flex: 1;
+}
+.ast-mode-content strong {
+    display: block;
+    font-size: 13px;
     font-weight: 600;
-    color: #1f2937;
+    color: #1e293b;
+    margin-bottom: 2px;
+}
+.ast-mode-content small {
+    font-size: 12px;
+    color: #94a3b8;
+}
+@media (max-width: 768px) {
+    .ast-category-mode-selector {
+        flex-direction: column;
+    }
 }
 
-.aismarttalk-empty-state p {
-    margin: 0;
-    color: #6b7280;
+/* Category Selector */
+.ast-category-box {
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-top: 12px;
+}
+.ast-category-header {
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    flex-wrap: wrap;
+}
+.ast-category-search {
+    flex: 1;
+    min-width: 200px;
+    padding: 10px 14px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 13px;
+}
+.ast-category-list {
+    max-height: 280px;
+    overflow-y: auto;
+    padding: 8px;
+}
+.ast-category-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+.ast-category-item:hover {
+    background: #f1f5f9;
+}
+.ast-category-item input {
+    width: 16px;
+    height: 16px;
+    accent-color: #667eea;
+}
+.ast-category-item .name {
+    flex: 1;
+    font-size: 13px;
+    color: #334155;
+}
+.ast-category-item .count {
+    font-size: 11px;
+    color: #94a3b8;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.ast-category-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    font-size: 13px;
+    color: #64748b;
+}
+
+/* Category Tree */
+.ast-category-tree {
+    max-height: 350px;
+    overflow-y: auto;
+    padding: 12px;
+}
+.ast-tree-node {
+    display: flex;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+.ast-tree-node:hover {
+    background: #f1f5f9;
+}
+.ast-tree-toggle {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 10px;
+    transition: transform 0.2s;
+    user-select: none;
+    flex-shrink: 0;
+}
+.ast-tree-toggle.expanded {
+    transform: rotate(90deg);
+}
+.ast-tree-spacer {
+    width: 20px;
+    flex-shrink: 0;
+}
+.ast-tree-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    flex: 1;
+    min-width: 0;
+}
+.ast-tree-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #667eea;
+    flex-shrink: 0;
+}
+.ast-tree-checkbox:indeterminate {
+    opacity: 0.6;
+}
+.ast-tree-name {
+    font-size: 13px;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ast-tree-count {
+    font-size: 11px;
+    color: #94a3b8;
+    background: #f1f5f9;
+    padding: 2px 8px;
+    border-radius: 10px;
+    flex-shrink: 0;
+}
+.ast-tree-node.hidden {
+    display: none !important;
+}
+
+/* Customization Section */
+.ast-color-picker {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.ast-color-picker input[type="color"] {
+    width: 48px;
+    height: 48px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
+    cursor: pointer;
+    padding: 4px;
+}
+.ast-color-picker input[type="text"] {
+    flex: 1;
+    padding: 12px 16px;
+    border: 2px solid #e2e8f0;
+    border-radius: 10px;
     font-size: 14px;
+    font-family: monospace;
 }
 
-/* Skills Grid (My Skills) */
-.aismarttalk-skills-grid {
+/* Button Type Selector */
+.ast-button-types {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px;
+}
+.ast-button-type {
+    padding: 16px 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fff;
+}
+.ast-button-type:hover {
+    border-color: #667eea;
+}
+.ast-button-type.selected {
+    border-color: #667eea;
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+}
+.ast-button-type input {
+    display: none;
+}
+.ast-button-type .preview {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+.ast-button-type .label {
+    font-size: 12px;
+    font-weight: 500;
+    color: #64748b;
+}
+
+/* Feature Toggles */
+.ast-features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+}
+.ast-feature-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border-radius: 10px;
+}
+.ast-feature-toggle .label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    color: #475569;
+}
+.ast-feature-toggle .label i {
+    color: #667eea;
+}
+
+/* Webhooks Section */
+.ast-webhooks-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
     gap: 16px;
 }
-
-/* Skill Card */
-.aismarttalk-skill-card {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding: 16px 20px;
+.ast-webhook-card {
     background: #fff;
-    border: 1px solid #e5e7eb;
+    border: 2px solid #e2e8f0;
     border-radius: 14px;
-    transition: all 0.2s ease;
+    padding: 20px;
+    transition: all 0.2s;
 }
-
-.aismarttalk-skill-card:hover {
+.ast-webhook-card:hover {
+    border-color: #cbd5e1;
     background: #fafafa;
+}
+.ast-webhook-card.active {
     border-color: #667eea;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+    background: rgba(102, 126, 234, 0.03);
 }
-
-.aismarttalk-skill-card.has-update {
-    border-color: rgba(251, 191, 36, 0.4);
-    background: rgba(251, 191, 36, 0.05);
-}
-
-.aismarttalk-skill-card.paused {
-    opacity: 0.7;
-}
-
-/* Manual workflow card styling */
-.aismarttalk-skill-card.is-manual {
-    border-left: 3px solid rgba(139, 92, 246, 0.5);
-}
-
-.aismarttalk-skill-icon {
-    font-size: 32px;
-    line-height: 1;
-    flex-shrink: 0;
-}
-
-.aismarttalk-skill-content {
+.ast-webhook-content {
     flex: 1;
-    min-width: 0;
 }
-
-.aismarttalk-skill-header-row {
+.ast-webhook-header {
     display: flex;
     align-items: center;
     gap: 12px;
+    margin-bottom: 12px;
 }
-
-.aismarttalk-skill-header-row .aismarttalk-skill-icon {
+.ast-webhook-header .ast-switch {
+    margin-left: auto;
+    flex-shrink: 0;
+}
+.ast-webhook-icon {
     font-size: 28px;
 }
-
-.aismarttalk-skill-header-row .aismarttalk-skill-name {
+.ast-webhook-info {
     flex: 1;
-    margin: 0;
-    font-size: 16px;
 }
-
-.aismarttalk-skill-name {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 600;
-    color: #1f2937;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.aismarttalk-skill-update-badge {
+.ast-webhook-info h5 {
+    margin: 0 0 4px;
     font-size: 14px;
-    animation: aismarttalk-pulse 2s infinite;
+    font-weight: 600;
+    color: #1e293b;
 }
-
-@keyframes aismarttalk-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-}
-
-.aismarttalk-skill-meta {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.aismarttalk-skill-version {
-    font-size: 11px;
-    color: #9ca3af;
-    font-family: 'Monaco', 'Consolas', monospace;
-}
-
-.aismarttalk-skill-status {
-    font-size: 12px;
-}
-
-.aismarttalk-skill-status.active {
-    color: #059669;
-}
-
-.aismarttalk-skill-status.paused {
-    color: #6b7280;
-}
-
-.aismarttalk-skill-desc {
+.ast-webhook-info p {
     margin: 0;
     font-size: 13px;
-    color: #6b7280;
-    line-height: 1.5;
+    color: #64748b;
+    line-height: 1.4;
 }
+.ast-webhook-payload {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+.ast-webhook-payload-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #94a3b8;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.ast-webhook-payload-fields {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    color: #64748b;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Fira Code', monospace;
+}
+.ast-doc-section h4 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #334155;
+}
+.ast-example-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+.ast-example-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 14px;
+}
+.ast-example-icon {
+    font-size: 24px;
+}
+.ast-example-card strong {
+    display: block;
+    font-size: 13px;
+    color: #334155;
+    margin-bottom: 4px;
+}
+.ast-example-card p {
+    margin: 0;
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.4;
+}
+.ast-tab-badge-success {
+    background: rgba(16, 185, 129, 0.15) !important;
+    color: #059669 !important;
+}
+
+/* Skills Section */
+.ast-skills-section { margin-bottom: 28px; }
+.ast-skills-section-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 20px; flex-wrap: wrap; gap: 16px;
+}
+.ast-skills-section-title { display: flex; align-items: flex-start; gap: 14px; }
+.ast-skills-section-icon { font-size: 28px; line-height: 1; }
+.ast-skills-section-title h3 { margin: 0 0 4px; font-size: 18px; font-weight: 700; color: #1e293b; }
+.ast-skills-section-title p { margin: 0; font-size: 13px; color: #64748b; }
+.ast-skills-stats { display: flex; gap: 12px; }
+.ast-skill-stat { display: flex; align-items: center; gap: 6px; padding: 6px 12px; background: #f8fafc; border-radius: 8px; font-size: 13px; font-weight: 500; }
+.ast-skill-stat.active { color: #059669; background: rgba(16, 185, 129, 0.1); }
+.ast-skill-stat.inactive { color: #64748b; }
+
+/* Update Banner */
+.ast-update-banner {
+    display: flex; align-items: center; padding: 14px 18px; gap: 14px;
+    background: linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(245, 158, 11, 0.06) 100%);
+    border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 12px; margin-bottom: 20px;
+}
+.ast-update-banner-icon { font-size: 24px; }
+.ast-update-banner-text { display: flex; flex-direction: column; gap: 2px; }
+.ast-update-banner-text strong { color: #b45309; font-size: 14px; }
+.ast-update-banner-text span { color: #92400e; font-size: 13px; }
+
+/* Skills Container */
+.ast-skills-container {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px;
+}
+
+/* Loading/Empty States */
+.ast-skills-loading, .ast-marketplace-loading {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; gap: 16px;
+}
+.ast-skills-spinner {
+    width: 36px; height: 36px; border: 3px solid rgba(99, 102, 241, 0.2);
+    border-top-color: #6366f1; border-radius: 50%; animation: ast-spin 0.8s linear infinite;
+}
+@keyframes ast-spin { to { transform: rotate(360deg); } }
+.ast-skills-loading p, .ast-marketplace-loading p { color: #64748b; font-size: 14px; margin: 0; }
+.ast-skills-empty, .ast-marketplace-empty { text-align: center; padding: 48px 24px; }
+.ast-skills-empty .ast-empty-icon, .ast-marketplace-empty .ast-empty-icon { font-size: 48px; display: block; margin-bottom: 16px; }
+.ast-skills-empty h4, .ast-marketplace-empty h4 { margin: 0 0 8px; font-size: 18px; font-weight: 600; color: #1e293b; }
+.ast-skills-empty p, .ast-marketplace-empty p { margin: 0; color: #64748b; font-size: 14px; }
+
+/* Skills Grid (My Skills) */
+.ast-skills-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px;
+}
+.ast-skill-card {
+    display: flex; flex-direction: column; gap: 10px;
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 18px; transition: all 0.2s;
+}
+.ast-skill-card:hover { border-color: #667eea; box-shadow: 0 4px 16px rgba(102, 126, 234, 0.12); transform: translateY(-2px); }
+.ast-skill-card.has-update { border-color: rgba(251, 191, 36, 0.5); background: rgba(251, 191, 36, 0.03); }
+.ast-skill-card.paused { opacity: 0.7; }
+.ast-skill-card.is-manual { border-left: 3px solid #ec4899; }
+
+/* Skill Type Badge */
+.ast-skill-type-badge {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;
+}
+.ast-skill-type-badge.conversation-tool { background: rgba(99, 102, 241, 0.1); color: #6366f1; border: 1px solid rgba(99, 102, 241, 0.2); }
+.ast-skill-type-badge.webhook { background: rgba(245, 158, 11, 0.1); color: #d97706; border: 1px solid rgba(245, 158, 11, 0.2); }
+.ast-skill-type-badge.smartform { background: rgba(59, 130, 246, 0.1); color: #2563eb; border: 1px solid rgba(59, 130, 246, 0.2); }
+.ast-skill-type-badge.sequence { background: rgba(168, 85, 247, 0.1); color: #7c3aed; border: 1px solid rgba(168, 85, 247, 0.2); }
+.ast-skill-type-badge.navigation { background: rgba(20, 184, 166, 0.1); color: #0d9488; border: 1px solid rgba(20, 184, 166, 0.2); }
+.ast-skill-type-badge.chat { background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.2); }
+.ast-skill-type-badge.scheduled { background: rgba(239, 68, 68, 0.1); color: #dc2626; border: 1px solid rgba(239, 68, 68, 0.2); }
+.ast-skill-type-badge.dictaphone { background: rgba(236, 72, 153, 0.1); color: #db2777; border: 1px solid rgba(236, 72, 153, 0.2); }
+.ast-skill-type-badge.custom { background: rgba(236, 72, 153, 0.1); color: #db2777; border: 1px solid rgba(236, 72, 153, 0.2); }
+.ast-skill-type-badge.default { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+
+/* Skill Header Row */
+.ast-skill-header-row { display: flex; align-items: center; gap: 10px; }
+.ast-skill-header-row .ast-skill-icon { font-size: 28px; line-height: 1; flex-shrink: 0; }
+.ast-skill-header-row .ast-skill-name { flex: 1; margin: 0; font-size: 15px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ast-skill-update-badge { font-size: 14px; animation: ast-pulse 2s infinite; }
+@keyframes ast-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+/* Skill Meta */
+.ast-skill-meta { display: flex; align-items: center; gap: 12px; }
+.ast-skill-version { font-size: 11px; color: #94a3b8; font-family: 'Monaco', 'Consolas', monospace; }
+.ast-skill-status { font-size: 12px; }
+.ast-skill-status.active { color: #059669; }
+.ast-skill-status.paused { color: #64748b; }
+.ast-skill-desc { margin: 0; font-size: 13px; color: #64748b; line-height: 1.5; }
 
 /* Skill Actions */
-.aismarttalk-skill-actions {
-    display: flex;
-    gap: 8px;
-    flex-shrink: 0;
-    justify-content: flex-end;
-    padding-top: 8px;
-    border-top: 1px solid #f3f4f6;
-    margin-top: auto;
+.ast-skill-actions {
+    display: flex; gap: 8px; justify-content: flex-end;
+    padding-top: 10px; border-top: 1px solid #f1f5f9; margin-top: auto;
 }
-
-.aismarttalk-skill-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    background: #f3f4f6;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-decoration: none;
+.ast-skill-btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; border: 1px solid transparent; text-decoration: none;
 }
+.ast-skill-btn-configure { background: rgba(99, 102, 241, 0.1); color: #6366f1; border-color: rgba(99, 102, 241, 0.2); }
+.ast-skill-btn-configure:hover { background: rgba(99, 102, 241, 0.2); color: #4f46e5; }
+.ast-skill-btn-update { background: rgba(251, 191, 36, 0.1); color: #b45309; border-color: rgba(251, 191, 36, 0.3); }
+.ast-skill-btn-update:hover { background: rgba(251, 191, 36, 0.2); color: #92400e; }
+.ast-skill-btn-remove { background: rgba(239, 68, 68, 0.08); color: #dc2626; border-color: rgba(239, 68, 68, 0.2); padding: 8px 10px; }
+.ast-skill-btn-remove:hover { background: rgba(239, 68, 68, 0.15); }
 
-.aismarttalk-skill-btn:hover {
-    background: #e5e7eb;
-    transform: scale(1.05);
-}
-
-.aismarttalk-skill-btn-update {
-    background: rgba(251, 191, 36, 0.15);
-    border-color: rgba(251, 191, 36, 0.3);
-}
-
-.aismarttalk-skill-btn-update:hover {
-    background: rgba(251, 191, 36, 0.25);
-}
-
-.aismarttalk-skill-btn-configure {
-    background: rgba(102, 126, 234, 0.15);
-    border-color: rgba(102, 126, 234, 0.3);
-}
-
-.aismarttalk-skill-btn-configure:hover {
-    background: rgba(102, 126, 234, 0.25);
-}
-
-.aismarttalk-skill-btn-remove {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: rgba(239, 68, 68, 0.2);
-}
-
-.aismarttalk-skill-btn-remove:hover {
-    background: rgba(239, 68, 68, 0.2);
-}
-
-/* =============================================
-   Skills Marketplace
-   ============================================= */
-
-.aismarttalk-marketplace-section {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 20px;
-    padding: 28px;
+/* Marketplace Section */
+.ast-marketplace-section {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 24px;
 }
 
 /* Marketplace Toolbar */
-.aismarttalk-marketplace-toolbar {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    padding-bottom: 20px;
-    margin-bottom: 16px;
-    border-bottom: 1px solid #e5e7eb;
+.ast-marketplace-toolbar {
+    display: flex; flex-direction: column; gap: 14px;
+    padding-bottom: 18px; margin-bottom: 16px; border-bottom: 1px solid #e2e8f0;
 }
+.ast-marketplace-search { position: relative; }
+.ast-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; opacity: 0.5; }
+.ast-marketplace-search input {
+    width: 100%; padding: 12px 16px 12px 42px; background: #f8fafc;
+    border: 1px solid #e2e8f0; border-radius: 10px; color: #1e293b; font-size: 14px; transition: all 0.2s;
+}
+.ast-marketplace-search input:focus { outline: none; border-color: #6366f1; background: #fff; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
+.ast-marketplace-search input::placeholder { color: #94a3b8; }
+.ast-marketplace-filters { display: flex; flex-wrap: wrap; gap: 10px; }
+.ast-filter-item { display: flex; flex-direction: column; gap: 4px; }
+.ast-filter-item label { font-size: 11px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; }
+.ast-filter-select {
+    padding: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 8px; color: #334155; font-size: 13px; cursor: pointer; transition: all 0.2s; min-width: 130px;
+}
+.ast-filter-select:hover { border-color: #cbd5e1; }
+.ast-filter-select:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12); }
 
-/* Search */
-.aismarttalk-marketplace-search {
-    position: relative;
-    max-width: 100%;
-}
-
-.aismarttalk-search-icon {
-    position: absolute;
-    left: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 18px;
-    opacity: 0.6;
-}
-
-.aismarttalk-marketplace-search input {
-    width: 100%;
-    padding: 14px 20px 14px 48px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    color: #1f2937;
-    font-size: 15px;
-    transition: all 0.2s ease;
-}
-
-.aismarttalk-marketplace-search input:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.15);
-}
-
-.aismarttalk-marketplace-search input::placeholder {
-    color: #9ca3af;
-}
-
-/* Filters */
-.aismarttalk-marketplace-filters {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.aismarttalk-filter-item {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.aismarttalk-filter-item label {
-    font-size: 11px;
-    font-weight: 600;
-    color: #6b7280;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
-.aismarttalk-filter-select {
-    padding: 10px 16px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 10px;
-    color: #1f2937;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    min-width: 140px;
-}
-
-.aismarttalk-filter-select:hover {
-    background: #fafafa;
-    border-color: #d1d5db;
-}
-
-.aismarttalk-filter-select:focus {
-    outline: none;
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-}
-
-/* Count */
-.aismarttalk-marketplace-count {
-    font-size: 13px;
-    color: #6b7280;
-    margin-bottom: 16px;
-}
-
-.aismarttalk-marketplace-count #aismarttalk-templates-total {
-    color: #1f2937;
-    font-weight: 600;
-}
+/* Marketplace Count */
+.ast-marketplace-count { font-size: 13px; color: #64748b; margin-bottom: 14px; }
+.ast-marketplace-count strong { color: #1e293b; }
 
 /* Marketplace Grid */
-.aismarttalk-marketplace-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 20px;
+.ast-marketplace-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px; }
+.ast-marketplace-card {
+    background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+    overflow: hidden; transition: all 0.25s; display: flex; flex-direction: column;
 }
+.ast-marketplace-card:hover { border-color: rgba(99, 102, 241, 0.5); transform: translateY(-3px); box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+.ast-marketplace-card.installed { border-color: rgba(16, 185, 129, 0.3); }
+.ast-marketplace-card.has-update { border-color: rgba(251, 191, 36, 0.4); }
 
-/* Marketplace Card */
-.aismarttalk-marketplace-card {
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    overflow: hidden;
-    transition: all 0.25s ease;
-    display: flex;
-    flex-direction: column;
-}
+.ast-marketplace-card-header { display: flex; align-items: flex-start; justify-content: space-between; padding: 18px 18px 0; }
+.ast-marketplace-card-badges { display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+.ast-badge-installed { font-size: 11px; padding: 3px 8px; background: rgba(16, 185, 129, 0.1); color: #059669; border-radius: 6px; font-weight: 600; }
+.ast-badge-update { font-size: 11px; padding: 3px 8px; background: rgba(251, 191, 36, 0.1); color: #b45309; border-radius: 6px; font-weight: 600; animation: ast-pulse 2s infinite; }
 
-.aismarttalk-marketplace-card:hover {
-    border-color: #667eea;
-    transform: translateY(-4px);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+.ast-marketplace-card-body { padding: 14px 18px; flex: 1; }
+.ast-marketplace-card-title-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.ast-marketplace-card-title-row .ast-marketplace-card-icon { font-size: 32px; line-height: 1; }
+.ast-marketplace-card-title-row .ast-marketplace-card-title { flex: 1; margin: 0; font-size: 16px; font-weight: 600; color: #1e293b; }
+.ast-marketplace-card-details {
+    display: flex; flex-direction: column; gap: 6px; padding: 10px;
+    background: #f8fafc; border-radius: 8px; margin-bottom: 10px;
 }
+.ast-detail-row { display: flex; gap: 8px; font-size: 12px; line-height: 1.4; }
+.ast-detail-label { color: #94a3b8; font-weight: 600; white-space: nowrap; min-width: 55px; }
+.ast-detail-value { color: #475569; flex: 1; }
+.ast-marketplace-card-platforms { display: flex; flex-wrap: wrap; gap: 5px; }
+.ast-platform-tag { font-size: 10px; padding: 3px 7px; background: rgba(99, 102, 241, 0.08); color: #6366f1; border-radius: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
+.ast-platform-tag.missing { background: rgba(239, 68, 68, 0.08); color: #dc2626; }
 
-.aismarttalk-marketplace-card.installed {
-    border-color: rgba(16, 185, 129, 0.3);
+.ast-marketplace-card-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; background: #f8fafc; border-top: 1px solid #f1f5f9;
 }
+.ast-marketplace-card-stats { display: flex; gap: 10px; }
+.ast-stat-item { font-size: 12px; color: #64748b; }
+.ast-version-tag { font-family: 'Monaco', 'Consolas', monospace; font-size: 11px; }
 
-.aismarttalk-marketplace-card.has-update {
-    border-color: rgba(251, 191, 36, 0.4);
+/* Install Button */
+.ast-skill-btn-install {
+    padding: 8px 16px; background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    border: none; border-radius: 8px; color: #fff; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; white-space: nowrap;
 }
-
-/* Card Header */
-.aismarttalk-marketplace-card-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 20px 20px 0 20px;
-}
-
-.aismarttalk-marketplace-card-icon {
-    font-size: 40px;
-    line-height: 1;
-}
-
-.aismarttalk-marketplace-card-badges {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    align-items: flex-end;
-}
-
-.aismarttalk-badge-installed {
-    font-size: 11px;
-    padding: 4px 10px;
-    background: rgba(16, 185, 129, 0.15);
-    color: #059669;
-    border-radius: 6px;
-    font-weight: 600;
-}
-
-.aismarttalk-badge-update {
-    font-size: 11px;
-    padding: 4px 10px;
-    background: rgba(251, 191, 36, 0.15);
-    color: #d97706;
-    border-radius: 6px;
-    font-weight: 600;
-    animation: aismarttalk-pulse 2s infinite;
-}
-
-/* Card Body */
-.aismarttalk-marketplace-card-body {
-    padding: 16px 20px;
-    flex: 1;
-}
-
-.aismarttalk-marketplace-card-title-row {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-}
-
-.aismarttalk-marketplace-card-title-row .aismarttalk-marketplace-card-icon {
-    font-size: 32px;
-    line-height: 1;
-}
-
-.aismarttalk-marketplace-card-title {
-    margin: 0;
-    font-size: 17px;
-    font-weight: 600;
-    color: #1f2937;
-    line-height: 1.3;
-    flex: 1;
-}
-
-.aismarttalk-marketplace-card-desc {
-    margin: 0 0 12px 0;
-    font-size: 13px;
-    color: #6b7280;
-    line-height: 1.5;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-}
-
-/* Detail rows (When/Action) */
-.aismarttalk-marketplace-card-details {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 12px;
-    background: #f9fafb;
-    border-radius: 10px;
-    margin-bottom: 12px;
-}
-
-.aismarttalk-detail-row {
-    display: flex;
-    gap: 8px;
-    font-size: 12px;
-    line-height: 1.4;
-}
-
-.aismarttalk-detail-label {
-    color: #9ca3af;
-    font-weight: 600;
-    white-space: nowrap;
-    min-width: 60px;
-}
-
-.aismarttalk-detail-value {
-    color: #4b5563;
-    flex: 1;
-}
-
-/* Platform Tags */
-.aismarttalk-marketplace-card-platforms {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.aismarttalk-platform-tag {
-    font-size: 10px;
-    padding: 4px 8px;
-    background: rgba(102, 126, 234, 0.15);
-    color: #667eea;
-    border-radius: 5px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
-.aismarttalk-platform-tag.missing {
-    background: rgba(239, 68, 68, 0.15);
-    color: #dc2626;
-}
-
-/* Card Footer */
-.aismarttalk-marketplace-card-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    background: #f9fafb;
-    border-top: 1px solid #e5e7eb;
-}
-
-.aismarttalk-marketplace-card-stats {
-    display: flex;
-    gap: 12px;
-}
-
-.aismarttalk-stat-item {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.aismarttalk-version-tag {
-    font-family: 'Monaco', 'Consolas', monospace;
-    font-size: 11px;
-}
-
-/* Skill Action Buttons */
-.aismarttalk-skill-btn-install {
-    padding: 10px 18px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border: none;
-    border-radius: 10px;
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    white-space: nowrap;
-}
-
-.aismarttalk-skill-btn-install:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-}
-
-.aismarttalk-skill-missing {
-    font-size: 12px;
-    color: #d97706;
-    padding: 8px 14px;
-    background: rgba(251, 191, 36, 0.1);
-    border-radius: 8px;
-}
+.ast-skill-btn-install:hover { transform: scale(1.04); box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35); }
+.ast-skill-btn-install:disabled { opacity: 0.6; cursor: not-allowed; transform: none; box-shadow: none; }
+.ast-skill-missing { font-size: 12px; color: #b45309; padding: 6px 12px; background: rgba(251, 191, 36, 0.08); border-radius: 6px; }
 
 /* Pagination */
-.aismarttalk-marketplace-pagination {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
-    padding-top: 24px;
-    margin-top: 24px;
-    border-top: 1px solid #e5e7eb;
+.ast-marketplace-pagination {
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    padding-top: 20px; margin-top: 20px; border-top: 1px solid #e2e8f0;
 }
-
-.aismarttalk-pagination-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 44px;
-    height: 44px;
-    padding: 0;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-    color: #1f2937;
-    cursor: pointer;
-    transition: all 0.2s ease;
+.ast-pagination-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; padding: 0; background: #f8fafc;
+    border: 1px solid #e2e8f0; border-radius: 10px; color: #475569;
+    cursor: pointer; transition: all 0.2s; font-size: 18px;
 }
-
-.aismarttalk-pagination-btn:hover:not(:disabled) {
-    background: rgba(102, 126, 234, 0.1);
-    border-color: #667eea;
-}
-
-.aismarttalk-pagination-btn:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-
-#aismarttalk-templates-page-info {
-    font-size: 14px;
-    color: #6b7280;
-    min-width: 70px;
-    text-align: center;
-    font-weight: 500;
-}
-
-/* =============================================
-   Skill Type Badges
-   ============================================= */
-
-.aismarttalk-skill-type-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 5px 12px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-}
-
-.aismarttalk-skill-type-badge.tool {
-    background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.15) 100%);
-    color: #667eea;
-    border: 1px solid rgba(102, 126, 234, 0.3);
-}
-
-.aismarttalk-skill-type-badge.auto {
-    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(5, 150, 105, 0.15) 100%);
-    color: #059669;
-    border: 1px solid rgba(16, 185, 129, 0.3);
-}
-
-.aismarttalk-skill-type-badge.webhook {
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.2) 0%, rgba(217, 119, 6, 0.15) 100%);
-    color: #d97706;
-    border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.aismarttalk-skill-type-badge.default {
-    background: #f3f4f6;
-    color: #6b7280;
-    border: 1px solid #e5e7eb;
-}
-
-.aismarttalk-skill-type-badge.aismarttalk-skill-type-custom {
-    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(124, 58, 237, 0.15) 100%);
-    color: #7c3aed;
-    border: 1px solid rgba(139, 92, 246, 0.3);
-}
-
-/* =============================================
-   Channels Section
-   ============================================= */
-
-.aismarttalk-channels-section {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 20px;
-    padding: 28px;
-    margin-bottom: 24px;
-}
-
-.aismarttalk-channels-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 16px;
-}
-
-/* =============================================
-   Integrations Section
-   ============================================= */
-
-.aismarttalk-integrations-section {
-    background: #f9fafb;
-    border: 1px solid #e5e7eb;
-    border-radius: 20px;
-    padding: 28px;
-}
-
-.aismarttalk-integrations-container {
-    min-height: 100px;
-}
-
-.aismarttalk-integrations-loading {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 40px;
-    gap: 16px;
-}
-
-.aismarttalk-integrations-loading p {
-    color: #6b7280;
-    font-size: 14px;
-    margin: 0;
-}
-
-.aismarttalk-integrations-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 16px;
-}
-
-.aismarttalk-integration-card {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    background: #fff;
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    transition: all 0.2s ease;
-}
-
-.aismarttalk-integration-card:hover {
-    background: #fafafa;
-    border-color: #d1d5db;
-}
-
-.aismarttalk-integration-card.connected {
-    border-color: rgba(16, 185, 129, 0.25);
-    background: rgba(16, 185, 129, 0.03);
-}
-
-.aismarttalk-integration-info {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    flex: 1;
-    min-width: 0;
-}
-
-.aismarttalk-integration-logo {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    overflow: hidden;
-}
-
-.aismarttalk-integration-logo img {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
-}
-
-.aismarttalk-integration-logo-fallback {
-    font-size: 24px;
-    line-height: 1;
-}
-
-.aismarttalk-integration-icon {
-    font-size: 28px;
-    line-height: 1;
-}
-
-.aismarttalk-integration-details {
-    flex: 1;
-    min-width: 0;
-}
-
-.aismarttalk-integration-details h4 {
-    margin: 0 0 2px 0;
-    font-size: 15px;
-    font-weight: 600;
-    color: #1f2937;
-}
-
-.aismarttalk-integration-category {
-    font-size: 11px;
-    color: #9ca3af;
-    text-transform: capitalize;
-}
-
-.aismarttalk-integration-details p {
-    margin: 0;
-    font-size: 12px;
-    color: #6b7280;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.aismarttalk-integration-status {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 8px;
-}
-
-.aismarttalk-integration-badge {
-    font-size: 11px;
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.aismarttalk-integration-badge.connected {
-    background: rgba(16, 185, 129, 0.15);
-    color: #059669;
-}
-
-.aismarttalk-integration-badge.not-connected {
-    background: #f3f4f6;
-    color: #6b7280;
-}
-
-.aismarttalk-integration-link {
-    font-size: 12px;
-    color: #667eea;
-    text-decoration: none;
-    font-weight: 500;
-    transition: all 0.2s ease;
-}
-
-.aismarttalk-integration-link:hover {
-    color: #4f46e5;
-    text-decoration: underline;
-}
-
-.aismarttalk-integrations-empty {
-    padding: 40px;
-}
-
-/* Hidden integration cards (collapsed state) */
-.aismarttalk-integration-hidden {
-    display: none;
-}
-
-/* Expand/Collapse button */
-.aismarttalk-expand-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    width: 100%;
-    margin-top: 16px;
-    padding: 12px 20px;
-    background: #fff;
-    border: 1px dashed #d1d5db;
-    border-radius: 12px;
-    color: #6b7280;
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-}
-
-.aismarttalk-expand-btn:hover {
-    background: #f9fafb;
-    border-color: #9ca3af;
-    color: #4b5563;
-}
-
-.aismarttalk-expand-btn:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3);
-}
-
-.aismarttalk-expand-text {
-    font-size: 13px;
-}
-
-.aismarttalk-expand-icon {
-    font-size: 10px;
-    transition: transform 0.2s ease;
-}
-
-.aismarttalk-expand-btn[data-expanded="true"] .aismarttalk-expand-icon {
-    transform: rotate(180deg);
-}
-
-/* =============================================
-   Responsive Styles for AI Skills
-   ============================================= */
-
-@media (max-width: 960px) {
-    .aismarttalk-marketplace-filters {
-        flex-wrap: wrap;
-    }
-
-    .aismarttalk-filter-select {
-        min-width: calc(50% - 5px);
-    }
-
-    .aismarttalk-skills-section-header {
-        flex-direction: column;
-    }
-}
+.ast-pagination-btn:hover:not(:disabled) { background: rgba(99, 102, 241, 0.1); border-color: #6366f1; color: #6366f1; }
+.ast-pagination-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.ast-page-info { font-size: 14px; color: #64748b; min-width: 60px; text-align: center; font-weight: 500; }
 
 @media (max-width: 768px) {
-    .aismarttalk-skills-grid,
-    .aismarttalk-marketplace-grid,
-    .aismarttalk-integrations-grid,
-    .aismarttalk-channels-grid {
-        grid-template-columns: 1fr;
-    }
+    .ast-filter-item { flex: 1; min-width: calc(50% - 5px); }
+    .ast-skills-grid, .ast-marketplace-grid { grid-template-columns: 1fr; }
+}
 
-    .aismarttalk-skill-card {
-        flex-wrap: wrap;
-    }
+/* Loading Spinner */
+.ast-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    gap: 16px;
+}
+.ast-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #e2e8f0;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: ast-spin 0.8s linear infinite;
+}
+@keyframes ast-spin {
+    to { transform: rotate(360deg); }
+}
 
-    .aismarttalk-skill-actions {
-        width: 100%;
-        justify-content: flex-end;
-        margin-top: 8px;
-    }
+/* Advanced Settings */
+.ast-advanced-form .ast-form-group {
+    max-width: 500px;
+}
 
-    .aismarttalk-skills-stats {
-        width: 100%;
-        justify-content: flex-start;
-    }
-
-    .aismarttalk-marketplace-toolbar {
-        gap: 12px;
-    }
-
-    .aismarttalk-filter-select {
-        min-width: 100%;
-    }
-
-    .aismarttalk-filter-item {
-        flex: 1;
-        min-width: calc(50% - 5px);
-    }
-
-    .aismarttalk-marketplace-section,
-    .aismarttalk-channels-section,
-    .aismarttalk-integrations-section {
+/* Responsive */
+@media (max-width: 768px) {
+    .ast-header {
         padding: 20px;
     }
-
-    .aismarttalk-marketplace-card-footer {
-        flex-direction: column;
-        gap: 12px;
-        align-items: stretch;
+    .ast-tabs {
+        margin-top: 16px;
     }
+    .ast-tab {
+        min-width: 80px;
+        padding: 12px 14px;
+        font-size: 12px;
+    }
+    .ast-tab span {
+        display: none;
+    }
+    .ast-container {
+        padding: 0 16px 30px;
+    }
+    .ast-card-body {
+        padding: 16px;
+    }
+}
 
-    .aismarttalk-marketplace-card-stats {
+/* ===== USAGE & CREDITS SECTION ===== */
+
+/* Badge styles */
+.ast-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.ast-badge-success {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff;
+}
+.ast-badge-secondary {
+    background: #e5e7eb;
+    color: #6b7280;
+}
+.ast-badge-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #fff;
+}
+.ast-badge-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: #fff;
+}
+
+/* Alert styles */
+.ast-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+.ast-alert i {
+    font-size: 18px;
+    margin-top: 2px;
+}
+.ast-alert-warning {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fcd34d;
+}
+.ast-alert-danger {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fca5a5;
+}
+.ast-alert-info {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #93c5fd;
+}
+
+/* Usage Grid */
+.ast-usage-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+/* Usage Item */
+.ast-usage-item {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+}
+.ast-usage-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+.ast-usage-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.ast-usage-label i {
+    color: #667eea;
+}
+.ast-usage-value {
+    font-size: 12px;
+    color: #64748b;
+}
+
+/* Progress Bar */
+.ast-progress-bar {
+    height: 8px;
+    background: #e2e8f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+.ast-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+.ast-progress-fill.warning {
+    background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+}
+.ast-progress-fill.danger {
+    background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+.ast-usage-percent {
+    font-size: 11px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* Plan Actions */
+.ast-plan-info {
+    flex: 1;
+}
+.ast-plan-buttons .ast-btn {
+    white-space: nowrap;
+}
+.ast-btn-success,
+a.ast-btn-success,
+a.ast-btn-success:visited {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: #fff !important;
+}
+.ast-btn-success:hover,
+a.ast-btn-success:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: #fff !important;
+}
+
+/* Responsive for usage section */
+@media (max-width: 768px) {
+    .ast-usage-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+    .ast-plan-actions {
+        flex-direction: column;
+        align-items: stretch !important;
+    }
+    .ast-plan-buttons {
         justify-content: center;
     }
-
-    .aismarttalk-skill-btn-install {
-        width: 100%;
-        justify-content: center;
-    }
-
-    .aismarttalk-integration-card {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-    }
-
-    .aismarttalk-integration-status {
-        flex-direction: row;
-        justify-content: space-between;
-        align-items: center;
-        padding-top: 12px;
-        border-top: 1px solid #e5e7eb;
+}
+@media (max-width: 480px) {
+    .ast-usage-grid {
+        grid-template-columns: 1fr;
     }
 }
 </style>
 
-<div class="aismarttalk-config">
-
-    {* ===== SECTION 1: CONNECTION ===== *}
-    <div class="panel">
-        <div class="panel-heading">
-            <h3><i class="icon icon-plug"></i> {l s='AI SmartTalk Connection' mod='aismarttalk'}</h3>
+<div class="ast-app">
+    {* ===== HEADER ===== *}
+    <div class="ast-header">
+        <div class="ast-header-left">
+            <div class="ast-logo">🤖</div>
+            <div class="ast-header-title">
+                <h1>AI SmartTalk</h1>
+                <p>{l s='Intelligent chatbot for your PrestaShop store' mod='aismarttalk'}</p>
+            </div>
         </div>
-        <div class="panel-body">
+        <div class="ast-header-right">
             {if $isConnected}
-                <div class="connection-status connected">
-                    <i class="icon icon-check-circle"></i>
-                    <div class="status-text">
-                        <h4>{l s='Connected to AI SmartTalk' mod='aismarttalk'}</h4>
-                        <p>{l s='Chat Model ID:' mod='aismarttalk'} <code style="background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 3px;">{$chatModelId|escape:'html':'UTF-8'}</code></p>
-                    </div>
+                <div class="ast-status-badge connected">
+                    <span class="ast-status-dot"></span>
+                    {l s='Connected' mod='aismarttalk'}
                 </div>
-                <a href="{$moduleLink|escape:'html':'UTF-8'}&amp;disconnectOAuth=1" class="btn btn-danger" onclick="return confirm('{l s='Are you sure you want to disconnect from AI SmartTalk?' mod='aismarttalk' js=1}');">
-                    <i class="icon icon-unlink"></i> {l s='Disconnect' mod='aismarttalk'}
+                <a href="{$backofficeUrl|escape:'html':'UTF-8'}" target="_blank" class="ast-header-btn primary">
+                    <i class="icon icon-external-link"></i>
+                    {l s='Dashboard' mod='aismarttalk'}
+                </a>
+                <a href="{$moduleLink|escape:'html':'UTF-8'}&amp;disconnectOAuth=1" class="ast-header-btn danger" onclick="return confirm('{l s='Disconnect from AI SmartTalk?' mod='aismarttalk' js=1}');">
+                    <i class="icon icon-unlink"></i>
                 </a>
             {else}
-                <div class="connection-status disconnected">
-                    <i class="icon icon-info-circle"></i>
-                    <div class="status-text">
-                        <h4>{l s='Not Connected' mod='aismarttalk'}</h4>
-                        <p>{l s='Connect your store to AI SmartTalk to enable the AI chatbot.' mod='aismarttalk'}</p>
-                    </div>
+                <div class="ast-status-badge disconnected">
+                    <i class="icon icon-circle-o"></i>
+                    {l s='Not connected' mod='aismarttalk'}
                 </div>
-                <a href="{$moduleLink|escape:'html':'UTF-8'}&amp;connectOAuth=1" class="btn btn-connect">
-                    <i class="icon icon-plug"></i> {l s='Connect with AI SmartTalk' mod='aismarttalk'}
+                <a href="{$moduleLink|escape:'html':'UTF-8'}&amp;connectOAuth=1" class="ast-header-btn primary">
+                    <i class="icon icon-plug"></i>
+                    {l s='Connect' mod='aismarttalk'}
                 </a>
             {/if}
         </div>
     </div>
 
-    {if $isConnected}
-
-    {* ===== SECTION 2: CHATBOT SETTINGS ===== *}
-    <div class="panel">
-        <div class="panel-heading">
-            <h3><i class="icon icon-comments"></i> {l s='Chatbot Settings' mod='aismarttalk'}</h3>
+    <div class="ast-container">
+        {if $isConnected}
+        {* ===== TABS NAVIGATION ===== *}
+        <div class="ast-tabs" role="tablist">
+            <button class="ast-tab active" data-tab="chatbot" role="tab">
+                <i class="icon icon-comments"></i>
+                <span>{l s='Chatbot' mod='aismarttalk'}</span>
+            </button>
+            <button class="ast-tab" data-tab="appearance" role="tab">
+                <i class="icon icon-paint-brush"></i>
+                <span>{l s='Appearance' mod='aismarttalk'}</span>
+            </button>
+            <button class="ast-tab" data-tab="sync" role="tab">
+                <i class="icon icon-refresh"></i>
+                <span>{l s='Sync' mod='aismarttalk'}</span>
+                {if $syncFilterHasActiveFilters}<span class="ast-tab-badge">{l s='Filtered' mod='aismarttalk'}</span>{/if}
+            </button>
+            <button class="ast-tab" data-tab="webhooks" role="tab">
+                <i class="icon icon-flash"></i>
+                <span>{l s='Webhooks' mod='aismarttalk'}</span>
+                {if $webhooksEnabledTriggers|count > 0}<span class="ast-tab-badge ast-tab-badge-success">{$webhooksEnabledTriggers|count} {l s='active' mod='aismarttalk'}</span>{/if}
+            </button>
+            <button class="ast-tab" data-tab="skills" role="tab">
+                <i class="icon icon-magic"></i>
+                <span>{l s='AI Skills' mod='aismarttalk'}</span>
+            </button>
+            <button class="ast-tab" data-tab="settings" role="tab">
+                <i class="icon icon-cog"></i>
+                <span>{l s='Settings' mod='aismarttalk'}</span>
+            </button>
         </div>
-        <div class="panel-body">
-            <form action="{$formAction|escape:'html':'UTF-8'}" method="post" class="form-horizontal">
-                <div class="settings-grid">
-                    {* Chatbot Enable/Disable *}
-                    <div class="setting-card">
-                        <h4><i class="icon icon-power-off"></i> {l s='Chatbot Activation' mod='aismarttalk'}</h4>
-                        <p class="text-muted">{l s='Enable or disable the chatbot on your store.' mod='aismarttalk'}</p>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <span class="switch prestashop-switch fixed-width-lg">
-                                <input type="radio" name="AI_SMART_TALK_ENABLED" id="AI_SMART_TALK_ENABLED_on" value="1" {if $chatbotEnabled}checked="checked"{/if}>
-                                <label for="AI_SMART_TALK_ENABLED_on">{l s='Yes' mod='aismarttalk'}</label>
-                                <input type="radio" name="AI_SMART_TALK_ENABLED" id="AI_SMART_TALK_ENABLED_off" value="0" {if !$chatbotEnabled}checked="checked"{/if}>
-                                <label for="AI_SMART_TALK_ENABLED_off">{l s='No' mod='aismarttalk'}</label>
-                                <a class="slide-button btn"></a>
-                            </span>
+
+        <div class="ast-content">
+            {* ===== TAB 1: CHATBOT ===== *}
+            <div class="ast-panel active" id="panel-chatbot" role="tabpanel">
+                <div class="ast-grid ast-grid-2">
+                    {* Chatbot Activation *}
+                    <div class="ast-card">
+                        <div class="ast-card-header">
+                            <h3><i class="icon icon-power-off"></i> {l s='Chatbot Status' mod='aismarttalk'}</h3>
                         </div>
-                    </div>
-
-                    {* Chatbot Position *}
-                    <div class="setting-card">
-                        <h4><i class="icon icon-arrows"></i> {l s='Display Position' mod='aismarttalk'}</h4>
-                        <p class="text-muted">{l s='Choose where to display the chatbot widget.' mod='aismarttalk'}</p>
-                        <div class="form-group" style="margin-bottom: 0;">
-                            <select name="AI_SMART_TALK_IFRAME_POSITION" class="form-control">
-                                <option value="footer" {if $iframePosition == 'footer'}selected{/if}>{l s='In Footer' mod='aismarttalk'}</option>
-                                <option value="before_footer" {if $iframePosition == 'before_footer'}selected{/if}>{l s='Before Footer' mod='aismarttalk'}</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="panel-footer" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef;">
-                    <button type="submit" name="submitChatbotSettings" class="btn btn-primary">
-                        <i class="icon icon-save"></i> {l s='Save Chatbot Settings' mod='aismarttalk'}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {* ===== SECTION 3: CHATBOT CUSTOMIZATION ===== *}
-    <div class="panel">
-        <div class="panel-heading">
-            <h3><i class="icon icon-paint-brush"></i> {l s='Chatbot Customization' mod='aismarttalk'}</h3>
-        </div>
-        <div class="panel-body">
-            <form action="{$formAction|escape:'html':'UTF-8'}" method="post" class="form-horizontal" id="chatbot-customization-form" enctype="multipart/form-data">
-
-                {* Button Style Section *}
-                <div class="section-title">
-                    <i class="icon icon-hand-pointer-o"></i> {l s='Button Style' mod='aismarttalk'}
-                </div>
-                <div class="button-type-grid">
-                    <label class="button-type-card {if $buttonType == ''}selected{/if}">
-                        <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="" {if $buttonType == ''}checked{/if}>
-                        <div class="preview">API</div>
-                        <div class="label">{l s='API Default' mod='aismarttalk'}</div>
-                    </label>
-                    <label class="button-type-card {if $buttonType == 'default'}selected{/if}">
-                        <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="default" {if $buttonType == 'default'}checked{/if}>
-                        <div class="preview">Chat</div>
-                        <div class="label">{l s='Default' mod='aismarttalk'}</div>
-                    </label>
-                    <label class="button-type-card {if $buttonType == 'icon'}selected{/if}">
-                        <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="icon" {if $buttonType == 'icon'}checked{/if}>
-                        <div class="preview"><i class="icon icon-comments"></i></div>
-                        <div class="label">{l s='Icon Only' mod='aismarttalk'}</div>
-                    </label>
-                    <label class="button-type-card {if $buttonType == 'avatar'}selected{/if}">
-                        <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="avatar" {if $buttonType == 'avatar'}checked{/if}>
-                        <div class="preview"><img src="{if $effectiveAvatarUrl}{$effectiveAvatarUrl|escape:'html':'UTF-8'}{else}https://aismarttalk.tech/images/favicons/favicon-128.png{/if}" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%;"></div>
-                        <div class="label">{l s='Avatar' mod='aismarttalk'}</div>
-                    </label>
-                    <label class="button-type-card {if $buttonType == 'minimal'}selected{/if}">
-                        <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="minimal" {if $buttonType == 'minimal'}checked{/if}>
-                        <div class="preview"><i class="icon icon-comment-o"></i></div>
-                        <div class="label">{l s='Minimal' mod='aismarttalk'}</div>
-                    </label>
-                </div>
-
-                {* Button Text *}
-                <div class="form-group">
-                    <label class="control-label">{l s='Button Text' mod='aismarttalk'}</label>
-                    <input type="text" name="AI_SMART_TALK_BUTTON_TEXT" value="{$buttonText|escape:'html':'UTF-8'}" class="form-control" placeholder="{l s='Leave empty for API default (e.g., Chat)' mod='aismarttalk'}">
-                    <p class="help-block">{l s='Custom text displayed on the chat button.' mod='aismarttalk'}</p>
-                </div>
-
-                {* Avatar Upload *}
-                <div class="form-group avatar-upload-group" id="avatar-upload-group" style="{if $buttonType != 'avatar'}display: none;{/if}">
-                    <label class="control-label">{l s='Avatar Image' mod='aismarttalk'}</label>
-
-                    {* Show current avatar (from embed config or local upload) *}
-                    {if $effectiveAvatarUrl}
-                    <div class="alert alert-info" style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
-                        <img src="{$effectiveAvatarUrl|escape:'html':'UTF-8'}" alt="Current avatar" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #667eea;">
-                        <div>
-                            <strong>{l s='Current Avatar' mod='aismarttalk'}</strong>
-                            {if $avatarUrl}
-                            <p style="margin: 0; font-size: 12px; opacity: 0.8;">{l s='Custom avatar uploaded. Upload a new image to replace it.' mod='aismarttalk'}</p>
-                            {else}
-                            <p style="margin: 0; font-size: 12px; opacity: 0.8;">{l s='Using avatar from AI SmartTalk. Upload an image to customize.' mod='aismarttalk'}</p>
-                            {/if}
-                        </div>
-                    </div>
-                    {/if}
-
-                    <div class="input-group" style="max-width: 400px;">
-                        <span class="input-group-addon"><i class="icon icon-upload"></i></span>
-                        <input type="file" name="AI_SMART_TALK_AVATAR_FILE" id="avatar-file-input" class="form-control" accept="image/jpeg,image/png,image/gif,image/webp" style="padding: 6px;">
-                    </div>
-                    <p class="help-block">{l s='Upload an image for the chatbot avatar. Accepted formats: JPEG, PNG, GIF, WebP. Recommended size: 60x60px. Max: 5MB.' mod='aismarttalk'}</p>
-
-                    {* Preview for new file selection *}
-                    <div id="avatar-file-preview" style="margin-top: 10px; display: none;">
-                        <div style="display: flex; align-items: center; gap: 10px;">
-                            <img id="avatar-file-preview-img" src="" alt="Avatar preview" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 2px solid #667eea;">
-                            <span class="text-info"><i class="icon icon-eye"></i> {l s='Preview - Save to apply' mod='aismarttalk'}</span>
-                        </div>
-                    </div>
-                </div>
-
-                {* Layout & Position Section *}
-                <div class="section-divider">
-                    <div class="section-title">
-                        <i class="icon icon-th-large"></i> {l s='Layout & Position' mod='aismarttalk'}
-                    </div>
-                    <div class="layout-grid">
-                        <div class="form-group">
-                            <label>{l s='Chat Window Size' mod='aismarttalk'}</label>
-                            <select name="AI_SMART_TALK_CHAT_SIZE" class="form-control">
-                                <option value="" {if $chatSize == ''}selected{/if}>{l s='API Default' mod='aismarttalk'}</option>
-                                <option value="small" {if $chatSize == 'small'}selected{/if}>{l s='Small (350x500px)' mod='aismarttalk'}</option>
-                                <option value="medium" {if $chatSize == 'medium'}selected{/if}>{l s='Medium (400x600px)' mod='aismarttalk'}</option>
-                                <option value="large" {if $chatSize == 'large'}selected{/if}>{l s='Large (450x700px)' mod='aismarttalk'}</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>{l s='Button Position' mod='aismarttalk'}</label>
-                            <select name="AI_SMART_TALK_BUTTON_POSITION" class="form-control">
-                                <option value="" {if $buttonPosition == ''}selected{/if}>{l s='API Default' mod='aismarttalk'}</option>
-                                <option value="bottom-right" {if $buttonPosition == 'bottom-right'}selected{/if}>{l s='Bottom Right' mod='aismarttalk'}</option>
-                                <option value="bottom-left" {if $buttonPosition == 'bottom-left'}selected{/if}>{l s='Bottom Left' mod='aismarttalk'}</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>{l s='Color Mode' mod='aismarttalk'}</label>
-                            <select name="AI_SMART_TALK_COLOR_MODE" class="form-control">
-                                <option value="" {if $colorMode == ''}selected{/if}>{l s='API Default' mod='aismarttalk'}</option>
-                                <option value="light" {if $colorMode == 'light'}selected{/if}>{l s='Light' mod='aismarttalk'}</option>
-                                <option value="dark" {if $colorMode == 'dark'}selected{/if}>{l s='Dark' mod='aismarttalk'}</option>
-                                <option value="auto" {if $colorMode == 'auto'}selected{/if}>{l s='Auto (System)' mod='aismarttalk'}</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                {* Brand Colors Section *}
-                <div class="section-divider">
-                    <div class="section-title">
-                        <i class="icon icon-tint"></i> {l s='Brand Colors' mod='aismarttalk'}
-                    </div>
-                    <div class="color-section">
-                        <p class="text-muted" style="margin-bottom: 15px;">{l s='Customize the chatbot colors to match your brand. Check the box to override API defaults.' mod='aismarttalk'}</p>
-                        <div class="color-inputs">
-                            <div class="color-input-group">
-                                <label>{l s='Primary Color' mod='aismarttalk'}</label>
-                                <div class="color-input-wrapper">
-                                    <input type="checkbox" class="color-toggle" id="toggle_primary_color" {if $primaryColor}checked{/if}>
-                                    <input type="color" id="picker_primary_color" value="{if $primaryColor}{$primaryColor|escape:'html':'UTF-8'}{else}#667eea{/if}" {if !$primaryColor}disabled{/if}>
-                                    <input type="text" name="AI_SMART_TALK_PRIMARY_COLOR" id="input_primary_color" class="form-control" value="{$primaryColor|escape:'html':'UTF-8'}" placeholder="#667eea" {if !$primaryColor}disabled{/if}>
+                        <div class="ast-card-body">
+                            <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
+                                <div class="ast-toggle-card">
+                                    <div class="ast-toggle-info">
+                                        <h4>{l s='Enable Chatbot' mod='aismarttalk'}</h4>
+                                        <p>{l s='Display the AI assistant on your store' mod='aismarttalk'}</p>
+                                    </div>
+                                    <label class="ast-switch">
+                                        <input type="checkbox" name="AI_SMART_TALK_ENABLED" value="1" {if $chatbotEnabled}checked{/if} onchange="this.form.submit()">
+                                        <span class="ast-switch-slider"></span>
+                                    </label>
+                                    <input type="hidden" name="submitToggleChatbot" value="1">
                                 </div>
-                            </div>
-                            <div class="color-input-group">
-                                <label>{l s='Secondary Color' mod='aismarttalk'}</label>
-                                <div class="color-input-wrapper">
-                                    <input type="checkbox" class="color-toggle" id="toggle_secondary_color" {if $secondaryColor}checked{/if}>
-                                    <input type="color" id="picker_secondary_color" value="{if $secondaryColor}{$secondaryColor|escape:'html':'UTF-8'}{else}#a5b4fc{/if}" {if !$secondaryColor}disabled{/if}>
-                                    <input type="text" name="AI_SMART_TALK_SECONDARY_COLOR" id="input_secondary_color" class="form-control" value="{$secondaryColor|escape:'html':'UTF-8'}" placeholder="#a5b4fc" {if !$secondaryColor}disabled{/if}>
-                                </div>
+                            </form>
+
+                            <div class="ast-form-group" style="margin-top: 20px;">
+                                <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
+                                    <label class="ast-label">{l s='Display Position' mod='aismarttalk'}</label>
+                                    <select name="AI_SMART_TALK_IFRAME_POSITION" class="ast-select" onchange="this.form.submit()">
+                                        <option value="footer" {if $iframePosition == 'footer'}selected{/if}>{l s='Footer (recommended)' mod='aismarttalk'}</option>
+                                        <option value="before_footer" {if $iframePosition == 'before_footer'}selected{/if}>{l s='Before Footer' mod='aismarttalk'}</option>
+                                    </select>
+                                    <input type="hidden" name="submitIframePosition" value="1">
+                                </form>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {* Features Section *}
-                <div class="section-divider">
-                    <div class="section-title">
-                        <i class="icon icon-sliders"></i> {l s='Features' mod='aismarttalk'}
-                    </div>
-                    <div class="features-grid">
-                        <div class="feature-item">
-                            <span class="feature-label">
-                                <i class="icon icon-paperclip"></i> {l s='File Attachments' mod='aismarttalk'}
-                            </span>
-                            <select name="AI_SMART_TALK_ENABLE_ATTACHMENT" class="form-control">
-                                <option value="" {if $enableAttachment == ''}selected{/if}>{l s='API Default' mod='aismarttalk'}</option>
-                                <option value="on" {if $enableAttachment == 'on'}selected{/if}>{l s='Enabled' mod='aismarttalk'}</option>
-                                <option value="off" {if $enableAttachment == 'off'}selected{/if}>{l s='Disabled' mod='aismarttalk'}</option>
-                            </select>
+                    {* Quick Info & Dashboard Link *}
+                    <div class="ast-card">
+                        <div class="ast-card-header">
+                            <h3><i class="icon icon-bar-chart"></i> {l s='Overview' mod='aismarttalk'}</h3>
                         </div>
-                        <div class="feature-item">
-                            <span class="feature-label">
-                                <i class="icon icon-thumbs-up"></i> {l s='Feedback' mod='aismarttalk'}
-                            </span>
-                            <select name="AI_SMART_TALK_ENABLE_FEEDBACK" class="form-control">
-                                <option value="" {if $enableFeedback == ''}selected{/if}>{l s='API Default' mod='aismarttalk'}</option>
-                                <option value="on" {if $enableFeedback == 'on'}selected{/if}>{l s='Enabled' mod='aismarttalk'}</option>
-                                <option value="off" {if $enableFeedback == 'off'}selected{/if}>{l s='Disabled' mod='aismarttalk'}</option>
-                            </select>
-                        </div>
-                        <div class="feature-item">
-                            <span class="feature-label">
-                                <i class="icon icon-microphone"></i> {l s='Voice Input' mod='aismarttalk'}
-                            </span>
-                            <select name="AI_SMART_TALK_ENABLE_VOICE_INPUT" class="form-control">
-                                <option value="" {if $enableVoiceInput == ''}selected{/if}>{l s='API Default' mod='aismarttalk'}</option>
-                                <option value="on" {if $enableVoiceInput == 'on'}selected{/if}>{l s='Enabled' mod='aismarttalk'}</option>
-                                <option value="off" {if $enableVoiceInput == 'off'}selected{/if}>{l s='Disabled' mod='aismarttalk'}</option>
-                            </select>
-                        </div>
-                        <div class="feature-item">
-                            <span class="feature-label">
-                                <i class="icon icon-phone"></i> {l s='Voice Mode' mod='aismarttalk'} <span class="badge-new">NEW</span>
-                            </span>
-                            <select name="AI_SMART_TALK_ENABLE_VOICE_MODE" class="form-control">
-                                <option value="" {if $enableVoiceMode == ''}selected{/if}>{l s='API Default' mod='aismarttalk'}</option>
-                                <option value="on" {if $enableVoiceMode == 'on'}selected{/if}>{l s='Enabled' mod='aismarttalk'}</option>
-                                <option value="off" {if $enableVoiceMode == 'off'}selected{/if}>{l s='Disabled' mod='aismarttalk'}</option>
-                            </select>
+                        <div class="ast-card-body">
+                            <div class="ast-stat-card" style="margin-bottom: 20px;">
+                                <div class="ast-stat-icon">💬</div>
+                                <div class="ast-stat-label">{l s='Chat Model' mod='aismarttalk'}</div>
+                                <div class="ast-stat-value" style="font-size: 14px; word-break: break-all;">{$chatModelId|escape:'html':'UTF-8'|truncate:20:'...'}</div>
+                            </div>
+                            <a href="{$backofficeUrl|escape:'html':'UTF-8'}" target="_blank" class="ast-btn ast-btn-primary" style="width: 100%; justify-content: center;">
+                                <i class="icon icon-external-link"></i>
+                                {l s='Open AI SmartTalk Dashboard' mod='aismarttalk'}
+                            </a>
                         </div>
                     </div>
                 </div>
 
-                <div class="panel-footer" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef;">
-                    <button type="submit" name="submitChatbotCustomization" class="btn btn-primary">
-                        <i class="icon icon-save"></i> {l s='Save Customization' mod='aismarttalk'}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {* ===== SECTION 4: DATA SYNCHRONIZATION ===== *}
-    <div class="panel">
-        <div class="panel-heading">
-            <h3><i class="icon icon-refresh"></i> {l s='Data Synchronization' mod='aismarttalk'}</h3>
-        </div>
-        <div class="panel-body">
-            <form action="{$formAction|escape:'html':'UTF-8'}" method="post" class="form-horizontal">
-                <div class="settings-grid">
-                    {* Product Sync *}
-                    <div class="setting-card">
-                        <h4><i class="icon icon-cube"></i> {l s='Product Synchronization' mod='aismarttalk'}</h4>
-                        <p class="text-muted">{l s='Automatically sync products with AI SmartTalk for smart recommendations.' mod='aismarttalk'}</p>
-                        <div class="form-group">
-                            <span class="switch prestashop-switch fixed-width-lg">
-                                <input type="radio" name="AI_SMART_TALK_PRODUCT_SYNC" id="AI_SMART_TALK_PRODUCT_SYNC_on" value="1" {if $productSyncEnabled}checked="checked"{/if}>
-                                <label for="AI_SMART_TALK_PRODUCT_SYNC_on">{l s='Yes' mod='aismarttalk'}</label>
-                                <input type="radio" name="AI_SMART_TALK_PRODUCT_SYNC" id="AI_SMART_TALK_PRODUCT_SYNC_off" value="0" {if !$productSyncEnabled}checked="checked"{/if}>
-                                <label for="AI_SMART_TALK_PRODUCT_SYNC_off">{l s='No' mod='aismarttalk'}</label>
-                                <a class="slide-button btn"></a>
+                {* Usage & Credits Section *}
+                {if $planUsage}
+                <div class="ast-card" style="margin-top: 20px;">
+                    <div class="ast-card-header">
+                        <h3><i class="icon icon-dashboard"></i> {l s='Usage & Credits' mod='aismarttalk'}</h3>
+                        {if $planUsage.plan}
+                            <span class="ast-badge {if $planUsage.plan.isFreePlan}ast-badge-secondary{else}ast-badge-success{/if}">
+                                {$planUsage.plan.name|escape:'html':'UTF-8'}
                             </span>
-                        </div>
-                        {if $productSyncEnabled}
-                        <div class="sync-actions">
-                            <a href="{$formAction|escape:'html':'UTF-8'}&amp;forceSync=true" class="btn btn-warning btn-sm">
-                                <i class="icon icon-refresh"></i> {l s='Sync All Products' mod='aismarttalk'}
-                            </a>
-                            <a href="{$formAction|escape:'html':'UTF-8'}&amp;clean=1" class="btn btn-default btn-sm">
-                                <i class="icon icon-trash"></i> {l s='Clean Deleted Products' mod='aismarttalk'}
-                            </a>
-                        </div>
                         {/if}
                     </div>
-
-                    {* Customer Sync *}
-                    <div class="setting-card">
-                        <h4><i class="icon icon-users"></i> {l s='Customer Synchronization' mod='aismarttalk'}</h4>
-                        <p class="text-muted">{l s='Sync customer data with AI SmartTalk CRM.' mod='aismarttalk'}</p>
-                        <div class="form-group">
-                            <span class="switch prestashop-switch fixed-width-lg">
-                                <input type="radio" name="AI_SMART_TALK_CUSTOMER_SYNC" id="AI_SMART_TALK_CUSTOMER_SYNC_on" value="1" {if $customerSyncEnabled}checked="checked"{/if}>
-                                <label for="AI_SMART_TALK_CUSTOMER_SYNC_on">{l s='Yes' mod='aismarttalk'}</label>
-                                <input type="radio" name="AI_SMART_TALK_CUSTOMER_SYNC" id="AI_SMART_TALK_CUSTOMER_SYNC_off" value="0" {if !$customerSyncEnabled}checked="checked"{/if}>
-                                <label for="AI_SMART_TALK_CUSTOMER_SYNC_off">{l s='No' mod='aismarttalk'}</label>
-                                <a class="slide-button btn"></a>
-                            </span>
+                    <div class="ast-card-body">
+                        {* Usage Warning Alert *}
+                        {if $planUsage.overallUsagePercentage >= 80}
+                        <div class="ast-alert {if $planUsage.overallUsagePercentage >= 95}ast-alert-danger{else}ast-alert-warning{/if}" style="margin-bottom: 20px;">
+                            <i class="icon icon-warning"></i>
+                            {if $planUsage.overallUsagePercentage >= 95}
+                                <strong>{l s='Critical:' mod='aismarttalk'}</strong> {l s='You have used %s of your plan limits. Upgrade now to avoid service interruption.' sprintf=[$planUsage.overallUsagePercentage|cat:'%'] mod='aismarttalk'}
+                            {else}
+                                <strong>{l s='Warning:' mod='aismarttalk'}</strong> {l s='You have used %s of your plan limits. Consider upgrading soon.' sprintf=[$planUsage.overallUsagePercentage|cat:'%'] mod='aismarttalk'}
+                            {/if}
                         </div>
-                        <div class="sync-actions">
-                            <a href="{$formAction|escape:'html':'UTF-8'}&amp;exportCustomers=1" class="btn btn-info btn-sm">
-                                <i class="icon icon-upload"></i> {l s='Export All Customers' mod='aismarttalk'}
-                            </a>
+                        {/if}
+
+                        {* Usage Bars *}
+                        <div class="ast-usage-grid">
+                            {* Tokens/Messages Usage *}
+                            <div class="ast-usage-item">
+                                <div class="ast-usage-header">
+                                    <span class="ast-usage-label">
+                                        <i class="icon icon-comment"></i> {l s='AI Messages' mod='aismarttalk'}
+                                    </span>
+                                    <span class="ast-usage-value">
+                                        {$planUsage.usage.tokens.used|number_format:0:',':' '} / {$planUsage.usage.tokens.limit|number_format:0:',':' '}
+                                    </span>
+                                </div>
+                                <div class="ast-progress-bar">
+                                    <div class="ast-progress-fill {if $planUsage.usage.tokens.percentage >= 90}danger{elseif $planUsage.usage.tokens.percentage >= 70}warning{/if}" style="width: {$planUsage.usage.tokens.percentage}%;"></div>
+                                </div>
+                                <span class="ast-usage-percent">{$planUsage.usage.tokens.percentage}%</span>
+                            </div>
+
+                            {* Documents Usage *}
+                            <div class="ast-usage-item">
+                                <div class="ast-usage-header">
+                                    <span class="ast-usage-label">
+                                        <i class="icon icon-file-text-o"></i> {l s='Documents' mod='aismarttalk'}
+                                    </span>
+                                    <span class="ast-usage-value">
+                                        {$planUsage.usage.documents.used|number_format:0:',':' '} / {$planUsage.usage.documents.limit|number_format:0:',':' '}
+                                    </span>
+                                </div>
+                                <div class="ast-progress-bar">
+                                    <div class="ast-progress-fill {if $planUsage.usage.documents.percentage >= 90}danger{elseif $planUsage.usage.documents.percentage >= 70}warning{/if}" style="width: {$planUsage.usage.documents.percentage}%;"></div>
+                                </div>
+                                <span class="ast-usage-percent">{$planUsage.usage.documents.percentage}%</span>
+                            </div>
+
+                            {* Agents Usage *}
+                            <div class="ast-usage-item">
+                                <div class="ast-usage-header">
+                                    <span class="ast-usage-label">
+                                        <i class="icon icon-robot"></i> {l s='AI Agents' mod='aismarttalk'}
+                                    </span>
+                                    <span class="ast-usage-value">
+                                        {$planUsage.usage.agents.used} / {$planUsage.usage.agents.limit}
+                                    </span>
+                                </div>
+                                <div class="ast-progress-bar">
+                                    <div class="ast-progress-fill {if $planUsage.usage.agents.percentage >= 90}danger{elseif $planUsage.usage.agents.percentage >= 70}warning{/if}" style="width: {$planUsage.usage.agents.percentage}%;"></div>
+                                </div>
+                                <span class="ast-usage-percent">{$planUsage.usage.agents.percentage}%</span>
+                            </div>
+
+                            {* Seats Usage *}
+                            <div class="ast-usage-item">
+                                <div class="ast-usage-header">
+                                    <span class="ast-usage-label">
+                                        <i class="icon icon-users"></i> {l s='Team Seats' mod='aismarttalk'}
+                                    </span>
+                                    <span class="ast-usage-value">
+                                        {$planUsage.usage.seats.used} / {$planUsage.usage.seats.limit}
+                                    </span>
+                                </div>
+                                <div class="ast-progress-bar">
+                                    <div class="ast-progress-fill {if $planUsage.usage.seats.percentage >= 90}danger{elseif $planUsage.usage.seats.percentage >= 70}warning{/if}" style="width: {$planUsage.usage.seats.percentage}%;"></div>
+                                </div>
+                                <span class="ast-usage-percent">{$planUsage.usage.seats.percentage}%</span>
+                            </div>
+                        </div>
+
+                        {* Plan Info & Actions *}
+                        <div class="ast-plan-actions" style="margin-top: 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+                            <div class="ast-plan-info">
+                                {if $planUsage.plan.isFreePlan}
+                                    <span class="ast-hint">
+                                        <i class="icon icon-info-circle"></i>
+                                        {l s='You are on the Free plan. Upgrade for more features and higher limits.' mod='aismarttalk'}
+                                    </span>
+                                {else}
+                                    <span class="ast-hint">
+                                        <i class="icon icon-calendar"></i>
+                                        {l s='Resets on:' mod='aismarttalk'} {$planUsage.resetsOn|escape:'html':'UTF-8'}
+                                    </span>
+                                {/if}
+                            </div>
+                            <div class="ast-plan-buttons" style="display: flex; gap: 8px;">
+                                {if $planUsage.links.upgrade}
+                                <a href="{$planUsage.links.upgrade|escape:'html':'UTF-8'}" target="_blank" class="ast-btn {if $planUsage.plan.isFreePlan || $planUsage.overallUsagePercentage >= 70}ast-btn-success{else}ast-btn-secondary{/if}">
+                                    <i class="icon icon-rocket"></i>
+                                    {l s='Upgrade Plan' mod='aismarttalk'}
+                                </a>
+                                {/if}
+                                {if $planUsage.links.billing && !$planUsage.plan.isFreePlan}
+                                <a href="{$planUsage.links.billing|escape:'html':'UTF-8'}" target="_blank" class="ast-btn ast-btn-secondary">
+                                    <i class="icon icon-credit-card"></i>
+                                    {l s='Billing' mod='aismarttalk'}
+                                </a>
+                                {/if}
+                            </div>
                         </div>
                     </div>
                 </div>
-
-                <div class="panel-footer" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef;">
-                    <button type="submit" name="submitSyncSettings" class="btn btn-primary">
-                        <i class="icon icon-save"></i> {l s='Save Sync Settings' mod='aismarttalk'}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    {* ===== SECTION 5: AI SKILLS ===== *}
-    <div class="panel" id="smartflow">
-        <div class="panel-heading">
-            <h3><span style="margin-right: 8px;">⚡</span> {l s='AI Skills' mod='aismarttalk'}</h3>
-            <p class="text-muted" style="margin: 5px 0 0 0; font-weight: normal;">{l s='Add skills to your AI assistant. It can create content, react to visitors, and connect to your tools.' mod='aismarttalk'}</p>
-        </div>
-        <div class="panel-body">
-
-            {* Updates Available Alert *}
-            <div id="aismarttalk-updates-alert" class="aismarttalk-skills-update-banner" style="display: none;">
-                <div class="aismarttalk-update-banner-content">
-                    <span class="aismarttalk-update-banner-icon">🔄</span>
-                    <div class="aismarttalk-update-banner-text">
-                        <strong>{l s='Updates Available' mod='aismarttalk'}</strong>
-                        <span><span id="aismarttalk-updates-count">0</span> {l s='skill(s) can be updated to the latest version.' mod='aismarttalk'}</span>
-                    </div>
-                </div>
+                {/if}
             </div>
 
-            {* My Skills (Installed) *}
-            <div class="aismarttalk-skills-section">
-                <div class="aismarttalk-skills-section-header">
-                    <div class="aismarttalk-skills-section-title">
-                        <span class="aismarttalk-skills-section-icon">🎯</span>
-                        <div>
-                            <h3>{l s='My Skills' mod='aismarttalk'}</h3>
-                            <p>{l s='Active skills on your assistant. It uses them automatically based on context.' mod='aismarttalk'}</p>
+            {* ===== TAB 2: APPEARANCE ===== *}
+            <div class="ast-panel" id="panel-appearance" role="tabpanel">
+                <form action="{$formAction|escape:'html':'UTF-8'}" method="post" enctype="multipart/form-data">
+                    <div class="ast-card">
+                        <div class="ast-card-header">
+                            <h3><i class="icon icon-hand-pointer-o"></i> {l s='Button Style' mod='aismarttalk'}</h3>
                         </div>
-                    </div>
-                    <div id="aismarttalk-skills-stats" class="aismarttalk-skills-stats" style="display: none;">
-                        <span class="aismarttalk-skill-stat active"><span id="stat-active">0</span> {l s='active' mod='aismarttalk'}</span>
-                        <span class="aismarttalk-skill-stat inactive"><span id="stat-inactive">0</span> {l s='paused' mod='aismarttalk'}</span>
-                    </div>
-                </div>
+                        <div class="ast-card-body">
+                            <div class="ast-button-types">
+                                <label class="ast-button-type {if $buttonType == ''}selected{/if}">
+                                    <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="" {if $buttonType == ''}checked{/if}>
+                                    <div class="preview">🌐</div>
+                                    <div class="label">{l s='Default' mod='aismarttalk'}</div>
+                                </label>
+                                <label class="ast-button-type {if $buttonType == 'default'}selected{/if}">
+                                    <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="default" {if $buttonType == 'default'}checked{/if}>
+                                    <div class="preview">💬</div>
+                                    <div class="label">{l s='Text' mod='aismarttalk'}</div>
+                                </label>
+                                <label class="ast-button-type {if $buttonType == 'icon'}selected{/if}">
+                                    <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="icon" {if $buttonType == 'icon'}checked{/if}>
+                                    <div class="preview">🔵</div>
+                                    <div class="label">{l s='Icon' mod='aismarttalk'}</div>
+                                </label>
+                                <label class="ast-button-type {if $buttonType == 'avatar'}selected{/if}">
+                                    <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="avatar" {if $buttonType == 'avatar'}checked{/if}>
+                                    <div class="preview">🤖</div>
+                                    <div class="label">{l s='Avatar' mod='aismarttalk'}</div>
+                                </label>
+                                <label class="ast-button-type {if $buttonType == 'minimal'}selected{/if}">
+                                    <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="minimal" {if $buttonType == 'minimal'}checked{/if}>
+                                    <div class="preview">•••</div>
+                                    <div class="label">{l s='Minimal' mod='aismarttalk'}</div>
+                                </label>
+                            </div>
 
-                <div id="aismarttalk-smartflows-container" class="aismarttalk-skills-container">
-                    <div class="aismarttalk-smartflows-loading aismarttalk-skills-loading">
-                        <div class="aismarttalk-loading-spinner"></div>
-                        <p>{l s='Loading your skills...' mod='aismarttalk'}</p>
-                    </div>
-                    <div class="aismarttalk-smartflows-grid aismarttalk-skills-grid" style="display: none;"></div>
-                    <div class="aismarttalk-smartflows-empty aismarttalk-skills-empty" style="display: none;">
-                        <div class="aismarttalk-empty-state">
-                            <span class="aismarttalk-empty-icon">🚀</span>
-                            <h4>{l s='No skills installed yet' mod='aismarttalk'}</h4>
-                            <p>{l s='Explore the Marketplace below to get started.' mod='aismarttalk'}</p>
-                        </div>
-                    </div>
-                    <div class="aismarttalk-smartflows-error aismarttalk-skills-error" style="display: none;">
-                        <i class="icon icon-warning"></i>
-                        <p></p>
-                    </div>
-                </div>
-            </div>
-
-            {* Skills Marketplace *}
-            <div class="aismarttalk-skills-section aismarttalk-marketplace-section">
-                <div class="aismarttalk-skills-section-header">
-                    <div class="aismarttalk-skills-section-title">
-                        <span class="aismarttalk-skills-section-icon">🏪</span>
-                        <div>
-                            <h3>{l s='Marketplace' mod='aismarttalk'}</h3>
-                            <p>{l s='Discover new skills for your assistant. One-click install.' mod='aismarttalk'}</p>
-                        </div>
-                    </div>
-                </div>
-
-                {* Search and Filters *}
-                <div id="aismarttalk-templates-toolbar" class="aismarttalk-marketplace-toolbar">
-                    <div class="aismarttalk-marketplace-search">
-                        <span class="aismarttalk-search-icon">🔍</span>
-                        <input type="text" id="aismarttalk-templates-search-input" placeholder="{l s='Search skills... (e.g., "create article", "welcome")' mod='aismarttalk'}" />
-                    </div>
-                    <div class="aismarttalk-marketplace-filters">
-                        <div class="aismarttalk-filter-item">
-                            <label>{l s='Platform' mod='aismarttalk'}</label>
-                            <select id="aismarttalk-filter-platform" class="aismarttalk-filter-select">
-                                <option value="">{l s='All platforms' mod='aismarttalk'}</option>
-                                <option value="prestashop" selected>🛒 {l s='PrestaShop' mod='aismarttalk'}</option>
-                                <option value="wordpress">🌐 {l s='WordPress' mod='aismarttalk'}</option>
-                                <option value="shopify">🛍️ {l s='Shopify' mod='aismarttalk'}</option>
-                                <option value="joomla">📦 {l s='Joomla' mod='aismarttalk'}</option>
-                                <option value="webflow">🎨 {l s='Webflow' mod='aismarttalk'}</option>
-                                <option value="docusaurus">📚 {l s='Docusaurus' mod='aismarttalk'}</option>
-                            </select>
-                        </div>
-                        <div class="aismarttalk-filter-item">
-                            <label>{l s='Integration' mod='aismarttalk'}</label>
-                            <select id="aismarttalk-filter-integration" class="aismarttalk-filter-select">
-                                <option value="">{l s='All integrations' mod='aismarttalk'}</option>
-                            </select>
-                        </div>
-                        <div class="aismarttalk-filter-item">
-                            <label>{l s='Skill type' mod='aismarttalk'}</label>
-                            <select id="aismarttalk-filter-trigger" class="aismarttalk-filter-select">
-                                <option value="">{l s='All types' mod='aismarttalk'}</option>
-                                <option value="CONVERSATION_TOOL">🤖 {l s='Conversation tool' mod='aismarttalk'}</option>
-                                <option value="WEBHOOK">🔗 {l s='Webhook' mod='aismarttalk'}</option>
-                                <option value="SMART_FORM_WORKFLOW">📝 {l s='SmartForm' mod='aismarttalk'}</option>
-                                <option value="NAVIGATION_EVENT">🧭 {l s='Navigation' mod='aismarttalk'}</option>
-                                <option value="CHAT_SERVICE">💬 {l s='Chat' mod='aismarttalk'}</option>
-                                <option value="SCHEDULE_WORKFLOW">⏰ {l s='Scheduled' mod='aismarttalk'}</option>
-                            </select>
-                        </div>
-                        <div class="aismarttalk-filter-item">
-                            <label>{l s='Status' mod='aismarttalk'}</label>
-                            <select id="aismarttalk-filter-status" class="aismarttalk-filter-select">
-                                <option value="">{l s='All' mod='aismarttalk'}</option>
-                                <option value="installed">✅ {l s='Installed' mod='aismarttalk'}</option>
-                                <option value="not-installed">➕ {l s='Not installed' mod='aismarttalk'}</option>
-                                <option value="has-update">🔄 {l s='Update available' mod='aismarttalk'}</option>
-                            </select>
-                        </div>
-                        <div class="aismarttalk-filter-item">
-                            <label>{l s='Sort by' mod='aismarttalk'}</label>
-                            <select id="aismarttalk-filter-sort" class="aismarttalk-filter-select">
-                                <option value="downloads">🔥 {l s='Popular' mod='aismarttalk'}</option>
-                                <option value="createdAt">✨ {l s='Recent' mod='aismarttalk'}</option>
-                                <option value="name">🔤 A-Z</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-
-                {* Results Count *}
-                <div id="aismarttalk-templates-count" class="aismarttalk-marketplace-count" style="display: none;">
-                    <span id="aismarttalk-templates-total">0</span> {l s='skills available' mod='aismarttalk'}
-                </div>
-
-                <div id="aismarttalk-templates-container" class="aismarttalk-marketplace-container">
-                    <div class="aismarttalk-templates-loading aismarttalk-marketplace-loading">
-                        <div class="aismarttalk-loading-spinner"></div>
-                        <p>{l s='Discovering skills...' mod='aismarttalk'}</p>
-                    </div>
-                    <div class="aismarttalk-templates-grid aismarttalk-marketplace-grid" style="display: none;"></div>
-                    <div class="aismarttalk-templates-empty aismarttalk-marketplace-empty" style="display: none;">
-                        <div class="aismarttalk-empty-state">
-                            <span class="aismarttalk-empty-icon">🔎</span>
-                            <h4>{l s='No skills match your criteria' mod='aismarttalk'}</h4>
-                            <p>{l s='Try different filters.' mod='aismarttalk'}</p>
-                        </div>
-                    </div>
-                    <div class="aismarttalk-templates-error aismarttalk-marketplace-error" style="display: none;">
-                        <i class="icon icon-warning"></i>
-                        <p></p>
-                    </div>
-                </div>
-
-                {* Pagination *}
-                <div id="aismarttalk-templates-pagination" class="aismarttalk-marketplace-pagination" style="display: none;">
-                    <button type="button" id="aismarttalk-templates-prev" class="aismarttalk-pagination-btn" disabled>
-                        ◀
-                    </button>
-                    <span id="aismarttalk-templates-page-info">1 / 1</span>
-                    <button type="button" id="aismarttalk-templates-next" class="aismarttalk-pagination-btn" disabled>
-                        ▶
-                    </button>
-                </div>
-            </div>
-
-            {* Channels Section *}
-            <div class="aismarttalk-skills-section aismarttalk-channels-section">
-                <div class="aismarttalk-skills-section-header">
-                    <div class="aismarttalk-skills-section-title">
-                        <span class="aismarttalk-skills-section-icon">💬</span>
-                        <div>
-                            <h3>{l s='Channels' mod='aismarttalk'}</h3>
-                            <p>{l s='Communication platforms where your assistant can interact with users.' mod='aismarttalk'}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="aismarttalk-channels-container" class="aismarttalk-integrations-container">
-                    <div class="aismarttalk-integrations-loading">
-                        <div class="aismarttalk-loading-spinner"></div>
-                        <p>{l s='Loading channels...' mod='aismarttalk'}</p>
-                    </div>
-                    <div class="aismarttalk-channels-grid" style="display: none;"></div>
-                    <div class="aismarttalk-integrations-empty" style="display: none;">
-                        <div class="aismarttalk-empty-state">
-                            <span class="aismarttalk-empty-icon">💬</span>
-                            <h4>{l s='No channels available' mod='aismarttalk'}</h4>
-                            <p>{l s='Channels will appear here once configured.' mod='aismarttalk'}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            {* Integrations Section *}
-            <div class="aismarttalk-skills-section aismarttalk-integrations-section">
-                <div class="aismarttalk-skills-section-header">
-                    <div class="aismarttalk-skills-section-title">
-                        <span class="aismarttalk-skills-section-icon">🔗</span>
-                        <div>
-                            <h3>{l s='Integrations' mod='aismarttalk'}</h3>
-                            <p>{l s='Connect your assistant to your tools and services.' mod='aismarttalk'}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="aismarttalk-integrations-container" class="aismarttalk-integrations-container">
-                    <div class="aismarttalk-integrations-loading">
-                        <div class="aismarttalk-loading-spinner"></div>
-                        <p>{l s='Loading integrations...' mod='aismarttalk'}</p>
-                    </div>
-                    <div class="aismarttalk-integrations-grid" style="display: none;"></div>
-                    <div class="aismarttalk-integrations-empty" style="display: none;">
-                        <div class="aismarttalk-empty-state">
-                            <span class="aismarttalk-empty-icon">🔌</span>
-                            <h4>{l s='No integrations available' mod='aismarttalk'}</h4>
-                            <p>{l s='Integrations will appear here once configured.' mod='aismarttalk'}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {* ===== SECTION 6: AI SMARTTALK BACKOFFICE ===== *}
-    <div class="panel">
-        <div class="panel-heading">
-            <h3><i class="icon icon-external-link"></i> {l s='AI SmartTalk Backoffice' mod='aismarttalk'}</h3>
-        </div>
-        <div class="panel-body">
-            <p>{l s='Access the AI SmartTalk dashboard to configure your chatbot, view conversations, and manage your AI agent.' mod='aismarttalk'}</p>
-            <a href="{$backofficeUrl|escape:'html':'UTF-8'}" target="_blank" class="btn btn-primary btn-lg">
-                <i class="icon icon-external-link"></i> {l s='Open AI SmartTalk Dashboard' mod='aismarttalk'}
-            </a>
-        </div>
-    </div>
-
-    {/if}
-
-    {* ===== SECTION 6: ADVANCED SETTINGS ===== *}
-    <div class="advanced-toggle" onclick="document.getElementById('advanced-settings').classList.toggle('show'); this.querySelector('.toggle-icon').classList.toggle('icon-chevron-down'); this.querySelector('.toggle-icon').classList.toggle('icon-chevron-up');">
-        <span><i class="icon icon-cogs"></i> {l s='Advanced Settings (WhiteLabel)' mod='aismarttalk'}</span>
-        <i class="icon icon-chevron-down toggle-icon"></i>
-    </div>
-
-    <div id="advanced-settings" class="advanced-content">
-        <div class="panel">
-            <div class="panel-body">
-                <div class="alert alert-warning">
-                    <i class="icon icon-warning"></i>
-                    {l s='These settings are for whitelabel implementations. Only modify if you know what you are doing.' mod='aismarttalk'}
-                </div>
-
-                <form action="{$formAction|escape:'html':'UTF-8'}" method="post" class="form-horizontal">
-                    <div class="form-group">
-                        <label class="control-label col-lg-3">{l s='API Base URL' mod='aismarttalk'}</label>
-                        <div class="col-lg-9">
-                            <input type="text" name="AI_SMART_TALK_URL" value="{$apiUrl|escape:'html':'UTF-8'}" class="form-control">
-                            <p class="help-block">{l s='Your custom API endpoint for whitelabel deployments.' mod='aismarttalk'}</p>
+                            <div class="ast-form-group" style="margin-top: 20px;">
+                                <label class="ast-label">{l s='Button Text' mod='aismarttalk'}</label>
+                                <input type="text" name="AI_SMART_TALK_BUTTON_TEXT" value="{$buttonText|escape:'html':'UTF-8'}" class="ast-input" placeholder="{l s='e.g., Need help?' mod='aismarttalk'}">
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="control-label col-lg-3">{l s='CDN Base URL' mod='aismarttalk'}</label>
-                        <div class="col-lg-9">
-                            <input type="text" name="AI_SMART_TALK_CDN" value="{$cdnUrl|escape:'html':'UTF-8'}" class="form-control">
-                            <p class="help-block">{l s='Custom CDN for chatbot assets.' mod='aismarttalk'}</p>
+                    <div class="ast-grid ast-grid-2">
+                        <div class="ast-card">
+                            <div class="ast-card-header">
+                                <h3><i class="icon icon-th-large"></i> {l s='Layout' mod='aismarttalk'}</h3>
+                            </div>
+                            <div class="ast-card-body">
+                                <div class="ast-form-group">
+                                    <label class="ast-label">{l s='Window Size' mod='aismarttalk'}</label>
+                                    <select name="AI_SMART_TALK_CHAT_SIZE" class="ast-select">
+                                        <option value="" {if $chatSize == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="small" {if $chatSize == 'small'}selected{/if}>{l s='Small' mod='aismarttalk'}</option>
+                                        <option value="medium" {if $chatSize == 'medium'}selected{/if}>{l s='Medium' mod='aismarttalk'}</option>
+                                        <option value="large" {if $chatSize == 'large'}selected{/if}>{l s='Large' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+                                <div class="ast-form-group">
+                                    <label class="ast-label">{l s='Position' mod='aismarttalk'}</label>
+                                    <select name="AI_SMART_TALK_BUTTON_POSITION" class="ast-select">
+                                        <option value="" {if $buttonPosition == ''}selected{/if}>{l s='Default (bottom-right)' mod='aismarttalk'}</option>
+                                        <option value="bottom-right" {if $buttonPosition == 'bottom-right'}selected{/if}>{l s='Bottom Right' mod='aismarttalk'}</option>
+                                        <option value="bottom-left" {if $buttonPosition == 'bottom-left'}selected{/if}>{l s='Bottom Left' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+                                <div class="ast-form-group">
+                                    <label class="ast-label">{l s='Color Mode' mod='aismarttalk'}</label>
+                                    <select name="AI_SMART_TALK_COLOR_MODE" class="ast-select">
+                                        <option value="" {if $colorMode == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="light" {if $colorMode == 'light'}selected{/if}>{l s='Light' mod='aismarttalk'}</option>
+                                        <option value="dark" {if $colorMode == 'dark'}selected{/if}>{l s='Dark' mod='aismarttalk'}</option>
+                                        <option value="auto" {if $colorMode == 'auto'}selected{/if}>{l s='Auto' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="ast-card">
+                            <div class="ast-card-header">
+                                <h3><i class="icon icon-tint"></i> {l s='Brand Colors' mod='aismarttalk'}</h3>
+                            </div>
+                            <div class="ast-card-body">
+                                <div class="ast-form-group">
+                                    <label class="ast-label">{l s='Primary Color' mod='aismarttalk'}</label>
+                                    <div class="ast-color-picker">
+                                        <input type="color" id="picker_primary" value="{if $primaryColor}{$primaryColor|escape:'html':'UTF-8'}{else}#667eea{/if}">
+                                        <input type="text" name="AI_SMART_TALK_PRIMARY_COLOR" id="input_primary" value="{$primaryColor|escape:'html':'UTF-8'}" placeholder="#667eea">
+                                    </div>
+                                </div>
+                                <div class="ast-form-group">
+                                    <label class="ast-label">{l s='Secondary Color' mod='aismarttalk'}</label>
+                                    <div class="ast-color-picker">
+                                        <input type="color" id="picker_secondary" value="{if $secondaryColor}{$secondaryColor|escape:'html':'UTF-8'}{else}#a5b4fc{/if}">
+                                        <input type="text" name="AI_SMART_TALK_SECONDARY_COLOR" id="input_secondary" value="{$secondaryColor|escape:'html':'UTF-8'}" placeholder="#a5b4fc">
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="form-group">
-                        <label class="control-label col-lg-3">{l s='WebSocket URL' mod='aismarttalk'}</label>
-                        <div class="col-lg-9">
-                            <input type="text" name="AI_SMART_TALK_WS" value="{$wsUrl|escape:'html':'UTF-8'}" class="form-control">
-                            <p class="help-block">{l s='Custom WebSocket endpoint.' mod='aismarttalk'}</p>
+                    <div class="ast-card">
+                        <div class="ast-card-header">
+                            <h3><i class="icon icon-sliders"></i> {l s='Features' mod='aismarttalk'}</h3>
+                        </div>
+                        <div class="ast-card-body">
+                            <div class="ast-features-grid">
+                                <div class="ast-feature-toggle">
+                                    <span class="label"><i class="icon icon-paperclip"></i> {l s='Attachments' mod='aismarttalk'}</span>
+                                    <select name="AI_SMART_TALK_ENABLE_ATTACHMENT" class="ast-select" style="width: auto;">
+                                        <option value="" {if $enableAttachment == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="on" {if $enableAttachment == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
+                                        <option value="off" {if $enableAttachment == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+                                <div class="ast-feature-toggle">
+                                    <span class="label"><i class="icon icon-thumbs-up"></i> {l s='Feedback' mod='aismarttalk'}</span>
+                                    <select name="AI_SMART_TALK_ENABLE_FEEDBACK" class="ast-select" style="width: auto;">
+                                        <option value="" {if $enableFeedback == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="on" {if $enableFeedback == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
+                                        <option value="off" {if $enableFeedback == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+                                <div class="ast-feature-toggle">
+                                    <span class="label"><i class="icon icon-microphone"></i> {l s='Voice Input' mod='aismarttalk'}</span>
+                                    <select name="AI_SMART_TALK_ENABLE_VOICE_INPUT" class="ast-select" style="width: auto;">
+                                        <option value="" {if $enableVoiceInput == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="on" {if $enableVoiceInput == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
+                                        <option value="off" {if $enableVoiceInput == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+                                <div class="ast-feature-toggle">
+                                    <span class="label"><i class="icon icon-phone"></i> {l s='Voice Mode' mod='aismarttalk'}</span>
+                                    <select name="AI_SMART_TALK_ENABLE_VOICE_MODE" class="ast-select" style="width: auto;">
+                                        <option value="" {if $enableVoiceMode == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="on" {if $enableVoiceMode == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
+                                        <option value="off" {if $enableVoiceMode == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="panel-footer">
-                        <button type="submit" name="submitWhiteLabel" class="btn btn-warning">
-                            <i class="icon icon-save"></i> {l s='Save Advanced Settings' mod='aismarttalk'}
+                    {* GDPR / Privacy Settings *}
+                    <div class="ast-card">
+                        <div class="ast-card-header">
+                            <h3><i class="icon icon-shield"></i> {l s='Privacy & GDPR' mod='aismarttalk'}</h3>
+                            <span class="ast-badge ast-badge-success">{l s='GDPR' mod='aismarttalk'}</span>
+                        </div>
+                        <div class="ast-card-body">
+                            <p style="color: #64748b; margin: 0 0 20px; font-size: 13px;">
+                                {l s='Configure privacy information displayed in the chatbot. This helps comply with GDPR requirements.' mod='aismarttalk'}
+                            </p>
+
+                            <div class="ast-feature-toggle" style="margin-bottom: 20px;">
+                                <span class="label"><i class="icon icon-eye"></i> {l s='Show Privacy Info' mod='aismarttalk'}</span>
+                                <select name="AI_SMART_TALK_GDPR_ENABLED" class="ast-select" style="width: auto;">
+                                    <option value="" {if $gdprEnabled == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                    <option value="on" {if $gdprEnabled == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
+                                    <option value="off" {if $gdprEnabled == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
+                                </select>
+                            </div>
+
+                            <div class="ast-form-group">
+                                <label class="ast-label">{l s='Privacy Policy URL' mod='aismarttalk'}</label>
+                                <input type="url" name="AI_SMART_TALK_GDPR_PRIVACY_URL" value="{$gdprPrivacyUrl|escape:'html':'UTF-8'}" class="ast-input" placeholder="{$apiUrl|escape:'html':'UTF-8'}/{$currentLang|escape:'html':'UTF-8'}/privacy-policy">
+                                <p class="ast-help">{l s='Link to your privacy policy. Leave empty to use AI SmartTalk\'s default privacy policy.' mod='aismarttalk'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="text-align: right; margin-top: 20px;">
+                        <button type="submit" name="submitChatbotCustomization" class="ast-btn ast-btn-primary">
+                            <i class="icon icon-save"></i>
+                            {l s='Save Appearance' mod='aismarttalk'}
                         </button>
                     </div>
                 </form>
             </div>
-        </div>
-    </div>
 
+            {* ===== TAB 3: SYNC ===== *}
+            <div class="ast-panel" id="panel-sync" role="tabpanel">
+                <div class="ast-grid ast-grid-2">
+                    {* Product Sync *}
+                    <div class="ast-card">
+                        <div class="ast-card-header">
+                            <h3><i class="icon icon-cube"></i> {l s='Product Sync' mod='aismarttalk'}</h3>
+                        </div>
+                        <div class="ast-card-body">
+                            <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
+                                <div class="ast-toggle-card">
+                                    <div class="ast-toggle-info">
+                                        <h4>{l s='Auto-sync Products' mod='aismarttalk'}</h4>
+                                        <p>{l s='Your products will be available to the AI chatbot' mod='aismarttalk'}</p>
+                                    </div>
+                                    <label class="ast-switch">
+                                        <input type="checkbox" name="AI_SMART_TALK_PRODUCT_SYNC" value="1" {if $productSyncEnabled}checked{/if} onchange="this.form.submit()">
+                                        <span class="ast-switch-slider"></span>
+                                    </label>
+                                    <input type="hidden" name="submitProductSync" value="1">
+                                </div>
+                            </form>
+
+                            {if $productSyncEnabled}
+                            <div class="ast-quick-actions">
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;forceSync=true" class="ast-btn ast-btn-warning ast-btn-sm">
+                                    <i class="icon icon-refresh"></i> {l s='Sync All' mod='aismarttalk'}
+                                </a>
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;clean=1" class="ast-btn ast-btn-secondary ast-btn-sm">
+                                    <i class="icon icon-trash"></i> {l s='Clean' mod='aismarttalk'}
+                                </a>
+                            </div>
+                            {/if}
+                        </div>
+                    </div>
+
+                    {* Customer Sync *}
+                    <div class="ast-card">
+                        <div class="ast-card-header">
+                            <h3><i class="icon icon-users"></i> {l s='Customer Sync' mod='aismarttalk'}</h3>
+                        </div>
+                        <div class="ast-card-body">
+                            <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
+                                <div class="ast-toggle-card">
+                                    <div class="ast-toggle-info">
+                                        <h4>{l s='Sync Customer Data' mod='aismarttalk'}</h4>
+                                        <p>{l s='Connect customers with AI SmartTalk CRM' mod='aismarttalk'}</p>
+                                    </div>
+                                    <label class="ast-switch">
+                                        <input type="checkbox" name="AI_SMART_TALK_CUSTOMER_SYNC" value="1" {if $customerSyncEnabled}checked{/if} onchange="this.form.submit()">
+                                        <span class="ast-switch-slider"></span>
+                                    </label>
+                                    <input type="hidden" name="submitCustomerSync" value="1">
+                                </div>
+                            </form>
+
+                            <div class="ast-quick-actions">
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;exportCustomers=1" class="ast-btn ast-btn-secondary ast-btn-sm">
+                                    <i class="icon icon-upload"></i> {l s='Export All' mod='aismarttalk'}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {* Sync Filters *}
+                {if $productSyncEnabled}
+                <div class="ast-card">
+                    <div class="ast-card-header">
+                        <h3>
+                            <i class="icon icon-filter"></i> {l s='Sync Filters' mod='aismarttalk'}
+                            {if $syncFilterHasActiveFilters}
+                                <span class="ast-filter-badge" style="margin-left: 10px;">{l s='Active' mod='aismarttalk'}</span>
+                            {/if}
+                        </h3>
+                    </div>
+                    <div class="ast-card-body">
+                        <p style="color: #64748b; margin: 0 0 20px;">{l s='Choose which products to synchronize with AI SmartTalk.' mod='aismarttalk'}</p>
+
+                        <form action="{$formAction|escape:'html':'UTF-8'}" method="post" id="sync-filters-form">
+
+                            {* Step 1: Category filter (main decision) *}
+                            <div class="ast-category-mode-selector">
+                                <label class="ast-mode-option {if $syncFilterCategoryMode == 'all'}active{/if}">
+                                    <input type="radio" name="sync_filter_category_mode" value="all" {if $syncFilterCategoryMode == 'all'}checked{/if}>
+                                    <div class="ast-mode-content">
+                                        <strong>{l s='All categories' mod='aismarttalk'}</strong>
+                                        <small>{l s='Sync products from every category' mod='aismarttalk'}</small>
+                                    </div>
+                                </label>
+                                <label class="ast-mode-option {if $syncFilterCategoryMode == 'include'}active{/if}">
+                                    <input type="radio" name="sync_filter_category_mode" value="include" {if $syncFilterCategoryMode == 'include'}checked{/if}>
+                                    <div class="ast-mode-content">
+                                        <strong>{l s='Only selected' mod='aismarttalk'}</strong>
+                                        <small>{l s='Sync only from checked categories' mod='aismarttalk'}</small>
+                                    </div>
+                                </label>
+                                <label class="ast-mode-option {if $syncFilterCategoryMode == 'exclude'}active{/if}">
+                                    <input type="radio" name="sync_filter_category_mode" value="exclude" {if $syncFilterCategoryMode == 'exclude'}checked{/if}>
+                                    <div class="ast-mode-content">
+                                        <strong>{l s='All except selected' mod='aismarttalk'}</strong>
+                                        <small>{l s='Exclude checked categories' mod='aismarttalk'}</small>
+                                    </div>
+                                </label>
+                            </div>
+
+                            {* Step 2: Category tree (only when filtering) *}
+                            <div id="category-tree-wrapper" style="{if $syncFilterCategoryMode == 'all'}display: none;{/if}">
+                                <div class="ast-category-box">
+                                    <div class="ast-category-header">
+                                        <input type="text" id="category-search" class="ast-category-search" placeholder="{l s='Search categories...' mod='aismarttalk'}">
+                                        <div style="display: flex; gap: 8px;">
+                                            <button type="button" id="expand-all" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Expand' mod='aismarttalk'}</button>
+                                            <button type="button" id="collapse-all" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Collapse' mod='aismarttalk'}</button>
+                                        </div>
+                                    </div>
+                                    <div class="ast-category-tree" id="category-tree">
+                                        {foreach from=$syncFilterCategoryTree item=category}
+                                            <div class="ast-tree-node"
+                                                 data-id="{$category.id_category|intval}"
+                                                 data-parent="{$category.parent_id|intval}"
+                                                 data-depth="{$category.depth|intval}"
+                                                 data-children="{$category.child_ids|@json_encode|escape:'html':'UTF-8'}"
+                                                 data-name="{$category.name|escape:'html':'UTF-8'|lower}"
+                                                 style="margin-left: {($category.depth * 24)|intval}px; {if $category.depth > 0}display: none;{/if}">
+                                                {if $category.has_children}
+                                                    <span class="ast-tree-toggle" data-id="{$category.id_category|intval}">&#9654;</span>
+                                                {else}
+                                                    <span class="ast-tree-spacer"></span>
+                                                {/if}
+                                                <label class="ast-tree-label">
+                                                    <input type="checkbox"
+                                                           class="ast-tree-checkbox"
+                                                           value="{$category.id_category|intval}"
+                                                           {if in_array($category.id_category, $syncFilterConfig.categories)}checked{/if}>
+                                                    <span class="ast-tree-name">{$category.name|escape:'html':'UTF-8'}</span>
+                                                    {if $category.product_count > 0}
+                                                        <span class="ast-tree-count">{$category.product_count|intval}</span>
+                                                    {/if}
+                                                </label>
+                                            </div>
+                                        {/foreach}
+                                    </div>
+                                    <div class="ast-category-footer">
+                                        <div style="display: flex; gap: 8px;">
+                                            <button type="button" id="select-all-cats" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Select All' mod='aismarttalk'}</button>
+                                            <button type="button" id="clear-categories" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Clear' mod='aismarttalk'}</button>
+                                        </div>
+                                        <span><span id="selected-count">0</span> {l s='selected' mod='aismarttalk'}</span>
+                                    </div>
+                                </div>
+                                <div id="category-warning" class="ast-filter-warning" style="display: none;">
+                                    <i class="icon icon-warning"></i>
+                                    <span id="category-warning-text"></span>
+                                </div>
+                            </div>
+                            <input type="hidden" name="sync_filter_categories" id="sync_filter_categories" value="">
+
+                            {* Step 3: Product types (compact secondary filter) *}
+                            <div class="ast-types-bar">
+                                <span class="ast-types-label">{l s='Product types to sync:' mod='aismarttalk'}</span>
+                                <div class="ast-types-chips">
+                                    <label class="ast-type-chip {if in_array('standard', $syncFilterConfig.product_types)}checked{/if}">
+                                        <input type="checkbox" name="sync_filter_product_types[]" value="standard" class="ast-type-checkbox" {if in_array('standard', $syncFilterConfig.product_types)}checked{/if}>
+                                        <span class="ast-type-chip-label">{l s='Standard' mod='aismarttalk'}</span>
+                                        <span class="ast-type-chip-count">{$syncFilterProductTypeCounts.standard|intval}</span>
+                                    </label>
+                                    <label class="ast-type-chip {if in_array('virtual', $syncFilterConfig.product_types)}checked{/if}">
+                                        <input type="checkbox" name="sync_filter_product_types[]" value="virtual" class="ast-type-checkbox" {if in_array('virtual', $syncFilterConfig.product_types)}checked{/if}>
+                                        <span class="ast-type-chip-label">{l s='Virtual' mod='aismarttalk'}</span>
+                                        <span class="ast-type-chip-count">{$syncFilterProductTypeCounts.virtual|intval}</span>
+                                    </label>
+                                    <label class="ast-type-chip {if in_array('pack', $syncFilterConfig.product_types)}checked{/if}">
+                                        <input type="checkbox" name="sync_filter_product_types[]" value="pack" class="ast-type-checkbox" {if in_array('pack', $syncFilterConfig.product_types)}checked{/if}>
+                                        <span class="ast-type-chip-label">{l s='Pack' mod='aismarttalk'}</span>
+                                        <span class="ast-type-chip-count">{$syncFilterProductTypeCounts.pack|intval}</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="type-warning" class="ast-filter-warning" style="display: none;">
+                                <i class="icon icon-warning"></i>
+                                {l s='No product type selected. No products will be synchronized.' mod='aismarttalk'}
+                            </div>
+
+                            <div style="margin-top: 24px; display: flex; align-items: center; gap: 16px;">
+                                <button type="submit" name="submitSyncFilters" class="ast-btn ast-btn-primary">
+                                    <i class="icon icon-save"></i> {l s='Save Filters' mod='aismarttalk'}
+                                </button>
+                                <span style="font-size: 13px; color: #94a3b8;">{l s='Run "Sync All" after saving to apply changes.' mod='aismarttalk'}</span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                {/if}
+            </div>
+
+            {* ===== TAB 4: WEBHOOKS ===== *}
+            <div class="ast-panel" id="panel-webhooks" role="tabpanel">
+                <div class="ast-card">
+                    <div class="ast-card-header">
+                        <h3><i class="icon icon-flash"></i> {l s='Webhook Triggers' mod='aismarttalk'}</h3>
+                        <span class="ast-badge {if $webhooksEnabledTriggers|count > 0}ast-badge-success{else}ast-badge-secondary{/if}">
+                            {$webhooksEnabledTriggers|count}/{$webhooksAvailableTriggers|count} {l s='active' mod='aismarttalk'}
+                        </span>
+                    </div>
+                    <div class="ast-card-body">
+                        <p style="color: #64748b; margin-bottom: 20px;">
+                            {l s='Webhooks send real-time notifications to AI SmartTalk when events occur in your store. Enable the triggers you need to use them in SmartFlow automations.' mod='aismarttalk'}
+                        </p>
+
+                        <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
+                            <div class="ast-webhooks-grid">
+                                {foreach from=$webhooksAvailableTriggers key=triggerKey item=trigger}
+                                <div class="ast-webhook-card {if in_array($triggerKey, $webhooksEnabledTriggers)}active{/if}">
+                                    <div class="ast-webhook-content">
+                                        <div class="ast-webhook-header">
+                                            <span class="ast-webhook-icon">
+                                                {if $triggerKey == 'ps_on_order_status_changed'}📦
+                                                {elseif $triggerKey == 'ps_on_payment_received'}💳
+                                                {elseif $triggerKey == 'ps_on_product_out_of_stock'}📉
+                                                {elseif $triggerKey == 'ps_on_return_requested'}↩️
+                                                {elseif $triggerKey == 'ps_on_review_posted'}⭐
+                                                {elseif $triggerKey == 'ps_on_new_order'}🛒
+                                                {elseif $triggerKey == 'ps_on_customer_registered'}👤
+                                                {elseif $triggerKey == 'ps_on_cart_updated'}🛍️
+                                                {elseif $triggerKey == 'ps_on_refund_created'}💸
+                                                {elseif $triggerKey == 'ps_on_product_created'}📝
+                                                {else}🔔{/if}
+                                            </span>
+                                            <div class="ast-webhook-info">
+                                                <h5>{$trigger.name|escape:'html':'UTF-8'}</h5>
+                                                <p>{$trigger.description|escape:'html':'UTF-8'}</p>
+                                            </div>
+                                            <label class="ast-switch">
+                                                <input type="checkbox" name="webhooks_triggers[]" value="{$triggerKey|escape:'html':'UTF-8'}"
+                                                       {if in_array($triggerKey, $webhooksEnabledTriggers)}checked{/if}>
+                                                <span class="ast-switch-slider"></span>
+                                            </label>
+                                        </div>
+                                        <div class="ast-webhook-payload">
+                                            <span class="ast-webhook-payload-label">{l s='Payload:' mod='aismarttalk'}</span>
+                                            <code class="ast-webhook-payload-fields">{', '|implode:$trigger.payload_fields}</code>
+                                        </div>
+                                    </div>
+                                </div>
+                                {/foreach}
+                            </div>
+
+                            <div style="margin-top: 24px;">
+                                <button type="submit" name="submitWebhooksSettings" class="ast-btn ast-btn-primary">
+                                    <i class="icon icon-save"></i> {l s='Save Webhooks Settings' mod='aismarttalk'}
+                                </button>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+
+                {* Webhook Documentation *}
+                <div class="ast-card" style="margin-top: 20px;">
+                    <div class="ast-card-header">
+                        <h3><i class="icon icon-book"></i> {l s='Using Webhooks in SmartFlows' mod='aismarttalk'}</h3>
+                    </div>
+                    <div class="ast-card-body">
+                        <div class="ast-doc-section">
+                            <h4>{l s='How it works' mod='aismarttalk'}</h4>
+                            <ol style="color: #64748b; padding-left: 20px; line-height: 1.8;">
+                                <li>{l s='Enable the webhooks you need above' mod='aismarttalk'}</li>
+                                <li>{l s='Go to AI SmartTalk Dashboard → SmartFlows' mod='aismarttalk'}</li>
+                                <li>{l s='Create a new SmartFlow and select "PrestaShop Trigger" as the starting point' mod='aismarttalk'}</li>
+                                <li>{l s='Choose your trigger event and configure the automation' mod='aismarttalk'}</li>
+                            </ol>
+                        </div>
+
+                        <div class="ast-doc-examples" style="margin-top: 20px;">
+                            <h4 style="margin-bottom: 12px;">{l s='Example Use Cases' mod='aismarttalk'}</h4>
+                            <div class="ast-example-grid">
+                                <div class="ast-example-card">
+                                    <span class="ast-example-icon">📦</span>
+                                    <div>
+                                        <strong>{l s='Order Status Changed' mod='aismarttalk'}</strong>
+                                        <p>{l s='Send shipping notifications, update CRM, notify team on Slack' mod='aismarttalk'}</p>
+                                    </div>
+                                </div>
+                                <div class="ast-example-card">
+                                    <span class="ast-example-icon">💳</span>
+                                    <div>
+                                        <strong>{l s='Payment Received' mod='aismarttalk'}</strong>
+                                        <p>{l s='Send thank you email, create invoice, notify warehouse' mod='aismarttalk'}</p>
+                                    </div>
+                                </div>
+                                <div class="ast-example-card">
+                                    <span class="ast-example-icon">📉</span>
+                                    <div>
+                                        <strong>{l s='Product Out of Stock' mod='aismarttalk'}</strong>
+                                        <p>{l s='Alert purchasing team, notify supplier, update availability' mod='aismarttalk'}</p>
+                                    </div>
+                                </div>
+                                <div class="ast-example-card">
+                                    <span class="ast-example-icon">↩️</span>
+                                    <div>
+                                        <strong>{l s='Return Requested' mod='aismarttalk'}</strong>
+                                        <p>{l s='Notify customer service, create support ticket, track returns' mod='aismarttalk'}</p>
+                                    </div>
+                                </div>
+                                <div class="ast-example-card">
+                                    <span class="ast-example-icon">⭐</span>
+                                    <div>
+                                        <strong>{l s='Review Posted' mod='aismarttalk'}</strong>
+                                        <p>{l s='Moderate reviews, respond to feedback, analyze sentiment' mod='aismarttalk'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 20px;">
+                            <a href="{$backofficeUrl|escape:'html':'UTF-8'}" target="_blank" class="ast-btn ast-btn-secondary">
+                                <i class="icon icon-external-link"></i>
+                                {l s='Create SmartFlow' mod='aismarttalk'}
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {* ===== TAB 5: AI SKILLS ===== *}
+            <div class="ast-panel" id="panel-skills" role="tabpanel">
+
+                {* Updates Available Banner *}
+                <div id="ast-updates-alert" class="ast-update-banner" style="display:none;">
+                    <span class="ast-update-banner-icon">🔄</span>
+                    <div class="ast-update-banner-text">
+                        <strong>{l s='Updates Available' mod='aismarttalk'}</strong>
+                        <span><span id="ast-updates-count">0</span> {l s='skill(s) can be updated to the latest version.' mod='aismarttalk'}</span>
+                    </div>
+                </div>
+
+                {* My Skills (Installed) *}
+                <div class="ast-skills-section">
+                    <div class="ast-skills-section-header">
+                        <div class="ast-skills-section-title">
+                            <span class="ast-skills-section-icon">🎯</span>
+                            <div>
+                                <h3>{l s='My Skills' mod='aismarttalk'}</h3>
+                                <p>{l s='Active skills on your assistant. It uses them automatically based on context.' mod='aismarttalk'}</p>
+                            </div>
+                        </div>
+                        <div id="ast-skills-stats" class="ast-skills-stats" style="display:none;">
+                            <span class="ast-skill-stat active"><span id="ast-stat-active">0</span> {l s='active' mod='aismarttalk'}</span>
+                            <span class="ast-skill-stat inactive"><span id="ast-stat-inactive">0</span> {l s='paused' mod='aismarttalk'}</span>
+                        </div>
+                    </div>
+
+                    <div id="ast-smartflows-container" class="ast-skills-container">
+                        <div class="ast-skills-loading" id="ast-smartflows-loading">
+                            <div class="ast-skills-spinner"></div>
+                            <p>{l s='Loading your skills...' mod='aismarttalk'}</p>
+                        </div>
+                        <div class="ast-skills-grid" id="ast-smartflows-grid" style="display:none;"></div>
+                        <div class="ast-skills-empty" id="ast-smartflows-empty" style="display:none;">
+                            <div class="ast-empty-icon">🚀</div>
+                            <h4>{l s='No skills installed yet' mod='aismarttalk'}</h4>
+                            <p>{l s='Explore the Marketplace below to get started.' mod='aismarttalk'}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {* Skills Marketplace *}
+                <div class="ast-skills-section ast-marketplace-section">
+                    <div class="ast-skills-section-header">
+                        <div class="ast-skills-section-title">
+                            <span class="ast-skills-section-icon">🏪</span>
+                            <div>
+                                <h3>{l s='Marketplace' mod='aismarttalk'}</h3>
+                                <p>{l s='Discover new skills for your assistant. One-click install.' mod='aismarttalk'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {* Search and Filters *}
+                    <div class="ast-marketplace-toolbar">
+                        <div class="ast-marketplace-search">
+                            <span class="ast-search-icon">🔍</span>
+                            <input type="text" id="ast-templates-search" placeholder="{l s='Search skills... (e.g., "create article", "welcome")' mod='aismarttalk'}" />
+                        </div>
+                        <div class="ast-marketplace-filters">
+                            <div class="ast-filter-item">
+                                <label>{l s='Platform' mod='aismarttalk'}</label>
+                                <select id="ast-filter-platform" class="ast-filter-select">
+                                    <option value="">{l s='All platforms' mod='aismarttalk'}</option>
+                                    <option value="prestashop" selected>🛒 PrestaShop</option>
+                                    <option value="wordpress">🌐 WordPress</option>
+                                    <option value="shopify">🛍️ Shopify</option>
+                                    <option value="joomla">📦 Joomla</option>
+                                    <option value="webflow">🎨 Webflow</option>
+                                    <option value="docusaurus">📚 Docusaurus</option>
+                                </select>
+                            </div>
+                            <div class="ast-filter-item">
+                                <label>{l s='Skill type' mod='aismarttalk'}</label>
+                                <select id="ast-filter-trigger" class="ast-filter-select">
+                                    <option value="">{l s='All types' mod='aismarttalk'}</option>
+                                    <option value="CONVERSATION_TOOL">🤖 {l s='Conversation tool' mod='aismarttalk'}</option>
+                                    <option value="WEBHOOK">🔗 {l s='Webhook' mod='aismarttalk'}</option>
+                                    <option value="SMART_FORM_WORKFLOW">📝 SmartForm</option>
+                                    <option value="NAVIGATION_EVENT">🧭 {l s='Navigation' mod='aismarttalk'}</option>
+                                    <option value="CHAT_SERVICE">💬 Chat</option>
+                                    <option value="SCHEDULE_WORKFLOW">⏰ {l s='Scheduled' mod='aismarttalk'}</option>
+                                </select>
+                            </div>
+                            <div class="ast-filter-item">
+                                <label>{l s='Status' mod='aismarttalk'}</label>
+                                <select id="ast-filter-status" class="ast-filter-select">
+                                    <option value="">{l s='All' mod='aismarttalk'}</option>
+                                    <option value="installed">✅ {l s='Installed' mod='aismarttalk'}</option>
+                                    <option value="not-installed">➕ {l s='Not installed' mod='aismarttalk'}</option>
+                                    <option value="has-update">🔄 {l s='Update available' mod='aismarttalk'}</option>
+                                </select>
+                            </div>
+                            <div class="ast-filter-item">
+                                <label>{l s='Sort by' mod='aismarttalk'}</label>
+                                <select id="ast-filter-sort" class="ast-filter-select">
+                                    <option value="downloads">🔥 {l s='Popular' mod='aismarttalk'}</option>
+                                    <option value="createdAt">✨ {l s='Recent' mod='aismarttalk'}</option>
+                                    <option value="name">🔤 A-Z</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    {* Results Count *}
+                    <div id="ast-templates-count" class="ast-marketplace-count" style="display:none;">
+                        <strong id="ast-templates-total">0</strong> {l s='skills available' mod='aismarttalk'}
+                    </div>
+
+                    {* Templates Grid *}
+                    <div id="ast-templates-container">
+                        <div class="ast-marketplace-loading" id="ast-templates-loading">
+                            <div class="ast-skills-spinner"></div>
+                            <p>{l s='Discovering skills...' mod='aismarttalk'}</p>
+                        </div>
+                        <div class="ast-marketplace-grid" id="ast-templates-grid" style="display:none;"></div>
+                        <div class="ast-marketplace-empty" id="ast-templates-empty" style="display:none;">
+                            <div class="ast-empty-icon">🔎</div>
+                            <h4>{l s='No skills match your criteria' mod='aismarttalk'}</h4>
+                            <p>{l s='Try different filters.' mod='aismarttalk'}</p>
+                        </div>
+                    </div>
+
+                    {* Pagination *}
+                    <div id="ast-templates-pagination" class="ast-marketplace-pagination" style="display:none;">
+                        <button type="button" id="ast-templates-prev" class="ast-pagination-btn" disabled>&#8249;</button>
+                        <span id="ast-templates-page-info" class="ast-page-info">1 / 1</span>
+                        <button type="button" id="ast-templates-next" class="ast-pagination-btn" disabled>&#8250;</button>
+                    </div>
+                </div>
+            </div>
+
+            {* ===== TAB 5: SETTINGS ===== *}
+            <div class="ast-panel" id="panel-settings" role="tabpanel">
+                <div class="ast-card">
+                    <div class="ast-card-header">
+                        <h3><i class="icon icon-cog"></i> {l s='Advanced Settings' mod='aismarttalk'}</h3>
+                    </div>
+                    <div class="ast-card-body">
+                        <div class="alert alert-warning" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                            <i class="icon icon-warning"></i>
+                            <span>{l s='Only modify these settings if you have a custom/whitelabel deployment.' mod='aismarttalk'}</span>
+                        </div>
+
+                        <form action="{$formAction|escape:'html':'UTF-8'}" method="post" class="ast-advanced-form">
+                            <div class="ast-form-group">
+                                <label class="ast-label">{l s='API URL' mod='aismarttalk'}</label>
+                                <input type="text" name="AI_SMART_TALK_URL" value="{$apiUrl|escape:'html':'UTF-8'}" class="ast-input">
+                            </div>
+                            <div class="ast-form-group">
+                                <label class="ast-label">{l s='CDN URL' mod='aismarttalk'}</label>
+                                <input type="text" name="AI_SMART_TALK_CDN" value="{$cdnUrl|escape:'html':'UTF-8'}" class="ast-input">
+                            </div>
+                            <div class="ast-form-group">
+                                <label class="ast-label">{l s='WebSocket URL' mod='aismarttalk'}</label>
+                                <input type="text" name="AI_SMART_TALK_WS" value="{$wsUrl|escape:'html':'UTF-8'}" class="ast-input">
+                            </div>
+                            <div style="margin-top: 24px;">
+                                <button type="submit" name="submitWhiteLabel" class="ast-btn ast-btn-warning">
+                                    <i class="icon icon-save"></i> {l s='Save Settings' mod='aismarttalk'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {else}
+        {* ===== NOT CONNECTED STATE ===== *}
+        <div class="ast-content" style="margin-top: 40px;">
+            <div class="ast-card">
+                <div class="ast-card-body">
+                    <div class="ast-empty">
+                        <div class="ast-empty-icon">🔌</div>
+                        <h3>{l s='Connect your store to AI SmartTalk' mod='aismarttalk'}</h3>
+                        <p>{l s='Get started by connecting your PrestaShop store to AI SmartTalk. It only takes a minute!' mod='aismarttalk'}</p>
+                        <a href="{$moduleLink|escape:'html':'UTF-8'}&amp;connectOAuth=1" class="ast-btn ast-btn-primary">
+                            <i class="icon icon-plug"></i>
+                            {l s='Connect Now' mod='aismarttalk'}
+                        </a>
+
+                        {* Discrete advanced settings toggle *}
+                        <div style="margin-top: 30px;">
+                            <a href="#" onclick="document.getElementById('ast-advanced-urls').style.display = document.getElementById('ast-advanced-urls').style.display === 'none' ? 'block' : 'none'; return false;" style="font-size: 11px; color: #94a3b8; text-decoration: none;">
+                                <i class="icon icon-cog"></i> {l s='Advanced' mod='aismarttalk'}
+                            </a>
+                        </div>
+
+                        <div id="ast-advanced-urls" style="display: none; margin-top: 20px; text-align: left; max-width: 400px; margin-left: auto; margin-right: auto;">
+                            <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
+                                <div style="font-size: 11px; color: #64748b; margin-bottom: 12px;">
+                                    {l s='For development or white-label deployments only.' mod='aismarttalk'}
+                                </div>
+                                <div class="ast-form-group" style="margin-bottom: 12px;">
+                                    <label class="ast-label" style="font-size: 11px;">{l s='API URL' mod='aismarttalk'}</label>
+                                    <input type="text" name="AI_SMART_TALK_URL" value="{$apiUrl|escape:'html':'UTF-8'}" class="ast-input" style="font-size: 12px; padding: 8px 12px;">
+                                </div>
+                                <div class="ast-form-group" style="margin-bottom: 12px;">
+                                    <label class="ast-label" style="font-size: 11px;">{l s='CDN URL' mod='aismarttalk'}</label>
+                                    <input type="text" name="AI_SMART_TALK_CDN" value="{$cdnUrl|escape:'html':'UTF-8'}" class="ast-input" style="font-size: 12px; padding: 8px 12px;">
+                                </div>
+                                <div class="ast-form-group" style="margin-bottom: 12px;">
+                                    <label class="ast-label" style="font-size: 11px;">{l s='WebSocket URL' mod='aismarttalk'}</label>
+                                    <input type="text" name="AI_SMART_TALK_WS" value="{$wsUrl|escape:'html':'UTF-8'}" class="ast-input" style="font-size: 12px; padding: 8px 12px;">
+                                </div>
+                                <button type="submit" name="submitWhiteLabel" class="ast-btn ast-btn-secondary" style="font-size: 11px; padding: 8px 16px;">
+                                    <i class="icon icon-save"></i> {l s='Save' mod='aismarttalk'}
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {/if}
+    </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Button type selection
-    var buttonTypeCards = document.querySelectorAll('.button-type-card');
-    var avatarUploadGroup = document.getElementById('avatar-upload-group');
+    // ===== TAB NAVIGATION =====
+    var tabs = document.querySelectorAll('.ast-tab');
+    var panels = document.querySelectorAll('.ast-panel');
 
-    function updateAvatarUploadVisibility(selectedValue) {
-        if (avatarUploadGroup) {
-            if (selectedValue === 'avatar') {
-                avatarUploadGroup.style.display = 'block';
-            } else {
-                avatarUploadGroup.style.display = 'none';
-            }
-        }
-    }
+    tabs.forEach(function(tab) {
+        tab.addEventListener('click', function() {
+            var targetId = 'panel-' + this.dataset.tab;
 
-    buttonTypeCards.forEach(function(card) {
-        card.addEventListener('click', function() {
-            buttonTypeCards.forEach(function(c) {
-                c.classList.remove('selected');
-            });
-            this.classList.add('selected');
-            var radio = this.querySelector('input[type="radio"]');
-            radio.checked = true;
-            updateAvatarUploadVisibility(radio.value);
+            // Update tabs
+            tabs.forEach(function(t) { t.classList.remove('active'); });
+            this.classList.add('active');
+
+            // Update panels
+            panels.forEach(function(p) { p.classList.remove('active'); });
+            var targetPanel = document.getElementById(targetId);
+            if (targetPanel) targetPanel.classList.add('active');
+
+            // Save to localStorage
+            localStorage.setItem('ast_active_tab', this.dataset.tab);
         });
     });
 
-    // Avatar file preview with validation
-    var avatarFileInput = document.getElementById('avatar-file-input');
-    var avatarFilePreview = document.getElementById('avatar-file-preview');
-    var avatarFilePreviewImg = document.getElementById('avatar-file-preview-img');
-
-    // Avatar validation constants
-    var AVATAR_MAX_SIZE = 5 * 1024 * 1024; // 5MB
-    var AVATAR_ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-
-    function formatFileSize(bytes) {
-        if (bytes < 1024) return bytes + ' B';
-        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    // Restore last active tab
+    var savedTab = localStorage.getItem('ast_active_tab');
+    if (savedTab) {
+        var savedTabBtn = document.querySelector('.ast-tab[data-tab="' + savedTab + '"]');
+        if (savedTabBtn) savedTabBtn.click();
     }
 
-    function showAvatarError(message) {
-        // Remove existing error
-        var existingError = document.getElementById('avatar-validation-error');
-        if (existingError) existingError.remove();
-
-        // Create error element
-        var errorDiv = document.createElement('div');
-        errorDiv.id = 'avatar-validation-error';
-        errorDiv.className = 'alert alert-danger';
-        errorDiv.style.marginTop = '10px';
-        errorDiv.innerHTML = '<i class="icon icon-warning"></i> ' + message;
-
-        avatarFileInput.parentNode.parentNode.appendChild(errorDiv);
-    }
-
-    function clearAvatarError() {
-        var existingError = document.getElementById('avatar-validation-error');
-        if (existingError) existingError.remove();
-    }
-
-    if (avatarFileInput && avatarFilePreview && avatarFilePreviewImg) {
-        avatarFileInput.addEventListener('change', function(e) {
-            var file = e.target.files[0];
-            clearAvatarError();
-
-            if (file) {
-                // Validate file type
-                if (AVATAR_ALLOWED_TYPES.indexOf(file.type) === -1) {
-                    showAvatarError('{l s='Invalid file type. Allowed formats: JPEG, PNG, GIF, WebP' mod='aismarttalk' js=1}');
-                    avatarFileInput.value = '';
-                    avatarFilePreview.style.display = 'none';
-                    avatarFilePreviewImg.src = '';
-                    return;
-                }
-
-                // Validate file size
-                if (file.size > AVATAR_MAX_SIZE) {
-                    showAvatarError('{l s='File too large. Maximum size: 5MB. Your file:' mod='aismarttalk' js=1} ' + formatFileSize(file.size));
-                    avatarFileInput.value = '';
-                    avatarFilePreview.style.display = 'none';
-                    avatarFilePreviewImg.src = '';
-                    return;
-                }
-
-                // Show preview
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    avatarFilePreviewImg.src = e.target.result;
-                    avatarFilePreview.style.display = 'block';
-                };
-                reader.readAsDataURL(file);
-            } else {
-                avatarFilePreview.style.display = 'none';
-                avatarFilePreviewImg.src = '';
-            }
+    // ===== BUTTON TYPE SELECTOR =====
+    var buttonTypes = document.querySelectorAll('.ast-button-type');
+    buttonTypes.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            buttonTypes.forEach(function(b) { b.classList.remove('selected'); });
+            this.classList.add('selected');
         });
-    }
+    });
 
-    // Color toggle functionality
-    function setupColorToggle(toggleId, pickerId, inputId) {
-        var toggle = document.getElementById(toggleId);
+    // ===== COLOR PICKERS =====
+    function setupColorPicker(pickerId, inputId) {
         var picker = document.getElementById(pickerId);
         var input = document.getElementById(inputId);
+        if (picker && input) {
+            picker.addEventListener('input', function() {
+                input.value = this.value;
+            });
+            input.addEventListener('input', function() {
+                if (/^#[0-9A-Fa-f]{6}$/.test(this.value)) {
+                    picker.value = this.value;
+                }
+            });
+        }
+    }
+    setupColorPicker('picker_primary', 'input_primary');
+    setupColorPicker('picker_secondary', 'input_secondary');
 
-        if (!toggle || !picker || !input) return;
-
+    // ===== WEBHOOK TOGGLE CARDS =====
+    document.querySelectorAll('.ast-webhook-card .ast-switch input').forEach(function(toggle) {
         toggle.addEventListener('change', function() {
+            var card = this.closest('.ast-webhook-card');
             if (this.checked) {
-                picker.disabled = false;
-                input.disabled = false;
-                if (!input.value) {
-                    input.value = picker.value;
-                }
+                card.classList.add('active');
             } else {
-                picker.disabled = true;
-                input.disabled = true;
-                input.value = '';
+                card.classList.remove('active');
+            }
+        });
+    });
+
+    // ===== SYNC FILTERS =====
+
+    // --- Product Type Chips ---
+    var typeCheckboxes = document.querySelectorAll('.ast-type-checkbox');
+    var typeWarning = document.getElementById('type-warning');
+
+    function updateTypeChips() {
+        var anyChecked = false;
+        typeCheckboxes.forEach(function(cb) {
+            var chip = cb.closest('.ast-type-chip');
+            if (chip) {
+                if (cb.checked) {
+                    chip.classList.add('checked');
+                    anyChecked = true;
+                } else {
+                    chip.classList.remove('checked');
+                }
+            }
+        });
+        if (typeWarning) typeWarning.style.display = anyChecked ? 'none' : 'flex';
+    }
+
+    typeCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateTypeChips);
+    });
+    updateTypeChips();
+
+    // --- Category Mode Selector ---
+    var categoryModeRadios = document.querySelectorAll('input[name="sync_filter_category_mode"]');
+    var categoryTreeWrapper = document.getElementById('category-tree-wrapper');
+    var categoryWarning = document.getElementById('category-warning');
+    var categoryWarningText = document.getElementById('category-warning-text');
+
+    function updateCategoryMode() {
+        var mode = 'all';
+        categoryModeRadios.forEach(function(r) { if (r.checked) mode = r.value; });
+
+        // Toggle active class on mode options
+        document.querySelectorAll('.ast-mode-option').forEach(function(opt) {
+            var radio = opt.querySelector('input[type="radio"]');
+            if (radio && radio.checked) {
+                opt.classList.add('active');
+            } else {
+                opt.classList.remove('active');
             }
         });
 
-        picker.addEventListener('input', function() {
-            input.value = this.value;
-        });
+        // Show/hide category tree
+        if (categoryTreeWrapper) {
+            categoryTreeWrapper.style.display = (mode === 'all') ? 'none' : '';
+        }
 
-        input.addEventListener('input', function() {
-            if (/^#[a-fA-F0-9]{6}$/.test(this.value)) {
-                picker.value = this.value;
+        // Update hidden categories input when "all" is selected
+        if (mode === 'all' && categoriesInput) {
+            categoriesInput.value = '[]';
+        } else {
+            updateCategorySelection();
+        }
+
+        // Update category warning
+        updateCategoryWarning(mode);
+    }
+
+    function updateCategoryWarning(mode) {
+        if (!categoryWarning || !categoryWarningText) return;
+        var count = 0;
+        if (categoryTree) {
+            categoryTree.querySelectorAll('.ast-tree-checkbox').forEach(function(cb) {
+                if (cb.checked) count++;
+            });
+        }
+
+        if (mode !== 'all' && count === 0) {
+            categoryWarningText.textContent = (mode === 'include')
+                ? '{l s="No categories selected. No products will be synchronized." mod="aismarttalk" js=1}'
+                : '{l s="No categories selected. All products will be synchronized (nothing excluded)." mod="aismarttalk" js=1}';
+            categoryWarning.style.display = 'flex';
+        } else {
+            categoryWarning.style.display = 'none';
+        }
+    }
+
+    categoryModeRadios.forEach(function(r) {
+        r.addEventListener('change', updateCategoryMode);
+    });
+
+    // --- Category Tree ---
+    var categoryTree = document.getElementById('category-tree');
+    var categorySearch = document.getElementById('category-search');
+    var categoriesInput = document.getElementById('sync_filter_categories');
+    var selectedCount = document.getElementById('selected-count');
+    var clearBtn = document.getElementById('clear-categories');
+    var selectAllBtn = document.getElementById('select-all-cats');
+    var expandAllBtn = document.getElementById('expand-all');
+    var collapseAllBtn = document.getElementById('collapse-all');
+
+    // Build parent-children relationships
+    var treeData = {};
+    if (categoryTree) {
+        var nodes = categoryTree.querySelectorAll('.ast-tree-node');
+        nodes.forEach(function(node) {
+            var id = parseInt(node.dataset.id);
+            var parentId = parseInt(node.dataset.parent) || null;
+            var children = [];
+            try { children = JSON.parse(node.dataset.children || '[]'); } catch(e) {}
+            treeData[id] = {
+                node: node,
+                parentId: parentId,
+                childIds: children,
+                checkbox: node.querySelector('.ast-tree-checkbox')
+            };
+        });
+    }
+
+    function getAllDescendants(id) {
+        var descendants = [];
+        var data = treeData[id];
+        if (data && data.childIds) {
+            data.childIds.forEach(function(childId) {
+                descendants.push(childId);
+                descendants = descendants.concat(getAllDescendants(childId));
+            });
+        }
+        return descendants;
+    }
+
+    function updateCategorySelection() {
+        if (!categoryTree) return;
+        var checkboxes = categoryTree.querySelectorAll('.ast-tree-checkbox');
+        var selected = [];
+        checkboxes.forEach(function(cb) {
+            if (cb.checked) selected.push(parseInt(cb.value));
+        });
+        if (categoriesInput) categoriesInput.value = JSON.stringify(selected);
+        if (selectedCount) selectedCount.textContent = selected.length;
+
+        // Update warning based on current mode
+        var mode = 'all';
+        categoryModeRadios.forEach(function(r) { if (r.checked) mode = r.value; });
+        updateCategoryWarning(mode);
+    }
+
+    function toggleNode(id, expand) {
+        var data = treeData[id];
+        if (!data || !data.childIds.length) return;
+        var toggle = data.node.querySelector('.ast-tree-toggle');
+        if (toggle) {
+            toggle.classList[expand ? 'add' : 'remove']('expanded');
+        }
+        data.childIds.forEach(function(childId) {
+            var childData = treeData[childId];
+            if (childData) {
+                childData.node.style.display = expand ? 'flex' : 'none';
+                if (!expand) toggleNode(childId, false);
             }
         });
     }
 
-    setupColorToggle('toggle_primary_color', 'picker_primary_color', 'input_primary_color');
-    setupColorToggle('toggle_secondary_color', 'picker_secondary_color', 'input_secondary_color');
+    function handleCheckboxChange(id, checked) {
+        var descendants = getAllDescendants(id);
+        descendants.forEach(function(descId) {
+            var data = treeData[descId];
+            if (data && data.checkbox) data.checkbox.checked = checked;
+        });
+        updateParentStates();
+        updateCategorySelection();
+    }
 
-    // Clear disabled color inputs on form submit
-    var customizationForm = document.getElementById('chatbot-customization-form');
-    if (customizationForm) {
-        customizationForm.addEventListener('submit', function() {
-            var primaryToggle = document.getElementById('toggle_primary_color');
-            var secondaryToggle = document.getElementById('toggle_secondary_color');
-            var primaryInput = document.getElementById('input_primary_color');
-            var secondaryInput = document.getElementById('input_secondary_color');
+    function updateParentStates() {
+        var maxDepth = 0;
+        Object.values(treeData).forEach(function(data) {
+            var depth = parseInt(data.node.dataset.depth) || 0;
+            if (depth > maxDepth) maxDepth = depth;
+        });
 
-            if (primaryToggle && !primaryToggle.checked && primaryInput) {
-                primaryInput.disabled = false;
-                primaryInput.value = '';
-            }
-            if (secondaryToggle && !secondaryToggle.checked && secondaryInput) {
-                secondaryInput.disabled = false;
-                secondaryInput.value = '';
+        for (var depth = maxDepth - 1; depth >= 0; depth--) {
+            Object.values(treeData).forEach(function(data) {
+                var nodeDepth = parseInt(data.node.dataset.depth) || 0;
+                if (nodeDepth !== depth || !data.childIds.length) return;
+
+                var allChecked = true;
+                var someChecked = false;
+                getAllDescendants(parseInt(data.node.dataset.id)).forEach(function(descId) {
+                    var descData = treeData[descId];
+                    if (descData && descData.checkbox) {
+                        if (descData.checkbox.checked) someChecked = true;
+                        else allChecked = false;
+                    }
+                });
+
+                if (data.checkbox) {
+                    data.checkbox.checked = allChecked && someChecked;
+                    data.checkbox.indeterminate = someChecked && !allChecked;
+                }
+            });
+        }
+    }
+
+    // Event listeners
+    if (categoryTree) {
+        categoryTree.addEventListener('click', function(e) {
+            if (e.target.classList.contains('ast-tree-toggle')) {
+                var id = parseInt(e.target.dataset.id);
+                toggleNode(id, !e.target.classList.contains('expanded'));
             }
         });
+
+        categoryTree.addEventListener('change', function(e) {
+            if (e.target.classList.contains('ast-tree-checkbox')) {
+                var node = e.target.closest('.ast-tree-node');
+                handleCheckboxChange(parseInt(node.dataset.id), e.target.checked);
+            }
+        });
+
+        // On page load: expand parents of checked items
+        Object.values(treeData).forEach(function(data) {
+            if (data.checkbox && data.checkbox.checked) {
+                data.node.style.display = 'flex';
+                var parentId = data.parentId;
+                while (parentId) {
+                    var parentData = treeData[parentId];
+                    if (parentData) {
+                        parentData.node.style.display = 'flex';
+                        var toggle = parentData.node.querySelector('.ast-tree-toggle');
+                        if (toggle) toggle.classList.add('expanded');
+                        parentId = parentData.parentId;
+                    } else {
+                        parentId = null;
+                    }
+                }
+            }
+        });
+
+        // Initial updates
+        updateCategorySelection();
+        updateParentStates();
     }
-});
-</script>
 
-{if $isConnected}
-<!-- AI Skills Loading Script -->
-<script>
-(function() {
-    // ============================
-    // AI Skills API v1
-    // ============================
-    var chatModelId = '{$chatModelId|escape:'javascript':'UTF-8'}';
-    var accessToken = '{$accessToken|escape:'javascript':'UTF-8'}';
-    var apiBaseUrl = '{$apiUrl|escape:'javascript':'UTF-8'}';
-    var currentLang = '{$currentLang|escape:'javascript':'UTF-8'}';
+    // Initialize category mode (show/hide tree)
+    updateCategoryMode();
 
-    // DOM Elements - Installed SmartFlows (My Skills)
-    var smartflowsContainer = document.getElementById('aismarttalk-smartflows-container');
-    var smartflowsLoading = smartflowsContainer ? smartflowsContainer.querySelector('.aismarttalk-smartflows-loading') : null;
-    var smartflowsGrid = smartflowsContainer ? smartflowsContainer.querySelector('.aismarttalk-smartflows-grid') : null;
-    var smartflowsEmpty = smartflowsContainer ? smartflowsContainer.querySelector('.aismarttalk-smartflows-empty') : null;
-    var smartflowsError = smartflowsContainer ? smartflowsContainer.querySelector('.aismarttalk-smartflows-error') : null;
+    // Search
+    if (categorySearch) {
+        categorySearch.addEventListener('input', function() {
+            var term = this.value.toLowerCase();
+            Object.values(treeData).forEach(function(data) {
+                var name = data.node.dataset.name || '';
+                if (term === '') {
+                    var depth = parseInt(data.node.dataset.depth) || 0;
+                    data.node.classList.remove('hidden');
+                    data.node.style.display = depth === 0 ? 'flex' : 'none';
+                    var toggle = data.node.querySelector('.ast-tree-toggle');
+                    if (toggle) toggle.classList.remove('expanded');
+                } else {
+                    if (name.indexOf(term) !== -1) {
+                        data.node.classList.remove('hidden');
+                        data.node.style.display = 'flex';
+                        var parentId = data.parentId;
+                        while (parentId) {
+                            var parentData = treeData[parentId];
+                            if (parentData) {
+                                parentData.node.style.display = 'flex';
+                                var toggle = parentData.node.querySelector('.ast-tree-toggle');
+                                if (toggle) toggle.classList.add('expanded');
+                                parentId = parentData.parentId;
+                            } else {
+                                parentId = null;
+                            }
+                        }
+                    } else {
+                        data.node.classList.add('hidden');
+                    }
+                }
+            });
+        });
+    }
 
-    // DOM Elements - Templates Store (Marketplace)
-    var templatesContainer = document.getElementById('aismarttalk-templates-container');
-    var templatesLoading = templatesContainer ? templatesContainer.querySelector('.aismarttalk-templates-loading') : null;
-    var templatesGrid = templatesContainer ? templatesContainer.querySelector('.aismarttalk-templates-grid') : null;
-    var templatesEmpty = templatesContainer ? templatesContainer.querySelector('.aismarttalk-templates-empty') : null;
-    var templatesError = templatesContainer ? templatesContainer.querySelector('.aismarttalk-templates-error') : null;
+    // Clear all categories
+    if (clearBtn) {
+        clearBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            Object.values(treeData).forEach(function(data) {
+                if (data.checkbox) {
+                    data.checkbox.checked = false;
+                    data.checkbox.indeterminate = false;
+                }
+            });
+            updateCategorySelection();
+        });
+    }
 
-    // DOM Elements - Search & Filters
-    var searchInput = document.getElementById('aismarttalk-templates-search-input');
-    var filterPlatform = document.getElementById('aismarttalk-filter-platform');
-    var filterIntegration = document.getElementById('aismarttalk-filter-integration');
-    var filterTrigger = document.getElementById('aismarttalk-filter-trigger');
-    var filterStatus = document.getElementById('aismarttalk-filter-status');
-    var filterSort = document.getElementById('aismarttalk-filter-sort');
-    var templatesCountEl = document.getElementById('aismarttalk-templates-count');
-    var templatesTotalEl = document.getElementById('aismarttalk-templates-total');
+    // Select all categories
+    if (selectAllBtn) {
+        selectAllBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            Object.values(treeData).forEach(function(data) {
+                if (data.checkbox) {
+                    data.checkbox.checked = true;
+                    data.checkbox.indeterminate = false;
+                }
+            });
+            updateCategorySelection();
+        });
+    }
 
-    // DOM Elements - Pagination
-    var paginationEl = document.getElementById('aismarttalk-templates-pagination');
-    var prevBtn = document.getElementById('aismarttalk-templates-prev');
-    var nextBtn = document.getElementById('aismarttalk-templates-next');
-    var pageInfoEl = document.getElementById('aismarttalk-templates-page-info');
+    // Expand all
+    if (expandAllBtn) {
+        expandAllBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            Object.values(treeData).forEach(function(data) {
+                data.node.style.display = 'flex';
+                var toggle = data.node.querySelector('.ast-tree-toggle');
+                if (toggle) toggle.classList.add('expanded');
+            });
+        });
+    }
 
-    // DOM Elements - Updates alert
-    var updatesAlert = document.getElementById('aismarttalk-updates-alert');
-    var updatesCount = document.getElementById('aismarttalk-updates-count');
+    // Collapse all
+    if (collapseAllBtn) {
+        collapseAllBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            Object.values(treeData).forEach(function(data) {
+                var depth = parseInt(data.node.dataset.depth) || 0;
+                data.node.style.display = depth === 0 ? 'flex' : 'none';
+                var toggle = data.node.querySelector('.ast-tree-toggle');
+                if (toggle) toggle.classList.remove('expanded');
+            });
+        });
+    }
 
-    // Store installed templates data for reference
+    // ===== AI SKILLS - FULL CLIENT-SIDE =====
+    var apiBaseUrl = '{$apiUrl|escape:"javascript":"UTF-8"}'.replace(/\/+$/, '');
+    var skillAccessToken = '{$accessToken|escape:"javascript":"UTF-8"}';
+    var skillChatModelId = '{$chatModelId|escape:"javascript":"UTF-8"}';
+    var skillLang = '{$currentLang|escape:"javascript":"UTF-8"}';
+
+    // DOM refs - Installed
+    var sfGrid = document.getElementById('ast-smartflows-grid');
+    var sfLoading = document.getElementById('ast-smartflows-loading');
+    var sfEmpty = document.getElementById('ast-smartflows-empty');
+    var sfStats = document.getElementById('ast-skills-stats');
+
+    // DOM refs - Marketplace
+    var tplGrid = document.getElementById('ast-templates-grid');
+    var tplLoading = document.getElementById('ast-templates-loading');
+    var tplEmpty = document.getElementById('ast-templates-empty');
+    var tplCountEl = document.getElementById('ast-templates-count');
+    var tplTotalEl = document.getElementById('ast-templates-total');
+    var tplPagination = document.getElementById('ast-templates-pagination');
+    var tplPrev = document.getElementById('ast-templates-prev');
+    var tplNext = document.getElementById('ast-templates-next');
+    var tplPageInfo = document.getElementById('ast-templates-page-info');
+    var updatesAlert = document.getElementById('ast-updates-alert');
+    var updatesCount = document.getElementById('ast-updates-count');
+
     var installedTemplatesData = {};
-
-    // Current filters state
-    var currentFilters = {
-        search: '',
-        platform: 'prestashop',
-        integration: '',
-        triggerType: '',
-        installed: null,
-        hasUpdate: null,
-        sortBy: 'downloads',
-        sortOrder: 'desc',
-        page: 1,
-        limit: 20
-    };
-
-    // Pagination state
-    var paginationState = {
-        page: 1,
-        totalPages: 1,
-        total: 0
-    };
-
-    // Debounce helper
+    var currentFilters = { search: '', platform: 'prestashop', integration: '', triggerType: '', installed: null, hasUpdate: null, sortBy: 'downloads', sortOrder: 'desc', page: 1, limit: 20 };
+    var paginationState = { page: 1, totalPages: 1, total: 0 };
     var searchTimeout = null;
-    function debounce(func, wait) {
-        return function() {
-            var args = arguments;
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(function() {
-                func.apply(null, args);
-            }, wait);
-        };
-    }
 
-    // Build configuration URL for a workflow
-    function getConfigureUrl(workflowId) {
-        return apiBaseUrl + '/' + currentLang + '/admin/chatModel/' + chatModelId + '/smartflows/' + workflowId;
-    }
+    function getConfigureUrl(wId) { return apiBaseUrl + '/' + skillLang + '/admin/chatModel/' + skillChatModelId + '/smartflows/' + wId; }
 
-    // API request helper
     function apiRequest(method, endpoint, body) {
-        var options = {
-            method: method,
-            headers: {
-                'Authorization': 'Bearer ' + accessToken,
-                'Content-Type': 'application/json',
-                'x-chat-model-id': chatModelId
-            }
-        };
-        if (body) {
-            options.body = JSON.stringify(body);
-        }
-        console.log('[AI SmartTalk] API Request:', method, apiBaseUrl + endpoint);
-        return fetch(apiBaseUrl + endpoint, options).then(function(response) {
-            if (!response.ok) {
-                console.error('[AI SmartTalk] API Error:', response.status, response.statusText);
-                return response.json().then(function(err) {
-                    return Promise.reject(err);
-                }).catch(function() {
-                    return Promise.reject({ error: 'HTTP ' + response.status });
-                });
-            }
-            return response.json();
+        var opts = { method: method, headers: { 'Authorization': 'Bearer ' + skillAccessToken, 'Content-Type': 'application/json', 'x-chat-model-id': skillChatModelId } };
+        if (body) opts.body = JSON.stringify(body);
+        return fetch(apiBaseUrl + endpoint, opts).then(function(r) {
+            if (!r.ok) return r.json().then(function(e) { return Promise.reject(e); }).catch(function() { return Promise.reject({ error: 'HTTP ' + r.status }); });
+            return r.json();
         });
     }
 
-    // Build query string from filters
     function buildQueryString() {
-        var params = [];
-        // Only add platform filter if a specific platform is selected
-        if (currentFilters.platform) {
-            params.push('platform=' + encodeURIComponent(currentFilters.platform));
-        }
-        params.push('lang=' + encodeURIComponent(currentLang));
-        params.push('limit=' + currentFilters.limit);
-        params.push('page=' + currentFilters.page);
-
-        if (currentFilters.search) {
-            params.push('search=' + encodeURIComponent(currentFilters.search));
-        }
-        if (currentFilters.integration) {
-            params.push('integrations=' + encodeURIComponent(currentFilters.integration));
-        }
-        if (currentFilters.triggerType) {
-            params.push('triggerTypes=' + encodeURIComponent(currentFilters.triggerType));
-        }
-        if (currentFilters.installed !== null) {
-            params.push('installed=' + currentFilters.installed);
-        }
-        if (currentFilters.hasUpdate !== null) {
-            params.push('hasUpdate=' + currentFilters.hasUpdate);
-        }
-        if (currentFilters.sortBy) {
-            params.push('sortBy=' + currentFilters.sortBy);
-            params.push('sortOrder=' + currentFilters.sortOrder);
-        }
-
-        return params.join('&');
+        var p = [];
+        if (currentFilters.platform) p.push('platform=' + encodeURIComponent(currentFilters.platform));
+        p.push('lang=' + encodeURIComponent(skillLang));
+        p.push('limit=' + currentFilters.limit);
+        p.push('page=' + currentFilters.page);
+        if (currentFilters.search) p.push('search=' + encodeURIComponent(currentFilters.search));
+        if (currentFilters.integration) p.push('integrations=' + encodeURIComponent(currentFilters.integration));
+        if (currentFilters.triggerType) p.push('triggerTypes=' + encodeURIComponent(currentFilters.triggerType));
+        if (currentFilters.installed !== null) p.push('installed=' + currentFilters.installed);
+        if (currentFilters.hasUpdate !== null) p.push('hasUpdate=' + currentFilters.hasUpdate);
+        if (currentFilters.sortBy) { p.push('sortBy=' + currentFilters.sortBy); p.push('sortOrder=' + currentFilters.sortOrder); }
+        return p.join('&');
     }
 
-    // Skill type helpers
     function getSkillTypeBadge(triggerType) {
-        switch (triggerType) {
-            case 'CHAT_SERVICE':
-                return { emoji: '🔧', label: '{l s='AI Tool' mod='aismarttalk' js=1}', class: 'tool' };
-            case 'NAVIGATION_EVENT':
-                return { emoji: '👋', label: '{l s='Automatic' mod='aismarttalk' js=1}', class: 'auto' };
-            case 'WEBHOOK':
-                return { emoji: '🔗', label: '{l s='Connection' mod='aismarttalk' js=1}', class: 'webhook' };
-            default:
-                return { emoji: '⚡', label: '{l s='Skill' mod='aismarttalk' js=1}', class: 'default' };
-        }
+        var map = {
+            'CONVERSATION_TOOL': { emoji: '🤖', label: '{l s="Conversation tool" mod="aismarttalk"}', cls: 'conversation-tool' },
+            'WEBHOOK': { emoji: '🔗', label: 'Webhook', cls: 'webhook' },
+            'SMART_FORM_WORKFLOW': { emoji: '📝', label: 'SmartForm', cls: 'smartform' },
+            'SMART_FORM_SEQUENCE_WORKFLOW': { emoji: '📋', label: 'Sequence', cls: 'sequence' },
+            'NAVIGATION_EVENT': { emoji: '🧭', label: 'Navigation', cls: 'navigation' },
+            'CHAT_SERVICE': { emoji: '💬', label: 'Chat', cls: 'chat' },
+            'SCHEDULE_WORKFLOW': { emoji: '⏰', label: '{l s="Scheduled" mod="aismarttalk"}', cls: 'scheduled' },
+            'DICTAPHONE': { emoji: '🎙️', label: 'Dictaphone', cls: 'dictaphone' }
+        };
+        return map[triggerType] || { emoji: '⚡', label: 'Skill', cls: 'default' };
     }
 
-    function getSkillTriggerText(template) {
-        if (template.triggerDescription) {
-            return template.triggerDescription;
-        }
-
-        var triggerType = template.triggerType || 'CHAT_SERVICE';
-        switch (triggerType) {
-            case 'CHAT_SERVICE':
-                return '{l s='When a visitor asks your assistant' mod='aismarttalk' js=1}';
-            case 'NAVIGATION_EVENT':
-                return '{l s='When a visitor browses your site' mod='aismarttalk' js=1}';
-            case 'WEBHOOK':
-                return '{l s='When an event is triggered' mod='aismarttalk' js=1}';
-            default:
-                return '{l s='Based on context' mod='aismarttalk' js=1}';
-        }
+    function getSkillTriggerText(t) {
+        if (t.triggerDescription) return t.triggerDescription;
+        var m = { 'CHAT_SERVICE': '{l s="When a visitor asks your assistant" mod="aismarttalk"}', 'NAVIGATION_EVENT': '{l s="When a visitor browses your site" mod="aismarttalk"}', 'WEBHOOK': '{l s="When an event is triggered" mod="aismarttalk"}' };
+        return m[t.triggerType] || '{l s="Based on context" mod="aismarttalk"}';
     }
 
-    function getSkillActionText(template) {
-        return template.actionDescription || template.description || '';
-    }
+    function getSkillActionText(t) { return t.actionDescription || t.description || ''; }
 
-    // Load filters from API
-    function loadFilters() {
-        apiRequest('GET', '/api/v1/smartflow-templates/filters?lang=' + currentLang)
-        .then(function(data) {
-            // Populate integrations/platforms
-            if (filterIntegration && data.integrations) {
-                data.integrations.forEach(function(item) {
-                    var option = document.createElement('option');
-                    option.value = item.type;
-                    var label = (item.emoji || '') + ' ' + item.label;
-                    if (item.count !== undefined) {
-                        label += ' (' + item.count + ')';
-                    }
-                    if (item.installed) {
-                        label += ' ✓';
-                    }
-                    option.textContent = label;
-                    filterIntegration.appendChild(option);
-                });
-            }
-        })
-        .catch(function(error) {
-            console.error('Error loading filters:', error);
-        });
-    }
+    function escHtml(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 
-    // Render a single integration card
-    function renderIntegrationCard(integration, fallbackIcon, isHidden) {
-        var isConnected = integration.connected || integration.status === 'connected';
-        var primaryColor = integration.colors ? integration.colors.primary : '#667eea';
-        var name = integration.name || integration.label || integration.type;
-        var icon = fallbackIcon || '🔌';
-        var hiddenClass = isHidden ? ' aismarttalk-integration-hidden' : '';
-
-        var html = '<div class="aismarttalk-integration-card' + (isConnected ? ' connected' : '') + hiddenClass + '">';
-        html += '<div class="aismarttalk-integration-info">';
-
-        // Logo or fallback icon
-        if (integration.logoUrl) {
-            html += '<div class="aismarttalk-integration-logo" style="background-color: ' + primaryColor + '20;">';
-            html += '<img src="' + integration.logoUrl + '" alt="' + name + '" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\';" />';
-            html += '<span class="aismarttalk-integration-logo-fallback" style="display:none;">' + icon + '</span>';
-            html += '</div>';
-        } else {
-            html += '<div class="aismarttalk-integration-logo" style="background-color: ' + primaryColor + '20;">';
-            html += '<span class="aismarttalk-integration-logo-fallback">' + icon + '</span>';
-            html += '</div>';
-        }
-
-        html += '<div class="aismarttalk-integration-details">';
-        html += '<h4>' + name + '</h4>';
-        html += '<span class="aismarttalk-integration-category">' + (integration.category || '') + '</span>';
-        html += '</div>';
-        html += '</div>';
-
-        html += '<div class="aismarttalk-integration-status">';
-        if (isConnected) {
-            html += '<span class="aismarttalk-integration-badge connected" style="background-color: ' + primaryColor + '20; color: ' + primaryColor + ';">✓ {l s='Connected' mod='aismarttalk' js=1}</span>';
-        } else {
-            html += '<span class="aismarttalk-integration-badge not-connected">⚪ {l s='Not configured' mod='aismarttalk' js=1}</span>';
-        }
-        if (integration.configUrl) {
-            var linkText = isConnected ? '{l s='Manage' mod='aismarttalk' js=1}' : '{l s='Configure' mod='aismarttalk' js=1}';
-            html += '<a href="' + integration.configUrl + '" target="_blank" class="aismarttalk-integration-link" style="color: ' + primaryColor + ';">' + linkText + ' →</a>';
-        }
-        html += '</div>';
-        html += '</div>';
-
-        return html;
-    }
-
-    // Render expand/collapse button
-    function renderExpandButton(hiddenCount, type) {
-        var showMoreText = '{l s='Show more' mod='aismarttalk' js=1}';
-        var showLessText = '{l s='Show less' mod='aismarttalk' js=1}';
-        return '<button type="button" class="aismarttalk-expand-btn" data-type="' + type + '" data-expanded="false" data-show-more="' + showMoreText + ' (' + hiddenCount + ')" data-show-less="' + showLessText + '">' +
-            '<span class="aismarttalk-expand-text">' + showMoreText + ' (' + hiddenCount + ')</span>' +
-            '<span class="aismarttalk-expand-icon">▼</span>' +
-            '</button>';
-    }
-
-    // Toggle expand/collapse for channels or integrations
-    function setupExpandToggle() {
-        document.addEventListener('click', function(e) {
-            var btn = e.target.closest('.aismarttalk-expand-btn');
-            if (!btn) return;
-
-            var type = btn.getAttribute('data-type');
-            var isExpanded = btn.getAttribute('data-expanded') === 'true';
-            var container = type === 'channels'
-                ? document.getElementById('aismarttalk-channels-container')
-                : document.getElementById('aismarttalk-integrations-container');
-
-            if (!container) return;
-
-            var hiddenCards = container.querySelectorAll('.aismarttalk-integration-hidden');
-            var textSpan = btn.querySelector('.aismarttalk-expand-text');
-            var iconSpan = btn.querySelector('.aismarttalk-expand-icon');
-
-            if (isExpanded) {
-                // Collapse
-                hiddenCards.forEach(function(card) { card.style.display = 'none'; });
-                btn.setAttribute('data-expanded', 'false');
-                textSpan.textContent = btn.getAttribute('data-show-more');
-                iconSpan.textContent = '▼';
-            } else {
-                // Expand
-                hiddenCards.forEach(function(card) { card.style.display = 'flex'; });
-                btn.setAttribute('data-expanded', 'true');
-                textSpan.textContent = btn.getAttribute('data-show-less');
-                iconSpan.textContent = '▲';
-            }
-        });
-    }
-
-    // Load integrations from API
-    function loadIntegrations() {
-        var channelsContainer = document.getElementById('aismarttalk-channels-container');
-        var integrationsContainer = document.getElementById('aismarttalk-integrations-container');
-
-        if (!channelsContainer && !integrationsContainer) {
-            console.log('[AI SmartTalk] Integrations/Channels containers not found');
-            return;
-        }
-
-        // Get elements for channels
-        var channelsLoading = channelsContainer ? channelsContainer.querySelector('.aismarttalk-integrations-loading') : null;
-        var channelsGrid = channelsContainer ? channelsContainer.querySelector('.aismarttalk-channels-grid') : null;
-        var channelsEmpty = channelsContainer ? channelsContainer.querySelector('.aismarttalk-integrations-empty') : null;
-
-        // Get elements for integrations
-        var integrationsLoading = integrationsContainer ? integrationsContainer.querySelector('.aismarttalk-integrations-loading') : null;
-        var integrationsGrid = integrationsContainer ? integrationsContainer.querySelector('.aismarttalk-integrations-grid') : null;
-        var integrationsEmpty = integrationsContainer ? integrationsContainer.querySelector('.aismarttalk-integrations-empty') : null;
-
-        console.log('[AI SmartTalk] Loading integrations...');
-        apiRequest('GET', '/api/v1/integrations?integrationType=PRESTASHOP')
-        .then(function(data) {
-            console.log('[AI SmartTalk] Integrations response:', data);
-
-            // Hide loading spinners
-            if (channelsLoading) channelsLoading.style.display = 'none';
-            if (integrationsLoading) integrationsLoading.style.display = 'none';
-
-            // API returns pre-sorted and grouped data
-            var channels = data.channels || [];
-            var integrations = data.integrations || [];
-            var visibleCount = data.config ? data.config.visibleCount : 4;
-
-            // Render channels
-            if (channels.length > 0 && channelsGrid) {
-                var channelsHtml = '';
-                channels.forEach(function(channel, index) {
-                    var isHidden = index >= visibleCount;
-                    channelsHtml += renderIntegrationCard(channel, '💬', isHidden);
-                });
-                channelsGrid.innerHTML = channelsHtml;
-                channelsGrid.style.display = 'grid';
-
-                // Add expand button if there are hidden items
-                if (channels.length > visibleCount) {
-                    var hiddenCount = channels.length - visibleCount;
-                    channelsGrid.insertAdjacentHTML('afterend', renderExpandButton(hiddenCount, 'channels'));
-                }
-            } else if (channelsEmpty) {
-                channelsEmpty.style.display = 'flex';
-            }
-
-            // Render integrations
-            if (integrations.length > 0 && integrationsGrid) {
-                var integrationsHtml = '';
-                integrations.forEach(function(integration, index) {
-                    var isHidden = index >= visibleCount;
-                    integrationsHtml += renderIntegrationCard(integration, '🔌', isHidden);
-                });
-                integrationsGrid.innerHTML = integrationsHtml;
-                integrationsGrid.style.display = 'grid';
-
-                // Add expand button if there are hidden items
-                if (integrations.length > visibleCount) {
-                    var hiddenCount = integrations.length - visibleCount;
-                    integrationsGrid.insertAdjacentHTML('afterend', renderExpandButton(hiddenCount, 'integrations'));
-                }
-            } else if (integrationsEmpty) {
-                integrationsEmpty.style.display = 'flex';
-            }
-        })
-        .catch(function(error) {
-            console.error('Error loading integrations:', error);
-            if (channelsLoading) channelsLoading.style.display = 'none';
-            if (integrationsLoading) integrationsLoading.style.display = 'none';
-            if (channelsEmpty) channelsEmpty.style.display = 'flex';
-            if (integrationsEmpty) integrationsEmpty.style.display = 'flex';
-        });
-    }
-
-    // Setup expand toggle listener
-    setupExpandToggle();
-
-    // Render action buttons for a skill based on installation status
-    function renderSkillAction(template) {
-        var installation = template.installation || {};
-        var hasUpdate = installation.hasUpdate || false;
-
-        // Check if template is installed via installedTemplatesData
-        var installedData = installedTemplatesData[template.id];
-        if (installedData) {
-            installation.isInstalled = true;
-            installation.workflowId = installedData.workflowId;
-            hasUpdate = installedData.hasUpdate || false;
-        }
-
-        if (installation.isInstalled && installation.workflowId) {
-            var actions = '<div class="aismarttalk-skill-actions">';
-            if (hasUpdate) {
-                actions += '<button type="button" class="aismarttalk-skill-btn aismarttalk-skill-btn-update" data-template-id="' + template.id + '" title="{l s='Update available' mod='aismarttalk' js=1}">🔄</button>';
-            }
-            actions += '<a href="' + getConfigureUrl(installation.workflowId) + '" target="_blank" class="aismarttalk-skill-btn aismarttalk-skill-btn-configure" title="{l s='Configure' mod='aismarttalk' js=1}">⚙️</a>';
-            actions += '<button type="button" class="aismarttalk-skill-btn aismarttalk-skill-btn-remove" data-template-id="' + template.id + '" title="{l s='Remove' mod='aismarttalk' js=1}">🗑️</button>';
-            actions += '</div>';
-            return actions;
-        }
-
-        // Check for missing integrations
-        if (template.missingIntegrations && template.missingIntegrations.length > 0) {
-            return '<span class="aismarttalk-skill-missing" title="{l s='Requires:' mod='aismarttalk' js=1} ' + template.missingIntegrations.join(', ') + '">🔗 {l s='Setup needed' mod='aismarttalk' js=1}</span>';
-        }
-
-        return '<button type="button" class="aismarttalk-skill-btn-install" data-template-id="' + template.id + '">➕ {l s='Add skill' mod='aismarttalk' js=1}</button>';
-    }
-
-    // Render installed skills (My Skills section)
+    // ---- RENDER INSTALLED SKILLS ----
     function renderInstalledSmartflows(data) {
-        if (smartflowsLoading) smartflowsLoading.style.display = 'none';
-
+        if (sfLoading) sfLoading.style.display = 'none';
         var installed = data.installed || [];
         var stats = data.stats || {};
 
-        // Update stats display
-        var skillsStatsEl = document.getElementById('aismarttalk-skills-stats');
-        if (skillsStatsEl && installed.length > 0) {
-            var statActive = document.getElementById('stat-active');
-            var statInactive = document.getElementById('stat-inactive');
-            if (statActive) statActive.textContent = stats.activeCount || 0;
-            if (statInactive) statInactive.textContent = stats.inactiveCount || 0;
-            skillsStatsEl.style.display = 'flex';
+        if (sfStats && installed.length > 0) {
+            var sa = document.getElementById('ast-stat-active');
+            var si = document.getElementById('ast-stat-inactive');
+            if (sa) sa.textContent = stats.activeCount || 0;
+            if (si) si.textContent = stats.inactiveCount || 0;
+            sfStats.style.display = 'flex';
         }
-
-        // Show updates alert if available
         if (updatesAlert && updatesCount && stats.updatesAvailable > 0) {
             updatesCount.textContent = stats.updatesAvailable;
             updatesAlert.style.display = 'flex';
         }
+        if (!installed.length) { if (sfEmpty) sfEmpty.style.display = 'block'; return; }
 
-        if (!installed || installed.length === 0) {
-            if (smartflowsEmpty) smartflowsEmpty.style.display = 'flex';
-            return;
-        }
-
-        // Store for reference - map by workflowId for quick lookup (works for both template-based and manual)
         installed.forEach(function(item) {
             installedTemplatesData[item.workflowId] = item;
-            // Also map by templateId for backwards compatibility
-            if (item.templateId) {
-                installedTemplatesData[item.templateId] = item;
-            }
+            if (item.templateId) installedTemplatesData[item.templateId] = item;
         });
 
         var html = '';
-        installed.forEach(function(skill) {
-            var isManual = skill.isManual || !skill.templateId;
-            var hasUpdate = !isManual && (skill.hasUpdate || (skill.installedVersion !== skill.currentVersion));
-            var statusClass = skill.isActive ? 'active' : 'paused';
-            var typeBadge = getSkillTypeBadge(skill.triggerType);
-            var skillId = skill.workflowId;
+        installed.forEach(function(sk) {
+            var isManual = sk.isManual || !sk.templateId;
+            var hasUpdate = !isManual && (sk.hasUpdate || (sk.installedVersion !== sk.currentVersion));
+            var statusClass = sk.isActive ? 'active' : 'paused';
+            var badge = getSkillTypeBadge(sk.triggerType);
 
-            html += '<div class="aismarttalk-skill-card' + (hasUpdate ? ' has-update' : '') + (isManual ? ' is-manual' : '') + ' ' + statusClass + '" data-workflow-id="' + skillId + '" data-template-id="' + (skill.templateId || '') + '" data-is-manual="' + (isManual ? 'true' : 'false') + '">';
-
-            // Type badge - show "Custom" for manual workflows
+            html += '<div class="ast-skill-card' + (hasUpdate ? ' has-update' : '') + (isManual ? ' is-manual' : '') + ' ' + statusClass + '">';
             if (isManual) {
-                html += '<div class="aismarttalk-skill-type-badge aismarttalk-skill-type-custom">🛠️ {l s='Custom' mod='aismarttalk' js=1}</div>';
+                html += '<div class="ast-skill-type-badge custom">🛠️ {l s="Custom" mod="aismarttalk"}</div>';
             } else {
-                html += '<div class="aismarttalk-skill-type-badge ' + typeBadge.class + '">' + typeBadge.emoji + ' ' + typeBadge.label + '</div>';
+                html += '<div class="ast-skill-type-badge ' + badge.cls + '">' + badge.emoji + ' ' + escHtml(badge.label) + '</div>';
             }
-
-            // Skill header with icon and name
-            html += '<div class="aismarttalk-skill-header-row">';
-            html += '<span class="aismarttalk-skill-icon">' + (skill.icon || '⚡') + '</span>';
-            html += '<h4 class="aismarttalk-skill-name">' + (skill.workflowName || skill.templateName || 'Skill') + '</h4>';
-            if (hasUpdate) {
-                html += '<span class="aismarttalk-skill-update-badge" title="v' + skill.currentVersion + ' {l s='available' mod='aismarttalk' js=1}">🔄</span>';
-            }
+            html += '<div class="ast-skill-header-row">';
+            html += '<span class="ast-skill-icon">' + (sk.icon || '⚡') + '</span>';
+            html += '<h4 class="ast-skill-name">' + escHtml(sk.workflowName || sk.templateName || 'Skill') + '</h4>';
+            if (hasUpdate) html += '<span class="ast-skill-update-badge" title="v' + escHtml(sk.currentVersion) + ' {l s="available" mod="aismarttalk"}">🔄</span>';
             html += '</div>';
-
-            // Skill meta
-            html += '<div class="aismarttalk-skill-meta">';
-            if (isManual) {
-                html += '<span class="aismarttalk-skill-version">{l s='Custom' mod='aismarttalk' js=1}</span>';
-            } else {
-                html += '<span class="aismarttalk-skill-version">v' + (skill.installedVersion || '1.0.0') + '</span>';
-            }
-            html += '<span class="aismarttalk-skill-status ' + statusClass + '">';
-            html += skill.isActive ? '🟢 {l s='Active' mod='aismarttalk' js=1}' : '⏸️ {l s='Paused' mod='aismarttalk' js=1}';
-            html += '</span>';
+            html += '<div class="ast-skill-meta">';
+            html += '<span class="ast-skill-version">' + (isManual ? '{l s="Custom" mod="aismarttalk"}' : 'v' + escHtml(sk.installedVersion || '1.0.0')) + '</span>';
+            html += '<span class="ast-skill-status ' + statusClass + '">' + (sk.isActive ? '🟢 {l s="Active" mod="aismarttalk"}' : '⏸️ {l s="Paused" mod="aismarttalk"}') + '</span>';
             html += '</div>';
-
-            // Description if available
-            var description = skill.templateDescription || skill.description;
-            if (description) {
-                html += '<p class="aismarttalk-skill-desc">' + description + '</p>';
-            }
-
-            // Skill actions
-            html += '<div class="aismarttalk-skill-actions">';
-            // Update button only for template-based workflows with updates
-            if (hasUpdate && skill.templateId) {
-                html += '<button type="button" class="aismarttalk-skill-btn aismarttalk-skill-btn-update" data-template-id="' + skill.templateId + '" title="{l s='Update to' mod='aismarttalk' js=1} v' + skill.currentVersion + '">🔄 {l s='Update' mod='aismarttalk' js=1}</button>';
-            }
-            html += '<a href="' + getConfigureUrl(skill.workflowId) + '" target="_blank" class="aismarttalk-skill-btn aismarttalk-skill-btn-configure">⚙️ {l s='Edit' mod='aismarttalk' js=1}</a>';
-            // Remove button only for template-based workflows (not manual)
-            if (!isManual && skill.templateId) {
-                html += '<button type="button" class="aismarttalk-skill-btn aismarttalk-skill-btn-remove" data-template-id="' + skill.templateId + '" title="{l s='Remove' mod='aismarttalk' js=1}">🗑️</button>';
-            }
-            html += '</div>';
-
-            html += '</div>';
+            var desc = sk.templateDescription || sk.description;
+            if (desc) html += '<p class="ast-skill-desc">' + escHtml(desc) + '</p>';
+            html += '<div class="ast-skill-actions">';
+            if (hasUpdate && sk.templateId) html += '<button type="button" class="ast-skill-btn ast-skill-btn-update" data-template-id="' + escHtml(sk.templateId) + '">🔄 {l s="Update" mod="aismarttalk"}</button>';
+            html += '<a href="' + getConfigureUrl(sk.workflowId) + '" target="_blank" class="ast-skill-btn ast-skill-btn-configure">⚙️ {l s="Edit" mod="aismarttalk"}</a>';
+            html += '</div></div>';
         });
 
-        if (smartflowsGrid) {
-            smartflowsGrid.innerHTML = html;
-            smartflowsGrid.style.display = 'grid';
-
-            // Add click handlers for update buttons
-            var updateButtons = smartflowsGrid.querySelectorAll('.aismarttalk-skill-btn-update');
-            updateButtons.forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    var templateId = btn.getAttribute('data-template-id');
-                    updateTemplate(templateId, btn);
-                });
-            });
-
-            // Add click handlers for remove buttons
-            var removeButtons = smartflowsGrid.querySelectorAll('.aismarttalk-skill-btn-remove');
-            removeButtons.forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    var templateId = btn.getAttribute('data-template-id');
-                    uninstallTemplate(templateId, btn);
-                });
+        if (sfGrid) {
+            sfGrid.innerHTML = html;
+            sfGrid.style.display = 'grid';
+            sfGrid.querySelectorAll('.ast-skill-btn-update').forEach(function(b) {
+                b.addEventListener('click', function(e) { e.stopPropagation(); updateTemplate(b.dataset.templateId, b); });
             });
         }
     }
 
-    // Render skills marketplace
-    function renderTemplates(data) {
-        if (templatesLoading) templatesLoading.style.display = 'none';
+    // ---- RENDER MARKETPLACE ----
+    function renderSkillAction(tpl) {
+        var inst = tpl.installation || {};
+        var local = installedTemplatesData[tpl.id];
+        if (local) { inst.isInstalled = true; inst.workflowId = local.workflowId; inst.hasUpdate = local.hasUpdate; }
 
-        var templates = data.templates || [];
-        var pagination = data.pagination || {};
-
-        // Update pagination state
-        paginationState.page = pagination.page || 1;
-        paginationState.totalPages = pagination.totalPages || 1;
-        paginationState.total = pagination.total || 0;
-
-        // Update total count
-        if (templatesCountEl && templatesTotalEl) {
-            templatesTotalEl.textContent = paginationState.total;
-            templatesCountEl.style.display = 'block';
+        if (inst.isInstalled && inst.workflowId) {
+            var a = '<div class="ast-skill-actions">';
+            if (inst.hasUpdate) a += '<button type="button" class="ast-skill-btn ast-skill-btn-update" data-template-id="' + escHtml(tpl.id) + '" title="{l s="Update available" mod="aismarttalk"}">🔄</button>';
+            a += '<a href="' + getConfigureUrl(inst.workflowId) + '" target="_blank" class="ast-skill-btn ast-skill-btn-configure" title="{l s="Configure" mod="aismarttalk"}">⚙️</a>';
+            a += '<button type="button" class="ast-skill-btn ast-skill-btn-remove" data-template-id="' + escHtml(tpl.id) + '" title="{l s="Remove" mod="aismarttalk"}">🗑️</button>';
+            a += '</div>';
+            return a;
         }
+        if (tpl.missingIntegrations && tpl.missingIntegrations.length > 0) {
+            return '<span class="ast-skill-missing">🔗 {l s="Setup needed" mod="aismarttalk"}</span>';
+        }
+        return '<button type="button" class="ast-skill-btn-install" data-template-id="' + escHtml(tpl.id) + '">➕ {l s="Add skill" mod="aismarttalk"}</button>';
+    }
 
-        // Update pagination UI
+    function renderTemplates(data) {
+        if (tplLoading) tplLoading.style.display = 'none';
+        var templates = data.templates || [];
+        var pg = data.pagination || {};
+        paginationState.page = pg.page || 1;
+        paginationState.totalPages = pg.totalPages || 1;
+        paginationState.total = pg.total || 0;
+        if (tplCountEl && tplTotalEl) { tplTotalEl.textContent = paginationState.total; tplCountEl.style.display = 'block'; }
         updatePaginationUI();
 
-        if (!Array.isArray(templates) || templates.length === 0) {
-            if (templatesGrid) templatesGrid.style.display = 'none';
-            if (templatesEmpty) templatesEmpty.style.display = 'flex';
-            return;
-        }
-
-        if (templatesEmpty) templatesEmpty.style.display = 'none';
+        if (!templates.length) { if (tplGrid) tplGrid.style.display = 'none'; if (tplEmpty) tplEmpty.style.display = 'block'; return; }
+        if (tplEmpty) tplEmpty.style.display = 'none';
 
         var html = '';
-        templates.forEach(function(template) {
-            var installation = template.installation || {};
+        templates.forEach(function(t) {
+            var inst = t.installation || {};
+            var local = installedTemplatesData[t.id];
+            if (local) { inst.isInstalled = true; inst.workflowId = local.workflowId; inst.hasUpdate = local.hasUpdate; }
+            var isInstalled = inst.isInstalled || false;
+            var hasUpdate = inst.hasUpdate || false;
+            var badge = getSkillTypeBadge(t.triggerType);
 
-            // Check if we have local installed data
-            var localInstalled = installedTemplatesData[template.id];
-            if (localInstalled) {
-                installation.isInstalled = true;
-                installation.workflowId = localInstalled.workflowId;
-                installation.hasUpdate = localInstalled.hasUpdate;
-            }
+            html += '<div class="ast-marketplace-card' + (isInstalled ? ' installed' : '') + (hasUpdate ? ' has-update' : '') + '">';
+            html += '<div class="ast-marketplace-card-header">';
+            html += '<span class="ast-skill-type-badge ' + badge.cls + '">' + badge.emoji + ' ' + escHtml(badge.label) + '</span>';
+            html += '<div class="ast-marketplace-card-badges">';
+            if (isInstalled) html += '<span class="ast-badge-installed">✅</span>';
+            if (hasUpdate) html += '<span class="ast-badge-update">🔄</span>';
+            html += '</div></div>';
 
-            var isInstalled = installation.isInstalled || false;
-            var hasUpdate = installation.hasUpdate || false;
-            var typeBadge = getSkillTypeBadge(template.triggerType);
-
-            html += '<div class="aismarttalk-marketplace-card' + (isInstalled ? ' installed' : '') + (hasUpdate ? ' has-update' : '') + '" data-template-id="' + template.id + '">';
-
-            // Card header with type badge and status badges
-            html += '<div class="aismarttalk-marketplace-card-header">';
-            html += '<span class="aismarttalk-skill-type-badge ' + typeBadge.class + '">' + typeBadge.emoji + ' ' + typeBadge.label + '</span>';
-            html += '<div class="aismarttalk-marketplace-card-badges">';
-            if (isInstalled) {
-                html += '<span class="aismarttalk-badge-installed">✅</span>';
-            }
-            if (hasUpdate) {
-                html += '<span class="aismarttalk-badge-update">🔄</span>';
-            }
-            html += '</div>';
+            html += '<div class="ast-marketplace-card-body">';
+            html += '<div class="ast-marketplace-card-title-row">';
+            html += '<span class="ast-marketplace-card-icon">' + (t.icon || '⚡') + '</span>';
+            html += '<h4 class="ast-marketplace-card-title">' + escHtml(t.name || 'Skill') + '</h4>';
             html += '</div>';
 
-            // Card body with icon and title
-            html += '<div class="aismarttalk-marketplace-card-body">';
-            html += '<div class="aismarttalk-marketplace-card-title-row">';
-            html += '<span class="aismarttalk-marketplace-card-icon">' + (template.icon || '⚡') + '</span>';
-            html += '<h4 class="aismarttalk-marketplace-card-title">' + (template.name || 'Skill') + '</h4>';
+            html += '<div class="ast-marketplace-card-details">';
+            html += '<div class="ast-detail-row"><span class="ast-detail-label">{l s="When:" mod="aismarttalk"}</span><span class="ast-detail-value">' + escHtml(getSkillTriggerText(t)) + '</span></div>';
+            html += '<div class="ast-detail-row"><span class="ast-detail-label">{l s="Action:" mod="aismarttalk"}</span><span class="ast-detail-value">' + escHtml(getSkillActionText(t)) + '</span></div>';
             html += '</div>';
 
-            // Trigger (When) and Action fields
-            html += '<div class="aismarttalk-marketplace-card-details">';
-            html += '<div class="aismarttalk-detail-row">';
-            html += '<span class="aismarttalk-detail-label">{l s='When:' mod='aismarttalk' js=1}</span>';
-            html += '<span class="aismarttalk-detail-value">' + getSkillTriggerText(template) + '</span>';
-            html += '</div>';
-            html += '<div class="aismarttalk-detail-row">';
-            html += '<span class="aismarttalk-detail-label">{l s='Action:' mod='aismarttalk' js=1}</span>';
-            html += '<span class="aismarttalk-detail-value">' + getSkillActionText(template) + '</span>';
-            html += '</div>';
-            html += '</div>';
-
-            // Platform tags
-            if (template.requiredIntegrations && template.requiredIntegrations.length > 0) {
-                html += '<div class="aismarttalk-marketplace-card-platforms">';
-                template.requiredIntegrations.forEach(function(integration) {
-                    var isMissing = template.missingIntegrations && template.missingIntegrations.indexOf(integration) !== -1;
-                    html += '<span class="aismarttalk-platform-tag' + (isMissing ? ' missing' : '') + '">🏷️ ' + integration + '</span>';
+            if (t.requiredIntegrations && t.requiredIntegrations.length) {
+                html += '<div class="ast-marketplace-card-platforms">';
+                t.requiredIntegrations.forEach(function(ig) {
+                    var miss = t.missingIntegrations && t.missingIntegrations.indexOf(ig) !== -1;
+                    html += '<span class="ast-platform-tag' + (miss ? ' missing' : '') + '">🏷️ ' + escHtml(ig) + '</span>';
                 });
                 html += '</div>';
             }
             html += '</div>';
 
-            // Card footer
-            html += '<div class="aismarttalk-marketplace-card-footer">';
-            html += '<div class="aismarttalk-marketplace-card-stats">';
-            if (template.downloads !== undefined) {
-                html += '<span class="aismarttalk-stat-item">📦 ' + template.downloads + ' {l s='installs' mod='aismarttalk' js=1}</span>';
-            }
-            if (template.version) {
-                html += '<span class="aismarttalk-stat-item aismarttalk-version-tag">v' + template.version + '</span>';
-            }
+            html += '<div class="ast-marketplace-card-footer">';
+            html += '<div class="ast-marketplace-card-stats">';
+            if (t.downloads !== undefined) html += '<span class="ast-stat-item">📦 ' + t.downloads + ' {l s="installs" mod="aismarttalk"}</span>';
+            if (t.version) html += '<span class="ast-stat-item ast-version-tag">v' + escHtml(t.version) + '</span>';
             html += '</div>';
-            html += renderSkillAction(template);
-            html += '</div>';
-
-            html += '</div>';
+            html += renderSkillAction(t);
+            html += '</div></div>';
         });
 
-        if (templatesGrid) {
-            templatesGrid.innerHTML = html;
-            templatesGrid.style.display = 'grid';
-
-            // Add click handlers for install buttons
-            var installButtons = templatesGrid.querySelectorAll('.aismarttalk-skill-btn-install');
-            installButtons.forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    var templateId = btn.getAttribute('data-template-id');
-                    installTemplate(templateId, btn);
-                });
+        if (tplGrid) {
+            tplGrid.innerHTML = html;
+            tplGrid.style.display = 'grid';
+            tplGrid.querySelectorAll('.ast-skill-btn-install').forEach(function(b) {
+                b.addEventListener('click', function(e) { e.stopPropagation(); installTemplate(b.dataset.templateId, b); });
             });
-
-            // Add click handlers for update buttons
-            var updateButtons = templatesGrid.querySelectorAll('.aismarttalk-skill-btn-update');
-            updateButtons.forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    var templateId = btn.getAttribute('data-template-id');
-                    updateTemplate(templateId, btn);
-                });
+            tplGrid.querySelectorAll('.ast-skill-btn-update').forEach(function(b) {
+                b.addEventListener('click', function(e) { e.stopPropagation(); updateTemplate(b.dataset.templateId, b); });
             });
-
-            // Add click handlers for remove buttons
-            var removeButtons = templatesGrid.querySelectorAll('.aismarttalk-skill-btn-remove');
-            removeButtons.forEach(function(btn) {
-                btn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    var templateId = btn.getAttribute('data-template-id');
-                    uninstallTemplate(templateId, btn);
-                });
+            tplGrid.querySelectorAll('.ast-skill-btn-remove').forEach(function(b) {
+                b.addEventListener('click', function(e) { e.stopPropagation(); uninstallTemplate(b.dataset.templateId, b); });
             });
         }
     }
 
-    // Update pagination UI
     function updatePaginationUI() {
-        if (!paginationEl) return;
-
-        if (paginationState.totalPages <= 1) {
-            paginationEl.style.display = 'none';
-            return;
-        }
-
-        paginationEl.style.display = 'flex';
-        pageInfoEl.textContent = paginationState.page + ' / ' + paginationState.totalPages;
-        prevBtn.disabled = paginationState.page <= 1;
-        nextBtn.disabled = paginationState.page >= paginationState.totalPages;
+        if (!tplPagination) return;
+        if (paginationState.totalPages <= 1) { tplPagination.style.display = 'none'; return; }
+        tplPagination.style.display = 'flex';
+        tplPageInfo.textContent = paginationState.page + ' / ' + paginationState.totalPages;
+        tplPrev.disabled = paginationState.page <= 1;
+        tplNext.disabled = paginationState.page >= paginationState.totalPages;
     }
 
-    // Fetch all workflows (both manual and template-based)
+    // ---- FETCH DATA ----
     function fetchInstalledTemplates() {
-        if (smartflowsLoading) smartflowsLoading.style.display = 'flex';
-        if (smartflowsGrid) smartflowsGrid.style.display = 'none';
-        if (smartflowsEmpty) smartflowsEmpty.style.display = 'none';
-
-        // Don't filter by platform - show ALL installed workflows (both template-based and manual)
-        console.log('[AI SmartTalk] Fetching all workflows with chatModelId:', chatModelId);
-        apiRequest('GET', '/api/v1/smartflow-templates/installed?lang=' + currentLang)
-        .then(function(data) {
-            console.log('[AI SmartTalk] Installed workflows response:', data);
-            renderInstalledSmartflows(data);
-        })
-        .catch(function(error) {
-            console.error('Error fetching installed workflows:', error);
-            if (smartflowsLoading) smartflowsLoading.style.display = 'none';
-            if (smartflowsEmpty) smartflowsEmpty.style.display = 'flex';
-        });
+        if (sfLoading) sfLoading.style.display = 'flex';
+        if (sfGrid) sfGrid.style.display = 'none';
+        if (sfEmpty) sfEmpty.style.display = 'none';
+        apiRequest('GET', '/api/v1/smartflow-templates/installed?lang=' + skillLang)
+        .then(renderInstalledSmartflows)
+        .catch(function() { if (sfLoading) sfLoading.style.display = 'none'; if (sfEmpty) sfEmpty.style.display = 'block'; });
     }
 
-    // Fetch templates with current filters
     function fetchTemplates() {
-        if (templatesLoading) templatesLoading.style.display = 'flex';
-        if (templatesGrid) templatesGrid.style.display = 'none';
-        if (templatesEmpty) templatesEmpty.style.display = 'none';
-
-        var queryString = buildQueryString();
-        apiRequest('GET', '/api/v1/smartflow-templates?' + queryString)
-        .then(function(data) {
-            renderTemplates(data);
-        })
-        .catch(function(error) {
-            console.error('Error fetching templates:', error);
-            if (templatesLoading) templatesLoading.style.display = 'none';
-            if (templatesEmpty) templatesEmpty.style.display = 'flex';
-        });
+        if (tplLoading) tplLoading.style.display = 'flex';
+        if (tplGrid) tplGrid.style.display = 'none';
+        if (tplEmpty) tplEmpty.style.display = 'none';
+        apiRequest('GET', '/api/v1/smartflow-templates?' + buildQueryString())
+        .then(renderTemplates)
+        .catch(function() { if (tplLoading) tplLoading.style.display = 'none'; if (tplEmpty) tplEmpty.style.display = 'block'; });
     }
 
-    // Handle filter changes
-    function onFilterChange() {
-        currentFilters.page = 1; // Reset to first page
-        fetchTemplates();
-    }
+    function onFilterChange() { currentFilters.page = 1; fetchTemplates(); }
 
-    // Setup event listeners for search and filters
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(function(e) {
-            currentFilters.search = e.target.value.trim();
-            onFilterChange();
-        }, 300));
-    }
-
-    if (filterPlatform) {
-        filterPlatform.addEventListener('change', function(e) {
-            currentFilters.platform = e.target.value;
-            onFilterChange();
-        });
-    }
-
-    if (filterIntegration) {
-        filterIntegration.addEventListener('change', function(e) {
-            currentFilters.integration = e.target.value;
-            onFilterChange();
-        });
-    }
-
-    if (filterTrigger) {
-        filterTrigger.addEventListener('change', function(e) {
-            currentFilters.triggerType = e.target.value;
-            onFilterChange();
-        });
-    }
-
-    if (filterStatus) {
-        filterStatus.addEventListener('change', function(e) {
-            var value = e.target.value;
-            currentFilters.installed = null;
-            currentFilters.hasUpdate = null;
-
-            if (value === 'installed') {
-                currentFilters.installed = true;
-            } else if (value === 'not-installed') {
-                currentFilters.installed = false;
-            } else if (value === 'has-update') {
-                currentFilters.hasUpdate = true;
-            }
-            onFilterChange();
-        });
-    }
-
-    if (filterSort) {
-        filterSort.addEventListener('change', function(e) {
-            currentFilters.sortBy = e.target.value;
-            currentFilters.sortOrder = (e.target.value === 'name') ? 'asc' : 'desc';
-            onFilterChange();
-        });
-    }
-
-    // Pagination handlers
-    if (prevBtn) {
-        prevBtn.addEventListener('click', function() {
-            if (currentFilters.page > 1) {
-                currentFilters.page--;
-                fetchTemplates();
-            }
-        });
-    }
-
-    if (nextBtn) {
-        nextBtn.addEventListener('click', function() {
-            if (currentFilters.page < paginationState.totalPages) {
-                currentFilters.page++;
-                fetchTemplates();
-            }
-        });
-    }
-
-    // Install template function
+    // ---- INSTALL / UPDATE / UNINSTALL ----
     function installTemplate(templateId, btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<div class="aismarttalk-loading-spinner" style="width:18px;height:18px;border-width:2px;"></div>';
-
-        apiRequest('POST', '/api/v1/smartflow-templates/' + templateId + '/install', {
-            configuration: {},
-            lang: currentLang
-        })
-        .then(function(data) {
-            if (data.success || data.workflowId) {
-                // Reload the page to refresh both lists, staying on AI Skills section
-                window.location.hash = '#smartflow';
-                location.reload();
-            } else {
-                btn.disabled = false;
-                btn.innerHTML = '➕ {l s='Add skill' mod='aismarttalk' js=1}';
-                alert(data.message || data.error || '{l s='Failed to install skill.' mod='aismarttalk' js=1}');
-            }
-        })
-        .catch(function(error) {
-            console.error('Error installing template:', error);
-            btn.disabled = false;
-            btn.innerHTML = '➕ {l s='Add skill' mod='aismarttalk' js=1}';
-            alert('{l s='Failed to install skill. Please try again.' mod='aismarttalk' js=1}');
-        });
+        btn.disabled = true; var orig = btn.innerHTML; btn.innerHTML = '⏳';
+        apiRequest('POST', '/api/v1/smartflow-templates/' + templateId + '/install', { configuration: {}, lang: skillLang })
+        .then(function(d) {
+            if (d.success || d.workflowId) { localStorage.setItem('ast_active_tab', 'skills'); location.reload(); }
+            else { btn.disabled = false; btn.innerHTML = orig; alert(d.message || d.error || '{l s="Installation failed" mod="aismarttalk"}'); }
+        }).catch(function() { btn.disabled = false; btn.innerHTML = orig; alert('{l s="Installation failed. Please try again." mod="aismarttalk"}'); });
     }
 
-    // Update template function (reinstall with latest version)
     function updateTemplate(templateId, btn) {
-        btn.disabled = true;
-        btn.innerHTML = '<div class="aismarttalk-loading-spinner" style="width:18px;height:18px;border-width:2px;"></div>';
-
-        apiRequest('POST', '/api/v1/smartflow-templates/' + templateId + '/install', {
-            configuration: {},
-            lang: currentLang
-        })
-        .then(function(data) {
-            if (data.success || data.workflowId) {
-                window.location.hash = '#smartflow';
-                location.reload();
-            } else {
-                btn.disabled = false;
-                btn.innerHTML = '🔄';
-                alert(data.message || data.error || '{l s='Failed to update skill.' mod='aismarttalk' js=1}');
-            }
-        })
-        .catch(function(error) {
-            console.error('Error updating template:', error);
-            btn.disabled = false;
-            btn.innerHTML = '🔄';
-            alert('{l s='Failed to update skill. Please try again.' mod='aismarttalk' js=1}');
-        });
+        btn.disabled = true; var orig = btn.innerHTML; btn.innerHTML = '⏳';
+        apiRequest('POST', '/api/v1/smartflow-templates/' + templateId + '/install', { configuration: {}, lang: skillLang })
+        .then(function(d) {
+            if (d.success || d.workflowId) { localStorage.setItem('ast_active_tab', 'skills'); location.reload(); }
+            else { btn.disabled = false; btn.innerHTML = orig; alert(d.message || d.error || '{l s="Update failed" mod="aismarttalk"}'); }
+        }).catch(function() { btn.disabled = false; btn.innerHTML = orig; alert('{l s="Update failed. Please try again." mod="aismarttalk"}'); });
     }
 
-    // Uninstall template function
     function uninstallTemplate(templateId, btn) {
-        if (!confirm('{l s='Are you sure you want to remove this skill? This action cannot be undone.' mod='aismarttalk' js=1}')) {
-            return;
-        }
-
-        btn.disabled = true;
-        btn.innerHTML = '<div class="aismarttalk-loading-spinner" style="width:18px;height:18px;border-width:2px;"></div>';
-
+        if (!confirm('{l s="Are you sure you want to uninstall this skill? This action cannot be undone." mod="aismarttalk"}')) return;
+        btn.disabled = true; var orig = btn.innerHTML; btn.innerHTML = '⏳';
         apiRequest('DELETE', '/api/v1/smartflow-templates/' + templateId)
-        .then(function(data) {
-            if (data.success) {
-                window.location.hash = '#smartflow';
-                location.reload();
-            } else {
-                btn.disabled = false;
-                btn.innerHTML = '🗑️';
-                alert(data.message || data.error || '{l s='Failed to remove skill.' mod='aismarttalk' js=1}');
-            }
-        })
-        .catch(function(error) {
-            console.error('Error uninstalling template:', error);
-            btn.disabled = false;
-            btn.innerHTML = '🗑️';
-            alert('{l s='Failed to remove skill. Please try again.' mod='aismarttalk' js=1}');
-        });
+        .then(function(d) {
+            if (d.success) { localStorage.setItem('ast_active_tab', 'skills'); location.reload(); }
+            else { btn.disabled = false; btn.innerHTML = orig; alert(d.message || d.error || '{l s="Uninstall failed" mod="aismarttalk"}'); }
+        }).catch(function() { btn.disabled = false; btn.innerHTML = orig; alert('{l s="Uninstall failed. Please try again." mod="aismarttalk"}'); });
     }
 
-    // Load SmartFlow data
-    if (chatModelId && accessToken) {
-        // Load filters first
-        loadFilters();
+    // ---- EVENT LISTENERS ----
+    var searchEl = document.getElementById('ast-templates-search');
+    if (searchEl) searchEl.addEventListener('input', function(e) {
+        clearTimeout(searchTimeout);
+        var val = e.target.value.trim();
+        searchTimeout = setTimeout(function() { currentFilters.search = val; onFilterChange(); }, 300);
+    });
+    var fPlatform = document.getElementById('ast-filter-platform');
+    if (fPlatform) fPlatform.addEventListener('change', function(e) { currentFilters.platform = e.target.value; onFilterChange(); });
+    var fTrigger = document.getElementById('ast-filter-trigger');
+    if (fTrigger) fTrigger.addEventListener('change', function(e) { currentFilters.triggerType = e.target.value; onFilterChange(); });
+    var fStatus = document.getElementById('ast-filter-status');
+    if (fStatus) fStatus.addEventListener('change', function(e) {
+        currentFilters.installed = null; currentFilters.hasUpdate = null;
+        if (e.target.value === 'installed') currentFilters.installed = true;
+        else if (e.target.value === 'not-installed') currentFilters.installed = false;
+        else if (e.target.value === 'has-update') currentFilters.hasUpdate = true;
+        onFilterChange();
+    });
+    var fSort = document.getElementById('ast-filter-sort');
+    if (fSort) fSort.addEventListener('change', function(e) {
+        currentFilters.sortBy = e.target.value;
+        currentFilters.sortOrder = (e.target.value === 'name') ? 'asc' : 'desc';
+        onFilterChange();
+    });
+    if (tplPrev) tplPrev.addEventListener('click', function() { if (currentFilters.page > 1) { currentFilters.page--; fetchTemplates(); } });
+    if (tplNext) tplNext.addEventListener('click', function() { if (currentFilters.page < paginationState.totalPages) { currentFilters.page++; fetchTemplates(); } });
 
-        // Fetch installed templates and marketplace templates
+    // ---- INIT ----
+    if (skillChatModelId && skillAccessToken) {
         fetchInstalledTemplates();
         fetchTemplates();
-
-        // Fetch integrations
-        loadIntegrations();
     }
 
-    // Handle hash navigation - scroll to AI Skills section if hash is #smartflow
-    if (window.location.hash === '#smartflow') {
-        setTimeout(function() {
-            var smartflowSection = document.getElementById('smartflow');
-            if (smartflowSection) {
-                smartflowSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        }, 100);
-    }
-})();
+});
+
 </script>
 
-<!-- AI SmartTalk Chatbot Embedding Code for Backoffice -->
+{* ===== CHATBOT PREVIEW IN ADMIN ===== *}
+{if $isConnected && $chatModelId}
+<!-- AI SmartTalk Chatbot Preview (Admin) -->
 <script>
 window.chatbotSettings = JSON.parse(atob("{$chatbotSettingsEncoded|escape:'html':'UTF-8'}"));
+window.onChatbotLogout = function() {
+  document.cookie = 'ai_smarttalk_oauth_token=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/;';
+  delete window.chatbotSettings.userToken;
+};
 </script>
 <script src="{$cdnUrl|escape:'html':'UTF-8'}/universal-chatbot.js" async></script>
 {/if}

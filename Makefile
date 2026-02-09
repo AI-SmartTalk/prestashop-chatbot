@@ -39,3 +39,7 @@ restart: down up
 # Build the containers
 build:
 	docker compose build
+
+# Display admin folder name for quick URL access
+admin:
+	@docker compose exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename"
