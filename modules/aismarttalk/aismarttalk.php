@@ -562,10 +562,12 @@ class AiSmartTalk extends Module
 
         // Handle sync filters form
         if (Tools::isSubmit('submitSyncFilters')) {
+            $categoryMode = Tools::getValue('sync_filter_category_mode', 'all');
+
             $filterConfig = [
-                'mode' => Tools::getValue('sync_filter_mode', SyncFilterHelper::MODE_INCLUDE),
-                'categories' => Tools::getValue('sync_filter_categories', []),
-                'include_subcategories' => (bool) Tools::getValue('sync_filter_include_subcategories'),
+                'mode' => ($categoryMode === 'exclude') ? SyncFilterHelper::MODE_EXCLUDE : SyncFilterHelper::MODE_INCLUDE,
+                'categories' => ($categoryMode === 'all') ? [] : Tools::getValue('sync_filter_categories', []),
+                'include_subcategories' => false,
                 'product_types' => Tools::getValue('sync_filter_product_types', []),
             ];
 
@@ -573,15 +575,6 @@ class AiSmartTalk extends Module
             if (is_string($filterConfig['categories'])) {
                 $decoded = json_decode($filterConfig['categories'], true);
                 $filterConfig['categories'] = is_array($decoded) ? $decoded : [];
-            }
-
-            // Handle product types - if empty array submitted, keep all types
-            if (empty($filterConfig['product_types'])) {
-                $filterConfig['product_types'] = [
-                    SyncFilterHelper::TYPE_STANDARD,
-                    SyncFilterHelper::TYPE_VIRTUAL,
-                    SyncFilterHelper::TYPE_PACK
-                ];
             }
 
             if (SyncFilterHelper::saveFilterConfig($filterConfig)) {
@@ -675,6 +668,9 @@ class AiSmartTalk extends Module
         $cacheMetadata = AiSmartTalkCache::getMetadata('embed_config');
         $hasLocalOverrides = $this->hasLocalCustomizations();
 
+        $syncFilterConfig = SyncFilterHelper::getFilterConfig();
+        $syncFilterCategoryMode = empty($syncFilterConfig['categories']) ? 'all' : $syncFilterConfig['mode'];
+
         $this->context->smarty->assign([
             'isConnected' => $isConnected,
             'chatModelId' => $chatModelId,
@@ -693,7 +689,8 @@ class AiSmartTalk extends Module
             'customerSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC'),
 
             // Sync filter settings
-            'syncFilterConfig' => SyncFilterHelper::getFilterConfig(),
+            'syncFilterConfig' => $syncFilterConfig,
+            'syncFilterCategoryMode' => $syncFilterCategoryMode,
             'syncFilterCategoryTree' => SyncFilterHelper::flattenCategoryTree(
                 SyncFilterHelper::getCategoryTree(
                     (int) $this->context->language->id,

@@ -442,24 +442,6 @@ a.ast-btn-warning:hover {
 }
 
 /* Filter Section */
-.ast-filter-section {
-    background: #f8fafc;
-    border-radius: 12px;
-    padding: 20px;
-    margin-top: 16px;
-}
-.ast-filter-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-}
-.ast-filter-header h4 {
-    margin: 0;
-    font-size: 14px;
-    font-weight: 600;
-    color: #475569;
-}
 .ast-filter-badge {
     background: #10b981;
     color: #fff;
@@ -468,45 +450,133 @@ a.ast-btn-warning:hover {
     font-size: 11px;
     font-weight: 600;
 }
-.ast-checkbox-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.ast-checkbox-item {
+
+/* Product Type Chips */
+.ast-types-bar {
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px 16px;
+    margin-top: 20px;
+    padding: 16px 20px;
+    background: #f8fafc;
+    border-radius: 10px;
+    flex-wrap: wrap;
+}
+.ast-types-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    white-space: nowrap;
+}
+.ast-types-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.ast-type-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
     background: #fff;
+    border: 2px solid #e2e8f0;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+    color: #64748b;
+    user-select: none;
+}
+.ast-type-chip:hover {
+    border-color: #cbd5e1;
+}
+.ast-type-chip.checked {
+    border-color: #667eea;
+    background: #f5f3ff;
+    color: #4338ca;
+}
+.ast-type-chip input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+    accent-color: #667eea;
+    margin: 0;
+}
+.ast-type-chip-label {
+    font-weight: 500;
+}
+.ast-type-chip-count {
+    font-size: 11px;
+    color: #94a3b8;
+    background: #f1f5f9;
+    padding: 1px 7px;
+    border-radius: 10px;
+}
+.ast-type-chip.checked .ast-type-chip-count {
+    background: #e0e7ff;
+    color: #6366f1;
+}
+
+/* Filter Warning */
+.ast-filter-warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: #fef3c7;
+    border: 1px solid #fbbf24;
+    border-radius: 8px;
+    font-size: 13px;
+    color: #92400e;
+}
+
+/* Category Mode Selector */
+.ast-category-mode-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+.ast-mode-option {
+    flex: 1;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: #fff;
+    border: 2px solid #e2e8f0;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s;
-    border: 2px solid transparent;
 }
-.ast-checkbox-item:hover {
-    border-color: #e2e8f0;
+.ast-mode-option:hover {
+    border-color: #cbd5e1;
 }
-.ast-checkbox-item input:checked ~ .ast-checkbox-content {
-    color: #667eea;
+.ast-mode-option.active {
+    border-color: #667eea;
+    background: #f5f3ff;
 }
-.ast-checkbox-item input {
-    width: 18px;
-    height: 18px;
+.ast-mode-option input[type="radio"] {
+    margin-top: 2px;
     accent-color: #667eea;
 }
-.ast-checkbox-content {
+.ast-mode-content {
     flex: 1;
 }
-.ast-checkbox-content strong {
+.ast-mode-content strong {
     display: block;
-    font-size: 14px;
+    font-size: 13px;
+    font-weight: 600;
     color: #1e293b;
-    font-weight: 500;
+    margin-bottom: 2px;
 }
-.ast-checkbox-content small {
+.ast-mode-content small {
     font-size: 12px;
     color: #94a3b8;
+}
+@media (max-width: 768px) {
+    .ast-category-mode-selector {
+        flex-direction: column;
+    }
 }
 
 /* Category Selector */
@@ -1771,53 +1841,34 @@ a.ast-btn-success:hover {
                         <p style="color: #64748b; margin: 0 0 20px;">{l s='Choose which products to synchronize with AI SmartTalk.' mod='aismarttalk'}</p>
 
                         <form action="{$formAction|escape:'html':'UTF-8'}" method="post" id="sync-filters-form">
-                            {* Product Types *}
-                            <div class="ast-filter-section">
-                                <div class="ast-filter-header">
-                                    <h4>{l s='Product Types' mod='aismarttalk'}</h4>
-                                </div>
-                                <div class="ast-checkbox-list">
-                                    <label class="ast-checkbox-item">
-                                        <input type="checkbox" name="sync_filter_product_types[]" value="standard" {if in_array('standard', $syncFilterConfig.product_types)}checked{/if}>
-                                        <div class="ast-checkbox-content">
-                                            <strong>📦 {l s='Standard Products' mod='aismarttalk'}</strong>
-                                            <small>{$syncFilterProductTypeCounts.standard|intval} {l s='products' mod='aismarttalk'}</small>
-                                        </div>
-                                    </label>
-                                    <label class="ast-checkbox-item">
-                                        <input type="checkbox" name="sync_filter_product_types[]" value="virtual" {if in_array('virtual', $syncFilterConfig.product_types)}checked{/if}>
-                                        <div class="ast-checkbox-content">
-                                            <strong>💾 {l s='Virtual Products' mod='aismarttalk'}</strong>
-                                            <small>{$syncFilterProductTypeCounts.virtual|intval} {l s='products' mod='aismarttalk'} — {l s='downloads, services' mod='aismarttalk'}</small>
-                                        </div>
-                                    </label>
-                                    <label class="ast-checkbox-item">
-                                        <input type="checkbox" name="sync_filter_product_types[]" value="pack" {if in_array('pack', $syncFilterConfig.product_types)}checked{/if}>
-                                        <div class="ast-checkbox-content">
-                                            <strong>🎁 {l s='Product Packs' mod='aismarttalk'}</strong>
-                                            <small>{$syncFilterProductTypeCounts.pack|intval} {l s='products' mod='aismarttalk'} — {l s='bundles' mod='aismarttalk'}</small>
-                                        </div>
-                                    </label>
-                                </div>
+
+                            {* Step 1: Category filter (main decision) *}
+                            <div class="ast-category-mode-selector">
+                                <label class="ast-mode-option {if $syncFilterCategoryMode == 'all'}active{/if}">
+                                    <input type="radio" name="sync_filter_category_mode" value="all" {if $syncFilterCategoryMode == 'all'}checked{/if}>
+                                    <div class="ast-mode-content">
+                                        <strong>{l s='All categories' mod='aismarttalk'}</strong>
+                                        <small>{l s='Sync products from every category' mod='aismarttalk'}</small>
+                                    </div>
+                                </label>
+                                <label class="ast-mode-option {if $syncFilterCategoryMode == 'include'}active{/if}">
+                                    <input type="radio" name="sync_filter_category_mode" value="include" {if $syncFilterCategoryMode == 'include'}checked{/if}>
+                                    <div class="ast-mode-content">
+                                        <strong>{l s='Only selected' mod='aismarttalk'}</strong>
+                                        <small>{l s='Sync only from checked categories' mod='aismarttalk'}</small>
+                                    </div>
+                                </label>
+                                <label class="ast-mode-option {if $syncFilterCategoryMode == 'exclude'}active{/if}">
+                                    <input type="radio" name="sync_filter_category_mode" value="exclude" {if $syncFilterCategoryMode == 'exclude'}checked{/if}>
+                                    <div class="ast-mode-content">
+                                        <strong>{l s='All except selected' mod='aismarttalk'}</strong>
+                                        <small>{l s='Exclude checked categories' mod='aismarttalk'}</small>
+                                    </div>
+                                </label>
                             </div>
 
-                            {* Categories *}
-                            <div class="ast-filter-section" style="margin-top: 20px;">
-                                <div class="ast-filter-header">
-                                    <h4>{l s='Categories' mod='aismarttalk'}</h4>
-                                </div>
-
-                                <div style="margin-bottom: 16px;">
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                                        <input type="radio" name="sync_filter_mode" value="include" {if $syncFilterConfig.mode == 'include' || empty($syncFilterConfig.categories)}checked{/if}>
-                                        <span>{l s='Sync only selected categories' mod='aismarttalk'} <small style="color: #94a3b8;">({l s='empty = all' mod='aismarttalk'})</small></span>
-                                    </label>
-                                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-top: 8px;">
-                                        <input type="radio" name="sync_filter_mode" value="exclude" {if $syncFilterConfig.mode == 'exclude' && !empty($syncFilterConfig.categories)}checked{/if}>
-                                        <span>{l s='Sync all EXCEPT selected categories' mod='aismarttalk'}</span>
-                                    </label>
-                                </div>
-
+                            {* Step 2: Category tree (only when filtering) *}
+                            <div id="category-tree-wrapper" style="{if $syncFilterCategoryMode == 'all'}display: none;{/if}">
                                 <div class="ast-category-box">
                                     <div class="ast-category-header">
                                         <input type="text" id="category-search" class="ast-category-search" placeholder="{l s='Search categories...' mod='aismarttalk'}">
@@ -1836,7 +1887,7 @@ a.ast-btn-success:hover {
                                                  data-name="{$category.name|escape:'html':'UTF-8'|lower}"
                                                  style="margin-left: {($category.depth * 24)|intval}px; {if $category.depth > 0}display: none;{/if}">
                                                 {if $category.has_children}
-                                                    <span class="ast-tree-toggle" data-id="{$category.id_category|intval}">▶</span>
+                                                    <span class="ast-tree-toggle" data-id="{$category.id_category|intval}">&#9654;</span>
                                                 {else}
                                                     <span class="ast-tree-spacer"></span>
                                                 {/if}
@@ -1861,11 +1912,37 @@ a.ast-btn-success:hover {
                                         <span><span id="selected-count">0</span> {l s='selected' mod='aismarttalk'}</span>
                                     </div>
                                 </div>
-                                <input type="hidden" name="sync_filter_categories" id="sync_filter_categories" value="">
-                                <p class="ast-help" style="margin-top: 8px;">
-                                    <i class="icon icon-info-circle"></i>
-                                    {l s='Select a parent to automatically include all its children. You can then adjust individually.' mod='aismarttalk'}
-                                </p>
+                                <div id="category-warning" class="ast-filter-warning" style="display: none;">
+                                    <i class="icon icon-warning"></i>
+                                    <span id="category-warning-text"></span>
+                                </div>
+                            </div>
+                            <input type="hidden" name="sync_filter_categories" id="sync_filter_categories" value="">
+
+                            {* Step 3: Product types (compact secondary filter) *}
+                            <div class="ast-types-bar">
+                                <span class="ast-types-label">{l s='Product types to sync:' mod='aismarttalk'}</span>
+                                <div class="ast-types-chips">
+                                    <label class="ast-type-chip {if in_array('standard', $syncFilterConfig.product_types)}checked{/if}">
+                                        <input type="checkbox" name="sync_filter_product_types[]" value="standard" class="ast-type-checkbox" {if in_array('standard', $syncFilterConfig.product_types)}checked{/if}>
+                                        <span class="ast-type-chip-label">{l s='Standard' mod='aismarttalk'}</span>
+                                        <span class="ast-type-chip-count">{$syncFilterProductTypeCounts.standard|intval}</span>
+                                    </label>
+                                    <label class="ast-type-chip {if in_array('virtual', $syncFilterConfig.product_types)}checked{/if}">
+                                        <input type="checkbox" name="sync_filter_product_types[]" value="virtual" class="ast-type-checkbox" {if in_array('virtual', $syncFilterConfig.product_types)}checked{/if}>
+                                        <span class="ast-type-chip-label">{l s='Virtual' mod='aismarttalk'}</span>
+                                        <span class="ast-type-chip-count">{$syncFilterProductTypeCounts.virtual|intval}</span>
+                                    </label>
+                                    <label class="ast-type-chip {if in_array('pack', $syncFilterConfig.product_types)}checked{/if}">
+                                        <input type="checkbox" name="sync_filter_product_types[]" value="pack" class="ast-type-checkbox" {if in_array('pack', $syncFilterConfig.product_types)}checked{/if}>
+                                        <span class="ast-type-chip-label">{l s='Pack' mod='aismarttalk'}</span>
+                                        <span class="ast-type-chip-count">{$syncFilterProductTypeCounts.pack|intval}</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="type-warning" class="ast-filter-warning" style="display: none;">
+                                <i class="icon icon-warning"></i>
+                                {l s='No product type selected. No products will be synchronized.' mod='aismarttalk'}
                             </div>
 
                             <div style="margin-top: 24px; display: flex; align-items: center; gap: 16px;">
@@ -2299,7 +2376,93 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
-    // ===== CATEGORY TREE =====
+    // ===== SYNC FILTERS =====
+
+    // --- Product Type Chips ---
+    var typeCheckboxes = document.querySelectorAll('.ast-type-checkbox');
+    var typeWarning = document.getElementById('type-warning');
+
+    function updateTypeChips() {
+        var anyChecked = false;
+        typeCheckboxes.forEach(function(cb) {
+            var chip = cb.closest('.ast-type-chip');
+            if (chip) {
+                if (cb.checked) {
+                    chip.classList.add('checked');
+                    anyChecked = true;
+                } else {
+                    chip.classList.remove('checked');
+                }
+            }
+        });
+        if (typeWarning) typeWarning.style.display = anyChecked ? 'none' : 'flex';
+    }
+
+    typeCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateTypeChips);
+    });
+    updateTypeChips();
+
+    // --- Category Mode Selector ---
+    var categoryModeRadios = document.querySelectorAll('input[name="sync_filter_category_mode"]');
+    var categoryTreeWrapper = document.getElementById('category-tree-wrapper');
+    var categoryWarning = document.getElementById('category-warning');
+    var categoryWarningText = document.getElementById('category-warning-text');
+
+    function updateCategoryMode() {
+        var mode = 'all';
+        categoryModeRadios.forEach(function(r) { if (r.checked) mode = r.value; });
+
+        // Toggle active class on mode options
+        document.querySelectorAll('.ast-mode-option').forEach(function(opt) {
+            var radio = opt.querySelector('input[type="radio"]');
+            if (radio && radio.checked) {
+                opt.classList.add('active');
+            } else {
+                opt.classList.remove('active');
+            }
+        });
+
+        // Show/hide category tree
+        if (categoryTreeWrapper) {
+            categoryTreeWrapper.style.display = (mode === 'all') ? 'none' : '';
+        }
+
+        // Update hidden categories input when "all" is selected
+        if (mode === 'all' && categoriesInput) {
+            categoriesInput.value = '[]';
+        } else {
+            updateCategorySelection();
+        }
+
+        // Update category warning
+        updateCategoryWarning(mode);
+    }
+
+    function updateCategoryWarning(mode) {
+        if (!categoryWarning || !categoryWarningText) return;
+        var count = 0;
+        if (categoryTree) {
+            categoryTree.querySelectorAll('.ast-tree-checkbox').forEach(function(cb) {
+                if (cb.checked) count++;
+            });
+        }
+
+        if (mode !== 'all' && count === 0) {
+            categoryWarningText.textContent = (mode === 'include')
+                ? '{l s="No categories selected. No products will be synchronized." mod="aismarttalk" js=1}'
+                : '{l s="No categories selected. All products will be synchronized (nothing excluded)." mod="aismarttalk" js=1}';
+            categoryWarning.style.display = 'flex';
+        } else {
+            categoryWarning.style.display = 'none';
+        }
+    }
+
+    categoryModeRadios.forEach(function(r) {
+        r.addEventListener('change', updateCategoryMode);
+    });
+
+    // --- Category Tree ---
     var categoryTree = document.getElementById('category-tree');
     var categorySearch = document.getElementById('category-search');
     var categoriesInput = document.getElementById('sync_filter_categories');
@@ -2327,7 +2490,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Get all descendant IDs recursively
     function getAllDescendants(id) {
         var descendants = [];
         var data = treeData[id];
@@ -2340,7 +2502,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return descendants;
     }
 
-    // Update hidden input and count
     function updateCategorySelection() {
         if (!categoryTree) return;
         var checkboxes = categoryTree.querySelectorAll('.ast-tree-checkbox');
@@ -2350,51 +2511,40 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         if (categoriesInput) categoriesInput.value = JSON.stringify(selected);
         if (selectedCount) selectedCount.textContent = selected.length;
+
+        // Update warning based on current mode
+        var mode = 'all';
+        categoryModeRadios.forEach(function(r) { if (r.checked) mode = r.value; });
+        updateCategoryWarning(mode);
     }
 
-    // Toggle expand/collapse for a node
     function toggleNode(id, expand) {
         var data = treeData[id];
         if (!data || !data.childIds.length) return;
-
         var toggle = data.node.querySelector('.ast-tree-toggle');
         if (toggle) {
-            if (expand) {
-                toggle.classList.add('expanded');
-            } else {
-                toggle.classList.remove('expanded');
-            }
+            toggle.classList[expand ? 'add' : 'remove']('expanded');
         }
-
         data.childIds.forEach(function(childId) {
             var childData = treeData[childId];
             if (childData) {
                 childData.node.style.display = expand ? 'flex' : 'none';
-                if (!expand) {
-                    toggleNode(childId, false); // Collapse children recursively
-                }
+                if (!expand) toggleNode(childId, false);
             }
         });
     }
 
-    // Handle checkbox change - select/deselect children
     function handleCheckboxChange(id, checked) {
         var descendants = getAllDescendants(id);
         descendants.forEach(function(descId) {
             var data = treeData[descId];
-            if (data && data.checkbox) {
-                data.checkbox.checked = checked;
-            }
+            if (data && data.checkbox) data.checkbox.checked = checked;
         });
-
-        // Update parent indeterminate states
         updateParentStates();
         updateCategorySelection();
     }
 
-    // Update parent checkbox states (indeterminate when some children selected)
     function updateParentStates() {
-        // Process from deepest nodes up
         var maxDepth = 0;
         Object.values(treeData).forEach(function(data) {
             var depth = parseInt(data.node.dataset.depth) || 0;
@@ -2408,30 +2558,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 var allChecked = true;
                 var someChecked = false;
-
-                var allDescendants = getAllDescendants(parseInt(data.node.dataset.id));
-                allDescendants.forEach(function(descId) {
+                getAllDescendants(parseInt(data.node.dataset.id)).forEach(function(descId) {
                     var descData = treeData[descId];
                     if (descData && descData.checkbox) {
-                        if (descData.checkbox.checked) {
-                            someChecked = true;
-                        } else {
-                            allChecked = false;
-                        }
+                        if (descData.checkbox.checked) someChecked = true;
+                        else allChecked = false;
                     }
                 });
 
                 if (data.checkbox) {
-                    if (allChecked && someChecked) {
-                        data.checkbox.checked = true;
-                        data.checkbox.indeterminate = false;
-                    } else if (someChecked) {
-                        data.checkbox.checked = false;
-                        data.checkbox.indeterminate = true;
-                    } else {
-                        data.checkbox.checked = false;
-                        data.checkbox.indeterminate = false;
-                    }
+                    data.checkbox.checked = allChecked && someChecked;
+                    data.checkbox.indeterminate = someChecked && !allChecked;
                 }
             });
         }
@@ -2439,30 +2576,24 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Event listeners
     if (categoryTree) {
-        // Toggle expand/collapse
         categoryTree.addEventListener('click', function(e) {
             if (e.target.classList.contains('ast-tree-toggle')) {
                 var id = parseInt(e.target.dataset.id);
-                var isExpanded = e.target.classList.contains('expanded');
-                toggleNode(id, !isExpanded);
+                toggleNode(id, !e.target.classList.contains('expanded'));
             }
         });
 
-        // Checkbox changes
         categoryTree.addEventListener('change', function(e) {
             if (e.target.classList.contains('ast-tree-checkbox')) {
                 var node = e.target.closest('.ast-tree-node');
-                var id = parseInt(node.dataset.id);
-                handleCheckboxChange(id, e.target.checked);
+                handleCheckboxChange(parseInt(node.dataset.id), e.target.checked);
             }
         });
 
-        // On page load: expand parents of checked items so they're visible
+        // On page load: expand parents of checked items
         Object.values(treeData).forEach(function(data) {
             if (data.checkbox && data.checkbox.checked) {
-                // Show this node
                 data.node.style.display = 'flex';
-                // Expand all its parents
                 var parentId = data.parentId;
                 while (parentId) {
                     var parentData = treeData[parentId];
@@ -2478,10 +2609,13 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Initial update
+        // Initial updates
         updateCategorySelection();
         updateParentStates();
     }
+
+    // Initialize category mode (show/hide tree)
+    updateCategoryMode();
 
     // Search
     if (categorySearch) {
@@ -2490,18 +2624,15 @@ document.addEventListener('DOMContentLoaded', function() {
             Object.values(treeData).forEach(function(data) {
                 var name = data.node.dataset.name || '';
                 if (term === '') {
-                    // Reset to collapsed state
                     var depth = parseInt(data.node.dataset.depth) || 0;
                     data.node.classList.remove('hidden');
                     data.node.style.display = depth === 0 ? 'flex' : 'none';
                     var toggle = data.node.querySelector('.ast-tree-toggle');
                     if (toggle) toggle.classList.remove('expanded');
                 } else {
-                    // Show matching nodes
                     if (name.indexOf(term) !== -1) {
                         data.node.classList.remove('hidden');
                         data.node.style.display = 'flex';
-                        // Show parents too
                         var parentId = data.parentId;
                         while (parentId) {
                             var parentData = treeData[parentId];
@@ -2522,7 +2653,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Clear all
+    // Clear all categories
     if (clearBtn) {
         clearBtn.addEventListener('click', function(e) {
             e.preventDefault();
@@ -2536,7 +2667,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Select all
+    // Select all categories
     if (selectAllBtn) {
         selectAllBtn.addEventListener('click', function(e) {
             e.preventDefault();
