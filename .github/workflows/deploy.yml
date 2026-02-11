@@ -48,23 +48,27 @@ jobs:
             # Ensure Docker network exists
             docker network create ai-toolkit-network 2>/dev/null || true
 
+            # Fix data permissions before starting containers
+            chown -R 999:999 data/mysql 2>/dev/null || true
+            chown -R 33:33 data/prestashop 2>/dev/null || true
+
             # Pre-deploy backup
             echo "Running pre-deploy backup..."
             ./scripts/backup-mysql.sh || echo "WARNING: Backup failed (first deploy or DB not running yet)"
 
-            # Build and start
-            docker compose -f docker-compose.prod.yml up -d --build
+            # Build and start (remove orphan containers from old setup)
+            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
 
-            # Wait for services to be healthy
+            # Wait for services with healthchecks to be healthy (prestashop + prestashop_db)
             echo "Waiting for services to be healthy..."
             TIMEOUT=180
             ELAPSED=0
             INTERVAL=10
             while [ $ELAPSED -lt $TIMEOUT ]; do
-              HEALTH=$(docker compose -f docker-compose.prod.yml ps --format json 2>/dev/null | grep -o '"Health":"[^"]*"' | grep -c '"Health":"healthy"' || true)
-              TOTAL=$(docker compose -f docker-compose.prod.yml ps --format json 2>/dev/null | grep -o '"Health":"[^"]*"' | wc -l | tr -d ' ')
-              echo "  Healthy: $HEALTH / $TOTAL (${ELAPSED}s elapsed)"
-              if [ "$TOTAL" -gt 0 ] && [ "$HEALTH" -eq "$TOTAL" ]; then
+              DB_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' prestashop-chatbot-prestashop_db-1 2>/dev/null || echo "starting")
+              PS_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' prestashop-chatbot-prestashop-1 2>/dev/null || echo "starting")
+              echo "  prestashop_db: $DB_HEALTH | prestashop: $PS_HEALTH (${ELAPSED}s elapsed)"
+              if [ "$DB_HEALTH" = "healthy" ] && [ "$PS_HEALTH" = "healthy" ]; then
                 echo "All services healthy!"
                 break
               fi
@@ -76,10 +80,6 @@ jobs:
               echo "WARNING: Timeout waiting for healthy status. Continuing anyway..."
               docker compose -f docker-compose.prod.yml ps
             fi
-
-            # Fix data permissions
-            chown -R 999:999 data/mysql 2>/dev/null || true
-            chown -R 33:33 data/prestashop 2>/dev/null || true
 
             # Configure domain and SSL in database
             docker compose -f docker-compose.prod.yml exec -T prestashop bash -c "
