@@ -48,9 +48,10 @@ jobs:
           # Ensure Docker network exists
           docker network create ai-toolkit-network 2>/dev/null || true
 
-          # Fix data permissions before starting containers
+          # Fix data permissions before starting containers (www-data=33, mysql=999)
           chown -R 999:999 data/mysql 2>/dev/null || true
           chown -R 33:33 data/prestashop 2>/dev/null || true
+          chown -R 33:33 modules/ 2>/dev/null || true
 
           # Pre-deploy backup
           echo "Running pre-deploy backup..."
