@@ -36,6 +36,9 @@ jobs:
             source .env
             set +a
 
+            # Pull latest code first
+            git pull origin main
+
             # Ensure directories exist
             mkdir -p data/mysql data/prestashop backups/mysql
 
@@ -49,8 +52,7 @@ jobs:
             echo "Running pre-deploy backup..."
             ./scripts/backup-mysql.sh || echo "WARNING: Backup failed (first deploy or DB not running yet)"
 
-            # Pull and rebuild
-            git pull origin main
+            # Build and start
             docker compose -f docker-compose.prod.yml up -d --build
 
             # Wait for services to be healthy
