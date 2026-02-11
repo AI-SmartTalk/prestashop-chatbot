@@ -2,3 +2,8 @@
 .DS_Store
 **/.DS_Store
 modules/aismarttalk.zip
+.env
+data/
+backups/
+*.sql
+*.sql.gz

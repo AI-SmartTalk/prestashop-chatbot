@@ -1,0 +1,11 @@
+.git
+.github
+data/
+backups/
+.env
+.env.example
+Makefile
+docker-compose*.yml
+*.md
+.DS_Store
+.idea/

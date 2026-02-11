@@ -6,58 +6,58 @@ services:
     platform: linux/amd64
     ports:
       - "8082:80"
+    env_file: .env
     environment:
       - DB_SERVER=prestashop_db
-      - PS_INSTALL_AUTO=1
-      - DB_NAME=prestashop
-      - DB_USER=prestashop
-      - DB_PASSWD=prestashop
-      - PS_DOMAIN=prestashop.demo.aismarttalk.tech
-      - PS_USER=admin
-      - PS_PASSWD=admin
-      - PS_LANGUAGE=fr
-      - PS_COUNTRY=FR
-      - ADMIN_PASSWD=Ds1J1umhy'l3~F%!b){1
-      - PS_ENABLE_SSL=1
     volumes:
       - ./modules/aismarttalk:/var/www/html/modules/aismarttalk
       - ./config/docker:/tmp/docker-config
-      - psdata:/var/www/html
+      - ./data/prestashop:/var/www/html
     restart: always
     networks:
       - ai-toolkit-network
+    depends_on:
+      prestashop_db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/index.php"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 90s
 
   prestashop_db:
     image: mysql:5.7
     platform: linux/amd64
-    environment:
-      - MYSQL_ROOT_PASSWORD=admin
-      - MYSQL_DATABASE=prestashop
-      - MYSQL_USER=prestashop
-      - MYSQL_PASSWORD=prestashop
+    env_file: .env
     restart: always
     networks:
       - ai-toolkit-network
     volumes:
-      - prestashop_dbdata:/var/lib/mysql
+      - ./data/mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
   prestashop_phpmyadmin:
     image: phpmyadmin/phpmyadmin
     platform: linux/amd64
     ports:
-      - "8083:80"
+      - "127.0.0.1:8083:80"
     environment:
       - PMA_HOST=prestashop_db
-      - PMA_USER=prestashop
-      - PMA_PASSWORD=prestashop
+      - PMA_USER=${MYSQL_USER}
+      - PMA_PASSWORD=${MYSQL_PASSWORD}
     restart: always
     networks:
       - ai-toolkit-network
+    depends_on:
+      prestashop_db:
+        condition: service_healthy
 
 networks:
   ai-toolkit-network:
     external: true
-
-volumes:
-  prestashop_dbdata:
-  psdata:

@@ -22,19 +22,55 @@ jobs:
       - name: Deploy to VPS
         run: |
           ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            set -e
             cd /home/debian/prestashop-chatbot
+
+            # Verify .env exists
+            if [ ! -f .env ]; then
+              echo "ERROR: .env file not found. Create it from .env.example before deploying."
+              exit 1
+            fi
+
+            # Load .env for variable substitution
+            set -a
+            source .env
+            set +a
+
+            # Pre-deploy backup
+            echo "Running pre-deploy backup..."
+            ./scripts/backup-mysql.sh || echo "WARNING: Backup failed (first deploy or DB not running yet)"
+
+            # Pull and rebuild
             git pull origin main
             docker compose -f docker-compose.prod.yml up -d --build
 
-            # Wait for PrestaShop to be ready
-            echo "Waiting for PrestaShop to be ready..."
-            sleep 45
+            # Wait for services to be healthy
+            echo "Waiting for services to be healthy..."
+            TIMEOUT=180
+            ELAPSED=0
+            INTERVAL=10
+            while [ $ELAPSED -lt $TIMEOUT ]; do
+              HEALTH=$(docker compose -f docker-compose.prod.yml ps --format json 2>/dev/null | grep -o '"Health":"[^"]*"' | grep -c '"Health":"healthy"' || true)
+              TOTAL=$(docker compose -f docker-compose.prod.yml ps --format json 2>/dev/null | grep -o '"Health":"[^"]*"' | wc -l | tr -d ' ')
+              echo "  Healthy: $HEALTH / $TOTAL (${ELAPSED}s elapsed)"
+              if [ "$TOTAL" -gt 0 ] && [ "$HEALTH" -eq "$TOTAL" ]; then
+                echo "All services healthy!"
+                break
+              fi
+              sleep $INTERVAL
+              ELAPSED=$((ELAPSED + INTERVAL))
+            done
+
+            if [ $ELAPSED -ge $TIMEOUT ]; then
+              echo "WARNING: Timeout waiting for healthy status. Continuing anyway..."
+              docker compose -f docker-compose.prod.yml ps
+            fi
 
             # Configure domain and SSL in database
             docker compose -f docker-compose.prod.yml exec -T prestashop bash -c "
-              mysql -h prestashop_db -u prestashop -pprestashop prestashop -e \"
-                UPDATE ps_shop_url SET domain = 'prestashop.demo.aismarttalk.tech', domain_ssl = 'prestashop.demo.aismarttalk.tech' WHERE id_shop_url = 1;
-                UPDATE ps_configuration SET value = 'prestashop.demo.aismarttalk.tech' WHERE name IN ('PS_SHOP_DOMAIN', 'PS_SHOP_DOMAIN_SSL');
+              mysql -h prestashop_db -u \$DB_USER -p\$DB_PASSWD \$DB_NAME -e \"
+                UPDATE ps_shop_url SET domain = '\$PS_DOMAIN', domain_ssl = '\$PS_DOMAIN' WHERE id_shop_url = 1;
+                UPDATE ps_configuration SET value = '\$PS_DOMAIN' WHERE name IN ('PS_SHOP_DOMAIN', 'PS_SHOP_DOMAIN_SSL');
                 UPDATE ps_configuration SET value = '1' WHERE name = 'PS_SSL_ENABLED';
                 UPDATE ps_configuration SET value = '1' WHERE name = 'PS_SSL_ENABLED_EVERYWHERE';
               \"
