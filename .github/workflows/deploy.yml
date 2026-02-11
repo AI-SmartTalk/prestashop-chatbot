@@ -56,8 +56,9 @@ jobs:
             echo "Running pre-deploy backup..."
             ./scripts/backup-mysql.sh || echo "WARNING: Backup failed (first deploy or DB not running yet)"
 
-            # Build and start (remove orphan containers from old setup)
-            docker compose -f docker-compose.prod.yml up -d --build --remove-orphans
+            # Stop, rebuild, and start fresh
+            docker compose -f docker-compose.prod.yml down --remove-orphans
+            docker compose -f docker-compose.prod.yml up -d --build
 
             # Wait for services with healthchecks to be healthy (prestashop + prestashop_db)
             echo "Waiting for services to be healthy..."
