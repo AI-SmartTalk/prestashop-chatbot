@@ -28,7 +28,7 @@ echo "[$(date)] Starting backup of database '$MYSQL_DATABASE'..."
 
 # Dump and compress
 docker compose -f "$PROJECT_DIR/docker-compose.prod.yml" exec -T prestashop_db \
-  mysqldump --single-transaction --quick \
+  mysqldump --single-transaction --quick --no-tablespaces \
   -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" \
   | gzip > "$BACKUP_FILE"
 
