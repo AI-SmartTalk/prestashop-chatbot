@@ -81,15 +81,21 @@ jobs:
               docker compose -f docker-compose.prod.yml ps
             fi
 
-            # Configure domain and SSL in database
+            # Configure domain and SSL in database (skip on fresh install where tables don't exist yet)
             docker compose -f docker-compose.prod.yml exec -T prestashop bash -c "
-              mysql -h prestashop_db -u \$DB_USER -p\$DB_PASSWD \$DB_NAME -e \"
-                UPDATE ps_shop_url SET domain = '\$PS_DOMAIN', domain_ssl = '\$PS_DOMAIN' WHERE id_shop_url = 1;
-                UPDATE ps_configuration SET value = '\$PS_DOMAIN' WHERE name IN ('PS_SHOP_DOMAIN', 'PS_SHOP_DOMAIN_SSL');
-                UPDATE ps_configuration SET value = '1' WHERE name = 'PS_SSL_ENABLED';
-                UPDATE ps_configuration SET value = '1' WHERE name = 'PS_SSL_ENABLED_EVERYWHERE';
-              \"
-            "
+              TABLE_EXISTS=\$(mysql -h prestashop_db -u \$DB_USER -p\$DB_PASSWD \$DB_NAME -sNe \"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='\$DB_NAME' AND table_name='ps_shop_url';\" 2>/dev/null)
+              if [ \"\$TABLE_EXISTS\" = \"1\" ]; then
+                mysql -h prestashop_db -u \$DB_USER -p\$DB_PASSWD \$DB_NAME -e \"
+                  UPDATE ps_shop_url SET domain = '\$PS_DOMAIN', domain_ssl = '\$PS_DOMAIN' WHERE id_shop_url = 1;
+                  UPDATE ps_configuration SET value = '\$PS_DOMAIN' WHERE name IN ('PS_SHOP_DOMAIN', 'PS_SHOP_DOMAIN_SSL');
+                  UPDATE ps_configuration SET value = '1' WHERE name = 'PS_SSL_ENABLED';
+                  UPDATE ps_configuration SET value = '1' WHERE name = 'PS_SSL_ENABLED_EVERYWHERE';
+                \"
+                echo 'Domain/SSL configured in database'
+              else
+                echo 'SKIP: PrestaShop tables not found (fresh install). Domain will be set after installation.'
+              fi
+            " || echo "WARNING: Could not configure domain/SSL"
 
             # Clear cache
             docker compose -f docker-compose.prod.yml exec -T prestashop rm -rf /var/www/html/var/cache/* || true
