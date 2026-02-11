@@ -56,9 +56,11 @@ jobs:
             echo "Running pre-deploy backup..."
             ./scripts/backup-mysql.sh || echo "WARNING: Backup failed (first deploy or DB not running yet)"
 
-            # Stop, rebuild, and start fresh
-            docker compose -f docker-compose.prod.yml down --remove-orphans
-            docker compose -f docker-compose.prod.yml up -d --build
+            # Stop, rebuild, and start fresh (< /dev/null prevents docker from consuming heredoc stdin)
+            echo "Stopping containers..."
+            docker compose -f docker-compose.prod.yml down --remove-orphans < /dev/null
+            echo "Starting containers..."
+            docker compose -f docker-compose.prod.yml up -d --build < /dev/null
 
             # Wait for services with healthchecks to be healthy (prestashop + prestashop_db)
             echo "Waiting for services to be healthy..."
@@ -79,7 +81,7 @@ jobs:
 
             if [ $ELAPSED -ge $TIMEOUT ]; then
               echo "WARNING: Timeout waiting for healthy status. Continuing anyway..."
-              docker compose -f docker-compose.prod.yml ps
+              docker compose -f docker-compose.prod.yml ps < /dev/null
             fi
 
             # Configure domain and SSL in database (skip on fresh install where tables don't exist yet)
@@ -96,10 +98,10 @@ jobs:
               else
                 echo 'SKIP: PrestaShop tables not found (fresh install). Domain will be set after installation.'
               fi
-            " || echo "WARNING: Could not configure domain/SSL"
+            " < /dev/null || echo "WARNING: Could not configure domain/SSL"
 
             # Clear cache
-            docker compose -f docker-compose.prod.yml exec -T prestashop rm -rf /var/www/html/var/cache/* || true
+            docker compose -f docker-compose.prod.yml exec -T prestashop rm -rf /var/www/html/var/cache/* < /dev/null || true
 
             # Ensure backup cron is installed
             CRON_CMD="0 2 * * * /home/debian/prestashop-chatbot/scripts/backup-mysql.sh >> /home/debian/prestashop-chatbot/backups/backup.log 2>&1"
