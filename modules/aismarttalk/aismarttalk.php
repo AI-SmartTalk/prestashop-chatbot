@@ -209,6 +209,8 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_FEEDBACK')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_INPUT')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_MODE')
+            && Configuration::deleteByName('AI_SMART_TALK_BORDER_RADIUS')
+            && Configuration::deleteByName('AI_SMART_TALK_BUTTON_BORDER_RADIUS')
             // Customer sync
             && Configuration::deleteByName('AI_SMART_TALK_CUSTOMER_SYNC')
             // GDPR settings
@@ -480,6 +482,17 @@ class AiSmartTalk extends Module
                 $colorMode = '';
             }
 
+            $borderRadius = Tools::getValue('AI_SMART_TALK_BORDER_RADIUS', '');
+            $validBorderRadius = ['', 'rounded', 'slightly-rounded', 'square'];
+            if (!in_array($borderRadius, $validBorderRadius)) {
+                $borderRadius = '';
+            }
+
+            $buttonBorderRadius = Tools::getValue('AI_SMART_TALK_BUTTON_BORDER_RADIUS', '');
+            if (!in_array($buttonBorderRadius, $validBorderRadius)) {
+                $buttonBorderRadius = '';
+            }
+
             $primaryColor = Tools::getValue('AI_SMART_TALK_PRIMARY_COLOR', '');
             $secondaryColor = Tools::getValue('AI_SMART_TALK_SECONDARY_COLOR', '');
 
@@ -522,6 +535,8 @@ class AiSmartTalk extends Module
             Configuration::updateValue('AI_SMART_TALK_BUTTON_POSITION', $buttonPosition);
             Configuration::updateValue('AI_SMART_TALK_CHAT_SIZE', $chatSize);
             Configuration::updateValue('AI_SMART_TALK_COLOR_MODE', $colorMode);
+            Configuration::updateValue('AI_SMART_TALK_BORDER_RADIUS', $borderRadius);
+            Configuration::updateValue('AI_SMART_TALK_BUTTON_BORDER_RADIUS', $buttonBorderRadius);
             Configuration::updateValue('AI_SMART_TALK_PRIMARY_COLOR', $primaryColor);
             Configuration::updateValue('AI_SMART_TALK_SECONDARY_COLOR', $secondaryColor);
             Configuration::updateValue('AI_SMART_TALK_ENABLE_ATTACHMENT', $enableAttachment);
@@ -716,6 +731,8 @@ class AiSmartTalk extends Module
             'buttonPosition' => Configuration::get('AI_SMART_TALK_BUTTON_POSITION') ?: '',
             'chatSize' => Configuration::get('AI_SMART_TALK_CHAT_SIZE') ?: '',
             'colorMode' => Configuration::get('AI_SMART_TALK_COLOR_MODE') ?: '',
+            'borderRadius' => Configuration::get('AI_SMART_TALK_BORDER_RADIUS') ?: '',
+            'buttonBorderRadius' => Configuration::get('AI_SMART_TALK_BUTTON_BORDER_RADIUS') ?: '',
             'primaryColor' => Configuration::get('AI_SMART_TALK_PRIMARY_COLOR') ?: '',
             'secondaryColor' => Configuration::get('AI_SMART_TALK_SECONDARY_COLOR') ?: '',
             'enableAttachment' => Configuration::get('AI_SMART_TALK_ENABLE_ATTACHMENT') ?: '',
@@ -1417,6 +1434,8 @@ class AiSmartTalk extends Module
         $buttonPosition = Configuration::get('AI_SMART_TALK_BUTTON_POSITION');
         $chatSize = Configuration::get('AI_SMART_TALK_CHAT_SIZE');
         $colorMode = Configuration::get('AI_SMART_TALK_COLOR_MODE');
+        $borderRadius = Configuration::get('AI_SMART_TALK_BORDER_RADIUS');
+        $buttonBorderRadius = Configuration::get('AI_SMART_TALK_BUTTON_BORDER_RADIUS');
         $primaryColor = Configuration::get('AI_SMART_TALK_PRIMARY_COLOR');
         $secondaryColor = Configuration::get('AI_SMART_TALK_SECONDARY_COLOR');
         $enableAttachment = Configuration::get('AI_SMART_TALK_ENABLE_ATTACHMENT');
@@ -1444,6 +1463,12 @@ class AiSmartTalk extends Module
         }
         if (!empty($colorMode)) {
             $chatbotSettings['initialColorMode'] = $colorMode;
+        }
+        if (!empty($borderRadius)) {
+            $chatbotSettings['borderRadius'] = $borderRadius;
+        }
+        if (!empty($buttonBorderRadius)) {
+            $chatbotSettings['buttonBorderRadius'] = $buttonBorderRadius;
         }
 
         // Apply boolean overrides (only if explicitly 'on' or 'off')
@@ -2109,6 +2134,8 @@ class AiSmartTalk extends Module
             'AI_SMART_TALK_BUTTON_POSITION',
             'AI_SMART_TALK_CHAT_SIZE',
             'AI_SMART_TALK_COLOR_MODE',
+            'AI_SMART_TALK_BORDER_RADIUS',
+            'AI_SMART_TALK_BUTTON_BORDER_RADIUS',
             'AI_SMART_TALK_PRIMARY_COLOR',
             'AI_SMART_TALK_SECONDARY_COLOR',
             'AI_SMART_TALK_ENABLE_ATTACHMENT',
@@ -2140,6 +2167,8 @@ class AiSmartTalk extends Module
             'AI_SMART_TALK_BUTTON_POSITION',
             'AI_SMART_TALK_CHAT_SIZE',
             'AI_SMART_TALK_COLOR_MODE',
+            'AI_SMART_TALK_BORDER_RADIUS',
+            'AI_SMART_TALK_BUTTON_BORDER_RADIUS',
             'AI_SMART_TALK_PRIMARY_COLOR',
             'AI_SMART_TALK_SECONDARY_COLOR',
             'AI_SMART_TALK_ENABLE_ATTACHMENT',

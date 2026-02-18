@@ -1656,6 +1656,24 @@ a.ast-btn-success:hover {
                                         <option value="auto" {if $colorMode == 'auto'}selected{/if}>{l s='Auto' mod='aismarttalk'}</option>
                                     </select>
                                 </div>
+                                <div class="ast-form-group">
+                                    <label class="ast-label">{l s='Chat Window Corners' mod='aismarttalk'}</label>
+                                    <select name="AI_SMART_TALK_BORDER_RADIUS" class="ast-select">
+                                        <option value="" {if $borderRadius == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="rounded" {if $borderRadius == 'rounded'}selected{/if}>{l s='Rounded' mod='aismarttalk'}</option>
+                                        <option value="slightly-rounded" {if $borderRadius == 'slightly-rounded'}selected{/if}>{l s='Slightly Rounded' mod='aismarttalk'}</option>
+                                        <option value="square" {if $borderRadius == 'square'}selected{/if}>{l s='Square' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+                                <div class="ast-form-group">
+                                    <label class="ast-label">{l s='Button Corners' mod='aismarttalk'}</label>
+                                    <select name="AI_SMART_TALK_BUTTON_BORDER_RADIUS" class="ast-select">
+                                        <option value="" {if $buttonBorderRadius == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="rounded" {if $buttonBorderRadius == 'rounded'}selected{/if}>{l s='Rounded' mod='aismarttalk'}</option>
+                                        <option value="slightly-rounded" {if $buttonBorderRadius == 'slightly-rounded'}selected{/if}>{l s='Slightly Rounded' mod='aismarttalk'}</option>
+                                        <option value="square" {if $buttonBorderRadius == 'square'}selected{/if}>{l s='Square' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
 
