@@ -21,80 +21,92 @@ jobs:
 
       - name: Deploy to VPS
         run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
-            set -e
-            cd /home/debian/prestashop-chatbot
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'cat > /tmp/deploy-prestashop.sh && bash /tmp/deploy-prestashop.sh; EXIT_CODE=$?; rm -f /tmp/deploy-prestashop.sh; exit $EXIT_CODE' << 'EOF'
+          set -e
+          cd /home/debian/prestashop-chatbot
 
-            # Verify .env exists
-            if [ ! -f .env ]; then
-              echo "ERROR: .env file not found. Create it from .env.example before deploying."
-              exit 1
+          # Verify .env exists
+          if [ ! -f .env ]; then
+            echo "ERROR: .env file not found. Create it from .env.example before deploying."
+            exit 1
+          fi
+
+          # Load .env for variable substitution
+          set -a
+          source .env
+          set +a
+
+          # Pull latest code first
+          git pull origin main
+
+          # Ensure directories exist
+          mkdir -p data/mysql data/prestashop backups/mysql
+
+          # Ensure scripts are executable
+          chmod +x scripts/*.sh
+
+          # Ensure Docker network exists
+          docker network create ai-toolkit-network 2>/dev/null || true
+
+          # Fix data permissions before starting containers (www-data=33, mysql=999)
+          chown -R 999:999 data/mysql 2>/dev/null || true
+          chown -R 33:33 data/prestashop 2>/dev/null || true
+          chown -R 33:33 modules/ 2>/dev/null || true
+
+          # Pre-deploy backup
+          echo "Running pre-deploy backup..."
+          ./scripts/backup-mysql.sh || echo "WARNING: Backup failed (first deploy or DB not running yet)"
+
+          # Stop, rebuild, and start fresh
+          echo "Stopping containers..."
+          docker compose -f docker-compose.prod.yml down --remove-orphans
+          echo "Starting containers..."
+          docker compose -f docker-compose.prod.yml up -d --build
+
+          # Wait for services with healthchecks to be healthy (prestashop + prestashop_db)
+          echo "Waiting for services to be healthy..."
+          TIMEOUT=180
+          ELAPSED=0
+          INTERVAL=10
+          while [ $ELAPSED -lt $TIMEOUT ]; do
+            DB_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' prestashop-chatbot-prestashop_db-1 2>/dev/null || echo "starting")
+            PS_HEALTH=$(docker inspect --format='{{.State.Health.Status}}' prestashop-chatbot-prestashop-1 2>/dev/null || echo "starting")
+            echo "  prestashop_db: $DB_HEALTH | prestashop: $PS_HEALTH (${ELAPSED}s elapsed)"
+            if [ "$DB_HEALTH" = "healthy" ] && [ "$PS_HEALTH" = "healthy" ]; then
+              echo "All services healthy!"
+              break
             fi
+            sleep $INTERVAL
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
 
-            # Load .env for variable substitution
-            set -a
-            source .env
-            set +a
+          if [ $ELAPSED -ge $TIMEOUT ]; then
+            echo "WARNING: Timeout waiting for healthy status. Continuing anyway..."
+            docker compose -f docker-compose.prod.yml ps
+          fi
 
-            # Ensure directories exist
-            mkdir -p data/mysql data/prestashop backups/mysql
-
-            # Ensure scripts are executable
-            chmod +x scripts/*.sh
-
-            # Ensure Docker network exists
-            docker network create ai-toolkit-network 2>/dev/null || true
-
-            # Pre-deploy backup
-            echo "Running pre-deploy backup..."
-            ./scripts/backup-mysql.sh || echo "WARNING: Backup failed (first deploy or DB not running yet)"
-
-            # Pull and rebuild
-            git pull origin main
-            docker compose -f docker-compose.prod.yml up -d --build
-
-            # Wait for services to be healthy
-            echo "Waiting for services to be healthy..."
-            TIMEOUT=180
-            ELAPSED=0
-            INTERVAL=10
-            while [ $ELAPSED -lt $TIMEOUT ]; do
-              HEALTH=$(docker compose -f docker-compose.prod.yml ps --format json 2>/dev/null | grep -o '"Health":"[^"]*"' | grep -c '"Health":"healthy"' || true)
-              TOTAL=$(docker compose -f docker-compose.prod.yml ps --format json 2>/dev/null | grep -o '"Health":"[^"]*"' | wc -l | tr -d ' ')
-              echo "  Healthy: $HEALTH / $TOTAL (${ELAPSED}s elapsed)"
-              if [ "$TOTAL" -gt 0 ] && [ "$HEALTH" -eq "$TOTAL" ]; then
-                echo "All services healthy!"
-                break
-              fi
-              sleep $INTERVAL
-              ELAPSED=$((ELAPSED + INTERVAL))
-            done
-
-            if [ $ELAPSED -ge $TIMEOUT ]; then
-              echo "WARNING: Timeout waiting for healthy status. Continuing anyway..."
-              docker compose -f docker-compose.prod.yml ps
-            fi
-
-            # Fix data permissions
-            chown -R 999:999 data/mysql 2>/dev/null || true
-            chown -R 33:33 data/prestashop 2>/dev/null || true
-
-            # Configure domain and SSL in database
-            docker compose -f docker-compose.prod.yml exec -T prestashop bash -c "
+          # Configure domain and SSL in database (skip on fresh install where tables don't exist yet)
+          docker compose -f docker-compose.prod.yml exec -T prestashop bash -c "
+            TABLE_EXISTS=\$(mysql -h prestashop_db -u \$DB_USER -p\$DB_PASSWD \$DB_NAME -sNe \"SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='\$DB_NAME' AND table_name='ps_shop_url';\" 2>/dev/null)
+            if [ \"\$TABLE_EXISTS\" = \"1\" ]; then
               mysql -h prestashop_db -u \$DB_USER -p\$DB_PASSWD \$DB_NAME -e \"
                 UPDATE ps_shop_url SET domain = '\$PS_DOMAIN', domain_ssl = '\$PS_DOMAIN' WHERE id_shop_url = 1;
                 UPDATE ps_configuration SET value = '\$PS_DOMAIN' WHERE name IN ('PS_SHOP_DOMAIN', 'PS_SHOP_DOMAIN_SSL');
                 UPDATE ps_configuration SET value = '1' WHERE name = 'PS_SSL_ENABLED';
                 UPDATE ps_configuration SET value = '1' WHERE name = 'PS_SSL_ENABLED_EVERYWHERE';
               \"
-            "
+              echo 'Domain/SSL configured in database'
+            else
+              echo 'SKIP: PrestaShop tables not found (fresh install). Domain will be set after installation.'
+            fi
+          " || echo "WARNING: Could not configure domain/SSL"
 
-            # Clear cache
-            docker compose -f docker-compose.prod.yml exec -T prestashop rm -rf /var/www/html/var/cache/* || true
+          # Clear cache
+          docker compose -f docker-compose.prod.yml exec -T prestashop rm -rf /var/www/html/var/cache/* || true
 
-            # Ensure backup cron is installed
-            CRON_CMD="0 2 * * * /home/debian/prestashop-chatbot/scripts/backup-mysql.sh >> /home/debian/prestashop-chatbot/backups/backup.log 2>&1"
-            (crontab -l 2>/dev/null | grep -v "backup-mysql.sh"; echo "$CRON_CMD") | crontab -
+          # Ensure backup cron is installed
+          CRON_CMD="0 2 * * * /home/debian/prestashop-chatbot/scripts/backup-mysql.sh >> /home/debian/prestashop-chatbot/backups/backup.log 2>&1"
+          (crontab -l 2>/dev/null | grep -v "backup-mysql.sh"; echo "$CRON_CMD") | crontab -
 
-            echo "Deployment completed successfully"
+          echo "Deployment completed successfully"
           EOF
