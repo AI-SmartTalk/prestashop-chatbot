@@ -66,6 +66,7 @@ class CleanProductDocuments
                 'chatModelToken' => $chatModelToken,
                 'deleteFromIds' => [] !== $this->productIds ? true : false,
                 'source' => 'PRESTASHOP',
+                'siteIdentifier' => OAuthHandler::getSiteIdentifier(),
             ],
         ));
 

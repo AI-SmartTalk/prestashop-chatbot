@@ -147,6 +147,7 @@ class WebhookHandler
             'chatModelId' => $chatModelId,
             'timestamp' => date('c'),
             'payload' => $payload,
+            'siteIdentifier' => OAuthHandler::getSiteIdentifier(),
         ];
 
         $ch = curl_init();

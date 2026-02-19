@@ -1,0 +1,114 @@
+services:
+  # ──────────────────────────────────────────────
+  # PrestaShop Site 1 (FR) — http://localhost:8081
+  # ──────────────────────────────────────────────
+  prestashop1:
+    container_name: prestashop1
+    image: prestashop/prestashop:9.0.1
+    platform: linux/amd64
+    ports:
+      - "8081:80"
+    environment:
+      - DB_SERVER=prestashop1_db
+      - PS_INSTALL_AUTO=1
+      - DB_NAME=prestashop
+      - DB_USER=prestashop
+      - DB_PASSWD=prestashop
+      - PS_DOMAIN=localhost:8081
+      - PS_LANGUAGE=fr
+      - PS_COUNTRY=FR
+      - ADMIN_MAIL=demo@prestashop.com
+      - ADMIN_PASSWD=Admin_Presta1!
+    volumes:
+      - ./modules/aismarttalk:/var/www/html/modules/aismarttalk
+      - ps1data:/var/www/html
+    networks:
+      - ai-toolkit-network
+    depends_on:
+      - prestashop1_db
+
+  prestashop1_db:
+    container_name: prestashop1_db
+    image: mysql:5.7
+    platform: linux/amd64
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin
+      - MYSQL_DATABASE=prestashop
+      - MYSQL_USER=prestashop
+      - MYSQL_PASSWORD=prestashop
+    networks:
+      - ai-toolkit-network
+    volumes:
+      - ps1dbdata:/var/lib/mysql
+
+  # ──────────────────────────────────────────────
+  # PrestaShop Site 2 (EN) — http://localhost:8082
+  # ──────────────────────────────────────────────
+  prestashop2:
+    container_name: prestashop2
+    image: prestashop/prestashop:9.0.1
+    platform: linux/amd64
+    ports:
+      - "8082:80"
+    environment:
+      - DB_SERVER=prestashop2_db
+      - PS_INSTALL_AUTO=1
+      - DB_NAME=prestashop
+      - DB_USER=prestashop
+      - DB_PASSWD=prestashop
+      - PS_DOMAIN=localhost:8082
+      - PS_LANGUAGE=en
+      - PS_COUNTRY=US
+      - ADMIN_MAIL=demo@prestashop.com
+      - ADMIN_PASSWD=Admin_Presta2!
+    volumes:
+      - ./modules/aismarttalk:/var/www/html/modules/aismarttalk
+      - ps2data:/var/www/html
+    networks:
+      - ai-toolkit-network
+    depends_on:
+      - prestashop2_db
+
+  prestashop2_db:
+    container_name: prestashop2_db
+    image: mysql:5.7
+    platform: linux/amd64
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin
+      - MYSQL_DATABASE=prestashop
+      - MYSQL_USER=prestashop
+      - MYSQL_PASSWORD=prestashop
+    networks:
+      - ai-toolkit-network
+    volumes:
+      - ps2dbdata:/var/lib/mysql
+
+  # ──────────────────────────────────────────────
+  # PhpMyAdmin (switch between both DBs)
+  # ──────────────────────────────────────────────
+  phpmyadmin:
+    container_name: phpmyadmin-multisite
+    image: phpmyadmin/phpmyadmin
+    platform: linux/amd64
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_HOSTS=prestashop1_db,prestashop2_db
+      - PMA_USER=prestashop
+      - PMA_PASSWORD=prestashop
+    networks:
+      - ai-toolkit-network
+
+networks:
+  ai-toolkit-network:
+    external: true
+
+volumes:
+  ps1data:
+  ps1dbdata:
+  ps2data:
+  ps2dbdata:

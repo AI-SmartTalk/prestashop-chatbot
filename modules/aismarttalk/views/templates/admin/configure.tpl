@@ -1468,11 +1468,16 @@ a.ast-btn-success:hover {
                     </div>
                     <div class="ast-card-body">
                         {* Usage Warning Alert *}
-                        {if $planUsage.overallUsagePercentage >= 80}
-                        <div class="ast-alert {if $planUsage.overallUsagePercentage >= 95}ast-alert-danger{else}ast-alert-warning{/if}" style="margin-bottom: 20px;">
+                        {if $planUsage.overallUsagePercentage > 100}
+                        <div class="ast-alert ast-alert-danger" style="margin-bottom: 20px;">
                             <i class="icon icon-warning"></i>
-                            {if $planUsage.overallUsagePercentage >= 95}
-                                <strong>{l s='Critical:' mod='aismarttalk'}</strong> {l s='You have used %s of your plan limits. Upgrade now to avoid service interruption.' sprintf=[$planUsage.overallUsagePercentage|cat:'%'] mod='aismarttalk'}
+                            <strong>{l s='Critical:' mod='aismarttalk'}</strong> {l s='You have exceeded your plan limits. Upgrade now to avoid service interruption.' mod='aismarttalk'}
+                        </div>
+                        {elseif $planUsage.overallUsagePercentage >= 80}
+                        <div class="ast-alert ast-alert-warning" style="margin-bottom: 20px;">
+                            <i class="icon icon-warning"></i>
+                            {if $planUsage.overallUsagePercentage >= 100}
+                                <strong>{l s='Heads up:' mod='aismarttalk'}</strong> {l s='You have reached your plan limits. Upgrade to get more resources.' mod='aismarttalk'}
                             {else}
                                 <strong>{l s='Warning:' mod='aismarttalk'}</strong> {l s='You have used %s of your plan limits. Consider upgrading soon.' sprintf=[$planUsage.overallUsagePercentage|cat:'%'] mod='aismarttalk'}
                             {/if}

@@ -94,6 +94,7 @@ class CustomerSync
             'chatModelId' => $chatModelId,
             'chatModelToken' => $chatModelToken,
             'source' => 'PRESTASHOP',
+            'siteIdentifier' => OAuthHandler::getSiteIdentifier(),
         ];
 
         $ch = curl_init();

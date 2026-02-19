@@ -75,7 +75,7 @@ class SynchProductsToAiSmartTalk
     {
         $products = $this->getProductsToSynchronize();
 
-        $baseLink = \Tools::getHttpHost(true) . __PS_BASE_URI__;
+        $link = $this->getContext()->link;
 
         // Get default currency information
         $defaultCurrencyId = (int) \Configuration::get('PS_CURRENCY_DEFAULT');
@@ -86,7 +86,7 @@ class SynchProductsToAiSmartTalk
         $synchronizedProductIds = [];
         foreach ($products as $product) {
             $psProduct = new \Product($product['id_product']);
-            $productUrl = $baseLink . $product['link_rewrite'] . '/' . $product['id_product'] . '-' . $product['link_rewrite'] . '.html';
+            $productUrl = $link->getProductLink($psProduct);
 
             $imageUrl = null;
             if (!empty($product['id_image'])) {
@@ -170,6 +170,7 @@ class SynchProductsToAiSmartTalk
             'chatModelId' => $chatModelId,
             'chatModelToken' => $chatModelToken,
             'source' => 'PRESTASHOP',
+            'siteIdentifier' => OAuthHandler::getSiteIdentifier(),
         ]));
         curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type:application/json']);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
