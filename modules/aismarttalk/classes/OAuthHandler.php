@@ -414,6 +414,11 @@ class OAuthHandler
         \Configuration::updateValue('AI_SMART_TALK_OAUTH_SCOPE', $tokenData['scope'] ?? self::OAUTH_SCOPES);
         \Configuration::updateValue('AI_SMART_TALK_OAUTH_CONNECTED', true);
 
+        // Store site identifier for multi-site support
+        if (isset($tokenData['site_identifier'])) {
+            \Configuration::updateValue('AI_SMART_TALK_SITE_IDENTIFIER', $tokenData['site_identifier']);
+        }
+
         // For backward compatibility, also update the old config keys
         \Configuration::updateValue('CHAT_MODEL_ID', $tokenData['chat_model_id']);
         \Configuration::updateValue('CHAT_MODEL_TOKEN', $tokenData['access_token']);
@@ -433,6 +438,29 @@ class OAuthHandler
             'chat_model_id' => $tokenData['chat_model_id'],
             'return_url' => $returnUrl,
         ];
+    }
+
+    /**
+     * Get the site identifier for multi-site support
+     *
+     * @return string|null
+     */
+    public static function getSiteIdentifier(): ?string
+    {
+        $stored = \Configuration::get('AI_SMART_TALK_SITE_IDENTIFIER');
+        if (!empty($stored)) {
+            return $stored;
+        }
+
+        // Include port in site identifier so sites on the same hostname are distinct
+        $url = \Tools::getShopDomainSsl(true);
+        $host = parse_url($url, PHP_URL_HOST);
+        $port = parse_url($url, PHP_URL_PORT);
+        if ($host && $port) {
+            return $host . ':' . $port;
+        }
+
+        return !empty($host) ? $host : (!empty($url) ? $url : null);
     }
 
     /**
@@ -469,6 +497,7 @@ class OAuthHandler
         \Configuration::deleteByName('AI_SMART_TALK_CHAT_MODEL_ID');
         \Configuration::deleteByName('AI_SMART_TALK_OAUTH_SCOPE');
         \Configuration::deleteByName('AI_SMART_TALK_OAUTH_CONNECTED');
+        \Configuration::deleteByName('AI_SMART_TALK_SITE_IDENTIFIER');
         \Configuration::deleteByName('CHAT_MODEL_ID');
         \Configuration::deleteByName('CHAT_MODEL_TOKEN');
 

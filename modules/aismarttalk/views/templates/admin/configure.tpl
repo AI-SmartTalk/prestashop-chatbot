@@ -1468,11 +1468,16 @@ a.ast-btn-success:hover {
                     </div>
                     <div class="ast-card-body">
                         {* Usage Warning Alert *}
-                        {if $planUsage.overallUsagePercentage >= 80}
-                        <div class="ast-alert {if $planUsage.overallUsagePercentage >= 95}ast-alert-danger{else}ast-alert-warning{/if}" style="margin-bottom: 20px;">
+                        {if $planUsage.overallUsagePercentage > 100}
+                        <div class="ast-alert ast-alert-danger" style="margin-bottom: 20px;">
                             <i class="icon icon-warning"></i>
-                            {if $planUsage.overallUsagePercentage >= 95}
-                                <strong>{l s='Critical:' mod='aismarttalk'}</strong> {l s='You have used %s of your plan limits. Upgrade now to avoid service interruption.' sprintf=[$planUsage.overallUsagePercentage|cat:'%'] mod='aismarttalk'}
+                            <strong>{l s='Critical:' mod='aismarttalk'}</strong> {l s='You have exceeded your plan limits. Upgrade now to avoid service interruption.' mod='aismarttalk'}
+                        </div>
+                        {elseif $planUsage.overallUsagePercentage >= 80}
+                        <div class="ast-alert ast-alert-warning" style="margin-bottom: 20px;">
+                            <i class="icon icon-warning"></i>
+                            {if $planUsage.overallUsagePercentage >= 100}
+                                <strong>{l s='Heads up:' mod='aismarttalk'}</strong> {l s='You have reached your plan limits. Upgrade to get more resources.' mod='aismarttalk'}
                             {else}
                                 <strong>{l s='Warning:' mod='aismarttalk'}</strong> {l s='You have used %s of your plan limits. Consider upgrading soon.' sprintf=[$planUsage.overallUsagePercentage|cat:'%'] mod='aismarttalk'}
                             {/if}
@@ -1654,6 +1659,24 @@ a.ast-btn-success:hover {
                                         <option value="light" {if $colorMode == 'light'}selected{/if}>{l s='Light' mod='aismarttalk'}</option>
                                         <option value="dark" {if $colorMode == 'dark'}selected{/if}>{l s='Dark' mod='aismarttalk'}</option>
                                         <option value="auto" {if $colorMode == 'auto'}selected{/if}>{l s='Auto' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+                                <div class="ast-form-group">
+                                    <label class="ast-label">{l s='Chat Window Corners' mod='aismarttalk'}</label>
+                                    <select name="AI_SMART_TALK_BORDER_RADIUS" class="ast-select">
+                                        <option value="" {if $borderRadius == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="rounded" {if $borderRadius == 'rounded'}selected{/if}>{l s='Rounded' mod='aismarttalk'}</option>
+                                        <option value="slightly-rounded" {if $borderRadius == 'slightly-rounded'}selected{/if}>{l s='Slightly Rounded' mod='aismarttalk'}</option>
+                                        <option value="square" {if $borderRadius == 'square'}selected{/if}>{l s='Square' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+                                <div class="ast-form-group">
+                                    <label class="ast-label">{l s='Button Corners' mod='aismarttalk'}</label>
+                                    <select name="AI_SMART_TALK_BUTTON_BORDER_RADIUS" class="ast-select">
+                                        <option value="" {if $buttonBorderRadius == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="rounded" {if $buttonBorderRadius == 'rounded'}selected{/if}>{l s='Rounded' mod='aismarttalk'}</option>
+                                        <option value="slightly-rounded" {if $buttonBorderRadius == 'slightly-rounded'}selected{/if}>{l s='Slightly Rounded' mod='aismarttalk'}</option>
+                                        <option value="square" {if $buttonBorderRadius == 'square'}selected{/if}>{l s='Square' mod='aismarttalk'}</option>
                                     </select>
                                 </div>
                             </div>
