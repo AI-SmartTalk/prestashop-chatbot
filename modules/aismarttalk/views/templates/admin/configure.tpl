@@ -58,6 +58,12 @@
     font-size: 22px;
     font-weight: 700;
 }
+.ast-version {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.6);
+    vertical-align: middle;
+}
 .ast-header-title p {
     margin: 4px 0 0;
     color: rgba(255,255,255,0.8);
@@ -1337,7 +1343,7 @@ a.ast-btn-success:hover {
         <div class="ast-header-left">
             <div class="ast-logo"><img src="{$modulePath|escape:'html':'UTF-8'}icons/favicon-64.png" alt="AI SmartTalk" width="32" height="32"></div>
             <div class="ast-header-title">
-                <h1>AI SmartTalk</h1>
+                <h1>AI SmartTalk <span class="ast-version">v{$moduleVersion|escape:'html':'UTF-8'}</span></h1>
                 <p>{l s='Intelligent chatbot for your PrestaShop store' mod='aismarttalk'}</p>
             </div>
         </div>
