@@ -43,7 +43,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.3.0';
+        $this->version = '3.4.0';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -707,6 +707,7 @@ class AiSmartTalk extends Module
 
         $this->context->smarty->assign([
             'modulePath' => $this->_path,
+            'moduleVersion' => $this->version,
             'isConnected' => $isConnected,
             'chatModelId' => $chatModelId,
             'accessToken' => OAuthHandler::getAccessToken() ?? '',
@@ -1713,13 +1714,15 @@ class AiSmartTalk extends Module
             if ($wasOutOfStock) {
                 // Clear the out of stock flag
                 Configuration::deleteByName($cacheKey);
+            }
 
-                // Product sync: re-sync when restocked
-                if ((bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
-                    $api = new SynchProductsToAiSmartTalk($this->context);
-                    $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
-                    AiSmartTalkProductSync::updateLastSyncTime($idProduct);
-                }
+            // Sync product if it hasn't been synced yet (new product or restock)
+            if ((bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')
+                && !AiSmartTalkProductSync::isSynced($idProduct)
+            ) {
+                $api = new SynchProductsToAiSmartTalk($this->context);
+                $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
+                AiSmartTalkProductSync::updateLastSyncTime($idProduct);
             }
         }
     }
