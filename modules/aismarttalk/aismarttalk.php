@@ -706,6 +706,7 @@ class AiSmartTalk extends Module
         $syncFilterCategoryMode = empty($syncFilterConfig['categories']) ? 'all' : $syncFilterConfig['mode'];
 
         $this->context->smarty->assign([
+            'modulePath' => $this->_path,
             'isConnected' => $isConnected,
             'chatModelId' => $chatModelId,
             'accessToken' => OAuthHandler::getAccessToken() ?? '',

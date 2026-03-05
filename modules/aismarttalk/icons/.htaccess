@@ -1,0 +1,13 @@
+# Allow access to image files only
+<IfModule !mod_authz_core.c>
+    <Files ~ "\.(png|jpg|gif|svg|ico)$">
+        Order allow,deny
+        Allow from all
+    </Files>
+</IfModule>
+
+<IfModule mod_authz_core.c>
+    <FilesMatch "\.(png|jpg|gif|svg|ico)$">
+        Require all granted
+    </FilesMatch>
+</IfModule>
