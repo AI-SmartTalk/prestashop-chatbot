@@ -105,6 +105,8 @@ class AiSmartTalk extends Module
 
     public function registerAiSmartTalkHooks()
     {
+        $isPS8Plus = version_compare(_PS_VERSION_, '8.0.0', '>=');
+
         $hooks = [
             'displayFooter',
             'displayBeforeBodyClosingTag',
@@ -113,22 +115,30 @@ class AiSmartTalk extends Module
             'actionProductCreate',
             'actionProductDelete',
             'actionUpdateQuantity',
-            'actionProductQuantityUpdate', // Alternative stock hook for PS 9
             'actionAuthentication',
             'actionCustomerLogout',
             'actionCustomerAccountAdd',
             'actionCustomerAccountUpdate',
             'actionCustomerDelete',
-            // Webhook triggers
-            'actionOrderStatusPostUpdate',
+            // Webhook triggers (common)
             'actionPaymentConfirmation',
             'actionValidateOrder',
             'actionOrderReturn',
-            'actionObjectProductCommentValidateAfter',
             'actionCartSave',
             'actionOrderSlipAdd',
             'actionProductAdd',
         ];
+
+        if ($isPS8Plus) {
+            // PS 8+ hooks
+            $hooks[] = 'actionProductQuantityUpdate';
+            $hooks[] = 'actionOrderStatusPostUpdate';
+            $hooks[] = 'actionObjectProductCommentValidateAfter';
+        } else {
+            // PS 1.7 hooks
+            $hooks[] = 'actionOrderStatusUpdate';
+            $hooks[] = 'actionObjectProductCommentAddAfter';
+        }
 
         foreach ($hooks as $hook) {
             if (!$this->isRegisteredInHook($hook)) {
@@ -158,29 +168,38 @@ class AiSmartTalk extends Module
         // Drop the product sync table
         AiSmartTalkProductSync::dropTable();
 
+        // Unregister all possible hooks (safe to call even if not registered)
+        $allHooks = [
+            'displayFooter',
+            'displayBeforeBodyClosingTag',
+            'displayBackOfficeHeader',
+            'actionProductUpdate',
+            'actionProductCreate',
+            'actionProductDelete',
+            'actionUpdateQuantity',
+            'actionProductQuantityUpdate',
+            'actionAuthentication',
+            'actionCustomerLogout',
+            'actionCustomerAccountAdd',
+            'actionCustomerAccountUpdate',
+            'actionCustomerDelete',
+            'actionOrderStatusPostUpdate',
+            'actionOrderStatusUpdate',
+            'actionPaymentConfirmation',
+            'actionValidateOrder',
+            'actionOrderReturn',
+            'actionObjectProductCommentValidateAfter',
+            'actionObjectProductCommentAddAfter',
+            'actionCartSave',
+            'actionOrderSlipAdd',
+            'actionProductAdd',
+        ];
+
+        foreach ($allHooks as $hook) {
+            $this->unregisterHook($hook);
+        }
+
         return parent::uninstall()
-            && $this->unregisterHook('displayFooter')
-            && $this->unregisterHook('displayBeforeBodyClosingTag')
-            && $this->unregisterHook('displayBackOfficeHeader')
-            && $this->unregisterHook('actionProductUpdate')
-            && $this->unregisterHook('actionProductCreate')
-            && $this->unregisterHook('actionProductDelete')
-            && $this->unregisterHook('actionUpdateQuantity')
-            && $this->unregisterHook('actionProductQuantityUpdate')
-            && $this->unregisterHook('actionAuthentication')
-            && $this->unregisterHook('actionCustomerLogout')
-            && $this->unregisterHook('actionCustomerAccountAdd')
-            && $this->unregisterHook('actionCustomerAccountUpdate')
-            && $this->unregisterHook('actionCustomerDelete')
-            // Webhook triggers
-            && $this->unregisterHook('actionOrderStatusPostUpdate')
-            && $this->unregisterHook('actionPaymentConfirmation')
-            && $this->unregisterHook('actionValidateOrder')
-            && $this->unregisterHook('actionOrderReturn')
-            && $this->unregisterHook('actionObjectProductCommentValidateAfter')
-            && $this->unregisterHook('actionCartSave')
-            && $this->unregisterHook('actionOrderSlipAdd')
-            && $this->unregisterHook('actionProductAdd')
             && Configuration::deleteByName('AI_SMART_TALK_WEBHOOKS_ENABLED')
             && Configuration::deleteByName('AI_SMART_TALK_WEBHOOKS_TRIGGERS')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLED')
@@ -691,7 +710,7 @@ class AiSmartTalk extends Module
             'chatModelId' => $chatModelId,
             'accessToken' => OAuthHandler::getAccessToken() ?? '',
             'moduleLink' => $currentIndex . '&token=' . $token,
-            'formAction' => htmlspecialchars($_SERVER['REQUEST_URI'], ENT_QUOTES, 'UTF-8'),
+            'formAction' => $_SERVER['REQUEST_URI'],
             'backofficeUrl' => $backofficeUrl,
             'currentLang' => substr($this->context->language->iso_code, 0, 2),
 
@@ -1886,6 +1905,47 @@ class AiSmartTalk extends Module
     }
 
     /**
+     * Hook: Order status changed (PS 1.7)
+     * PS 1.7 equivalent of actionOrderStatusPostUpdate
+     *
+     * @param array $params Hook parameters: newOrderStatus (OrderState), id_order
+     */
+    public function hookActionOrderStatusUpdate($params)
+    {
+        try {
+            if (!WebhookHandler::isTriggerEnabled(WebhookHandler::TRIGGER_ORDER_STATUS_CHANGED)) {
+                return;
+            }
+
+            $newOrderState = $params['newOrderStatus'] ?? null;
+            $orderId = $params['id_order'] ?? null;
+
+            if (!$newOrderState || !$orderId) {
+                return;
+            }
+
+            $order = new \Order((int) $orderId);
+            if (!\Validate::isLoadedObject($order)) {
+                return;
+            }
+
+            // PS 1.7 does not provide oldOrderStatus, read it from current state
+            $oldOrderState = null;
+            if ($order->current_state) {
+                $oldOrderState = new \OrderState((int) $order->current_state);
+                if (!\Validate::isLoadedObject($oldOrderState)) {
+                    $oldOrderState = null;
+                }
+            }
+
+            $webhookHandler = new WebhookHandler($this->context);
+            $webhookHandler->triggerOrderStatusChanged($order, $newOrderState, $oldOrderState);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionOrderStatusUpdate error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
+    }
+
+    /**
      * Hook: Payment confirmation
      * Triggers when a payment is confirmed
      *
@@ -2016,6 +2076,17 @@ class AiSmartTalk extends Module
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog('AI SmartTalk hookActionObjectProductCommentValidateAfter error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
+    }
+
+    /**
+     * Hook: Product comment added (PS 1.7)
+     * PS 1.7 equivalent of actionObjectProductCommentValidateAfter
+     *
+     * @param array $params ['object' => ProductComment]
+     */
+    public function hookActionObjectProductCommentAddAfter($params)
+    {
+        $this->hookActionObjectProductCommentValidateAfter($params);
     }
 
     /**

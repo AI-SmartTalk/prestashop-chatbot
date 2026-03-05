@@ -450,7 +450,7 @@ class WebhookHandler
         $langId = (int) \Configuration::get('PS_LANG_DEFAULT');
         $products = [];
 
-        foreach ($cart->getProducts(true, false, null, true, true) as $product) {
+        foreach ($cart->getProducts(true) as $product) {
             $products[] = [
                 'product_id' => (int) $product['id_product'],
                 'product_name' => $product['name'] ?? '',
