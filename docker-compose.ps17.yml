@@ -1,0 +1,70 @@
+services:
+  # ──────────────────────────────────────────────
+  # PrestaShop 1.7 — http://localhost:8091
+  # ──────────────────────────────────────────────
+  prestashop17:
+    container_name: prestashop17
+    image: prestashop/prestashop:1.7.8.11
+    platform: linux/amd64
+    ports:
+      - "8091:80"
+    environment:
+      - DB_SERVER=prestashop17_db
+      - PS_INSTALL_AUTO=1
+      - DB_NAME=prestashop
+      - DB_USER=prestashop
+      - DB_PASSWD=prestashop
+      - PS_DOMAIN=localhost:8091
+      - PS_LANGUAGE=fr
+      - PS_COUNTRY=FR
+      - ADMIN_MAIL=demo@prestashop.com
+      - ADMIN_PASSWD=Admin_Presta17!
+    volumes:
+      - ./modules/aismarttalk:/var/www/html/modules/aismarttalk
+      - ps17data:/var/www/html
+    networks:
+      - ai-toolkit-network
+    depends_on:
+      - prestashop17_db
+
+  prestashop17_db:
+    container_name: prestashop17_db
+    image: mysql:5.7
+    platform: linux/amd64
+    ports:
+      - "3317:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=admin
+      - MYSQL_DATABASE=prestashop
+      - MYSQL_USER=prestashop
+      - MYSQL_PASSWORD=prestashop
+    networks:
+      - ai-toolkit-network
+    volumes:
+      - ps17dbdata:/var/lib/mysql
+
+  # ──────────────────────────────────────────────
+  # PhpMyAdmin — http://localhost:8092
+  # ──────────────────────────────────────────────
+  phpmyadmin17:
+    container_name: phpmyadmin17
+    image: phpmyadmin/phpmyadmin
+    platform: linux/amd64
+    ports:
+      - "8092:80"
+    environment:
+      - PMA_HOST=prestashop17_db
+      - PMA_USER=prestashop
+      - PMA_PASSWORD=prestashop
+    networks:
+      - ai-toolkit-network
+    depends_on:
+      - prestashop17_db
+
+networks:
+  ai-toolkit-network:
+    external: true
+
+volumes:
+  ps17data:
+  ps17dbdata:

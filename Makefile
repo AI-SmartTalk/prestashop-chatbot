@@ -75,3 +75,33 @@ multisite-logs:
 admin-multisite:
 	@echo "PrestaShop 1 (FR):" && echo "  http://localhost:8081/$$(docker exec prestashop1 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")"
 	@echo "PrestaShop 2 (EN):" && echo "  http://localhost:8082/$$(docker exec prestashop2 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")"
+
+# ──────────────────────────────────────────────
+# PrestaShop 1.7 (test environment)
+# ──────────────────────────────────────────────
+PS17_COMPOSE=docker compose -f docker-compose.ps17.yml
+
+ps17:
+	docker network create ai-toolkit-network || true
+	$(PS17_COMPOSE) up -d
+	@echo ""
+	@echo "=== PrestaShop 1.7 Ready ==="
+	@echo "PrestaShop 1.7: http://localhost:8091"
+	@echo "PhpMyAdmin:     http://localhost:8092"
+	@echo ""
+	@echo "Admin credentials: demo@prestashop.com / Admin_Presta17!"
+
+ps17-stop:
+	$(PS17_COMPOSE) down
+
+ps17-clean:
+	$(PS17_COMPOSE) down -v
+
+ps17-logs:
+	$(PS17_COMPOSE) logs -f
+
+ps17-bash:
+	docker exec -it prestashop17 bash
+
+ps17-admin:
+	@echo "PrestaShop 1.7:" && echo "  http://localhost:8091/$$(docker exec prestashop17 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")"

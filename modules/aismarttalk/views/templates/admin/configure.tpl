@@ -58,6 +58,12 @@
     font-size: 22px;
     font-weight: 700;
 }
+.ast-version {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.6);
+    vertical-align: middle;
+}
 .ast-header-title p {
     margin: 4px 0 0;
     color: rgba(255,255,255,0.8);
@@ -1335,9 +1341,9 @@ a.ast-btn-success:hover {
     {* ===== HEADER ===== *}
     <div class="ast-header">
         <div class="ast-header-left">
-            <div class="ast-logo">🤖</div>
+            <div class="ast-logo"><img src="{$modulePath|escape:'html':'UTF-8'}icons/favicon-64.png" alt="AI SmartTalk" width="32" height="32"></div>
             <div class="ast-header-title">
-                <h1>AI SmartTalk</h1>
+                <h1>AI SmartTalk <span class="ast-version">v{$moduleVersion|escape:'html':'UTF-8'}</span></h1>
                 <p>{l s='Intelligent chatbot for your PrestaShop store' mod='aismarttalk'}</p>
             </div>
         </div>
@@ -1522,7 +1528,7 @@ a.ast-btn-success:hover {
                             <div class="ast-usage-item">
                                 <div class="ast-usage-header">
                                     <span class="ast-usage-label">
-                                        <i class="icon icon-robot"></i> {l s='AI Agents' mod='aismarttalk'}
+                                        <img src="{$modulePath|escape:'html':'UTF-8'}icons/favicon-16.png" alt="" width="14" height="14" style="vertical-align: middle; margin-right: 4px;"> {l s='AI Agents' mod='aismarttalk'}
                                     </span>
                                     <span class="ast-usage-value">
                                         {$planUsage.usage.agents.used} / {$planUsage.usage.agents.limit}
@@ -1612,7 +1618,7 @@ a.ast-btn-success:hover {
                                 </label>
                                 <label class="ast-button-type {if $buttonType == 'avatar'}selected{/if}">
                                     <input type="radio" name="AI_SMART_TALK_BUTTON_TYPE" value="avatar" {if $buttonType == 'avatar'}checked{/if}>
-                                    <div class="preview">🤖</div>
+                                    <div class="preview"><img src="{$modulePath|escape:'html':'UTF-8'}icons/favicon-32.png" alt="AI SmartTalk" width="24" height="24"></div>
                                     <div class="label">{l s='Avatar' mod='aismarttalk'}</div>
                                 </label>
                                 <label class="ast-button-type {if $buttonType == 'minimal'}selected{/if}">
@@ -2186,7 +2192,7 @@ a.ast-btn-success:hover {
                                 <label>{l s='Skill type' mod='aismarttalk'}</label>
                                 <select id="ast-filter-trigger" class="ast-filter-select">
                                     <option value="">{l s='All types' mod='aismarttalk'}</option>
-                                    <option value="CONVERSATION_TOOL">🤖 {l s='Conversation tool' mod='aismarttalk'}</option>
+                                    <option value="CONVERSATION_TOOL">💬 {l s='Conversation tool' mod='aismarttalk'}</option>
                                     <option value="WEBHOOK">🔗 {l s='Webhook' mod='aismarttalk'}</option>
                                     <option value="SMART_FORM_WORKFLOW">📝 SmartForm</option>
                                     <option value="NAVIGATION_EVENT">🧭 {l s='Navigation' mod='aismarttalk'}</option>
@@ -2787,7 +2793,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function getSkillTypeBadge(triggerType) {
         var map = {
-            'CONVERSATION_TOOL': { emoji: '🤖', label: '{l s="Conversation tool" mod="aismarttalk"}', cls: 'conversation-tool' },
+            'CONVERSATION_TOOL': { emoji: '💬', label: '{l s="Conversation tool" mod="aismarttalk"}', cls: 'conversation-tool' },
             'WEBHOOK': { emoji: '🔗', label: 'Webhook', cls: 'webhook' },
             'SMART_FORM_WORKFLOW': { emoji: '📝', label: 'SmartForm', cls: 'smartform' },
             'SMART_FORM_SEQUENCE_WORKFLOW': { emoji: '📋', label: 'Sequence', cls: 'sequence' },

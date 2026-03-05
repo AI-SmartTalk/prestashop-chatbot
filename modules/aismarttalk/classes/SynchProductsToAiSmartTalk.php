@@ -261,13 +261,13 @@ class SynchProductsToAiSmartTalk
     }
 
     /**
-     * Nettoie les produits avec stock <= 0 d'AI SmartTalk lors d'une re-synchronisation
+     * Nettoie les produits hors stock ou inactifs d'AI SmartTalk lors d'une re-synchronisation
      */
     private function cleanOutOfStockProducts()
     {
         $defaultShopId = (int) $this->getContext()->shop->id;
 
-        // Récupérer tous les produits qui ont été synchronisés mais qui ont maintenant stock <= 0
+        // Récupérer tous les produits synchronisés mais maintenant hors stock ou inactifs
         $sql = 'SELECT p.id_product
                 FROM ' . _DB_PREFIX_ . 'product p
                 INNER JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product
@@ -276,7 +276,7 @@ class SynchProductsToAiSmartTalk
                     AND sa.id_product_attribute = 0
                     AND sa.id_shop = ' . $defaultShopId . '
                 WHERE aps.synced = 1
-                    AND COALESCE(sa.quantity, 0) <= 0';
+                    AND (COALESCE(sa.quantity, 0) <= 0 OR p.active = 0)';
 
         $outOfStockProducts = \Db::getInstance()->executeS($sql);
 
