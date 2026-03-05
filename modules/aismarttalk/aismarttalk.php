@@ -1576,9 +1576,17 @@ class AiSmartTalk extends Module
             }
 
             $idProduct = (int) $params['id_product'];
+            $product = new Product($idProduct);
             $currentQuantity = (int) StockAvailable::getQuantityAvailableByProduct($idProduct);
+            $shopId = (int) $this->context->shop->id;
 
-            if ($currentQuantity == 0) {
+            // If product is inactive or out of stock, clean it from AI SmartTalk
+            if (!$product->active || $currentQuantity <= 0) {
+                if (AiSmartTalkProductSync::isSynced($idProduct)) {
+                    $api = new CleanProductDocuments();
+                    $api(['productIds' => [(string) $idProduct]]);
+                    AiSmartTalkProductSync::markAsNotSynced($idProduct);
+                }
                 return;
             }
 
