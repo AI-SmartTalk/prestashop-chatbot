@@ -602,7 +602,6 @@ class AiSmartTalk extends Module
                 'mode' => ($categoryMode === 'exclude') ? SyncFilterHelper::MODE_EXCLUDE : SyncFilterHelper::MODE_INCLUDE,
                 'categories' => ($categoryMode === 'all') ? [] : Tools::getValue('sync_filter_categories', []),
                 'include_subcategories' => false,
-                'product_types' => Tools::getValue('sync_filter_product_types', []),
             ];
 
             // Handle categories as JSON string or array
@@ -667,17 +666,20 @@ class AiSmartTalk extends Module
             'source' => 'PRESTASHOP',
         ];
 
-        // Get or refresh user token for auto-login in back-office
-        $userToken = OAuthTokenHandler::getOrRefreshUserToken();
-        if ($userToken) {
-            $chatbotSettings['userToken'] = $userToken;
-        }
-
         // Fetch and merge embed config from API (as base defaults)
         $embedConfig = $this->fetchEmbedConfig();
+
+        // Get or refresh user token for auto-login (only if enabled in embed config, defaults to true)
+        $autoLoginEnabled = !is_array($embedConfig) || !isset($embedConfig['enableAutoLogin']) || $embedConfig['enableAutoLogin'] === true;
+        if ($autoLoginEnabled) {
+            $userToken = OAuthTokenHandler::getOrRefreshUserToken();
+            if ($userToken) {
+                $chatbotSettings['userToken'] = $userToken;
+            }
+        }
         $embedConfigAvatarUrl = '';
         if ($embedConfig && is_array($embedConfig)) {
-            $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang'];
+            $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang', 'enableAutoLogin'];
             foreach ($embedConfig as $key => $value) {
                 if (!in_array($key, $protectedSettings)) {
                     $chatbotSettings[$key] = $value;
@@ -733,7 +735,6 @@ class AiSmartTalk extends Module
                     (int) $this->context->shop->id
                 )
             ),
-            'syncFilterProductTypeCounts' => SyncFilterHelper::getProductTypeCounts((int) $this->context->shop->id),
             'syncFilterSummary' => SyncFilterHelper::getFilterSummary((int) $this->context->language->id),
             'syncFilterHasActiveFilters' => SyncFilterHelper::hasActiveFilters(),
 
@@ -1394,9 +1395,6 @@ class AiSmartTalk extends Module
 
         $lang = $this->context->language->iso_code;
 
-        // Get or refresh user token for auto-login (handles cookie check + API refresh)
-        $userToken = OAuthTokenHandler::getOrRefreshUserToken();
-
         // Fetch embed config from API
         $embedConfig = $this->fetchEmbedConfig();
 
@@ -1410,14 +1408,18 @@ class AiSmartTalk extends Module
             'source' => 'PRESTASHOP',
         ];
 
-        // Add user token if available
-        if ($userToken) {
-            $chatbotSettings['userToken'] = $userToken;
+        // Get or refresh user token for auto-login (only if enabled in embed config, defaults to true)
+        $autoLoginEnabled = !is_array($embedConfig) || !isset($embedConfig['enableAutoLogin']) || $embedConfig['enableAutoLogin'] === true;
+        if ($autoLoginEnabled) {
+            $userToken = OAuthTokenHandler::getOrRefreshUserToken();
+            if ($userToken) {
+                $chatbotSettings['userToken'] = $userToken;
+            }
         }
 
         // Merge with API embed config if available (as base defaults)
         if ($embedConfig && is_array($embedConfig)) {
-            $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang'];
+            $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang', 'enableAutoLogin'];
 
             foreach ($embedConfig as $key => $value) {
                 // Only merge settings that are not protected
@@ -1811,17 +1813,19 @@ class AiSmartTalk extends Module
     private function sync(bool $force = false, $output = '')
     {
         $api = new SynchProductsToAiSmartTalk($this->context);
-        $isSynch = $api(['forceSync' => $force]);
+        $result = $api(['forceSync' => $force]);
 
-        if (true === $isSynch) {
-            if ($force) {
-                $output .= $this->displayConfirmation($this->trans('All products have been synchronized with the API.', [], 'Modules.Aismarttalk.Admin'));
-            } else {
-                $output .= $this->displayConfirmation($this->trans('New products have been synchronized with the API.', [], 'Modules.Aismarttalk.Admin'));
-            }
-        } else {
+        if ($result === false) {
             $output .= $this->displayError($this->trans('An error occurred during synchronization with the API.', [], 'Modules.Aismarttalk.Admin'));
             $output .= Configuration::get('AI_SMART_TALK_ERROR') ? $this->displayError(Configuration::get('AI_SMART_TALK_ERROR')) : '';
+        } elseif ($result === 0) {
+            $output .= $this->displayWarning($this->trans('No products found to synchronize. Check that your products are active, in stock, and match your sync filters.', [], 'Modules.Aismarttalk.Admin'));
+        } else {
+            if ($force) {
+                $output .= $this->displayConfirmation($this->trans('%count% products have been synchronized with the API.', ['%count%' => (int) $result], 'Modules.Aismarttalk.Admin'));
+            } else {
+                $output .= $this->displayConfirmation($this->trans('%count% new products have been synchronized with the API.', ['%count%' => (int) $result], 'Modules.Aismarttalk.Admin'));
+            }
         }
 
         return $output;
