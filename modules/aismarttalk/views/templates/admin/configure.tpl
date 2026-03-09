@@ -457,71 +457,6 @@ a.ast-btn-warning:hover {
     font-weight: 600;
 }
 
-/* Product Type Chips */
-.ast-types-bar {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-top: 20px;
-    padding: 16px 20px;
-    background: #f8fafc;
-    border-radius: 10px;
-    flex-wrap: wrap;
-}
-.ast-types-label {
-    font-size: 13px;
-    font-weight: 600;
-    color: #475569;
-    white-space: nowrap;
-}
-.ast-types-chips {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-}
-.ast-type-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    background: #fff;
-    border: 2px solid #e2e8f0;
-    border-radius: 20px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 13px;
-    color: #64748b;
-    user-select: none;
-}
-.ast-type-chip:hover {
-    border-color: #cbd5e1;
-}
-.ast-type-chip.checked {
-    border-color: #667eea;
-    background: #f5f3ff;
-    color: #4338ca;
-}
-.ast-type-chip input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
-    accent-color: #667eea;
-    margin: 0;
-}
-.ast-type-chip-label {
-    font-weight: 500;
-}
-.ast-type-chip-count {
-    font-size: 11px;
-    color: #94a3b8;
-    background: #f1f5f9;
-    padding: 1px 7px;
-    border-radius: 10px;
-}
-.ast-type-chip.checked .ast-type-chip-count {
-    background: #e0e7ff;
-    color: #6366f1;
-}
-
 /* Filter Warning */
 .ast-filter-warning {
     display: flex;
@@ -1335,7 +1270,128 @@ a.ast-btn-success:hover {
         grid-template-columns: 1fr;
     }
 }
+
+/* Toast Notifications */
+.ast-toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+.ast-toast {
+    pointer-events: auto;
+    min-width: 320px;
+    max-width: 480px;
+    padding: 14px 20px 14px 16px;
+    border-radius: 12px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.4;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.08);
+    backdrop-filter: blur(12px);
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.4s ease;
+}
+.ast-toast.ast-toast-visible {
+    transform: translateX(0);
+    opacity: 1;
+}
+.ast-toast.ast-toast-exit {
+    transform: translateX(120%);
+    opacity: 0;
+}
+.ast-toast-success {
+    background: linear-gradient(135deg, #059669, #10b981);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.ast-toast-error {
+    background: linear-gradient(135deg, #dc2626, #ef4444);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.ast-toast-warning {
+    background: linear-gradient(135deg, #d97706, #f59e0b);
+    color: #fff;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+.ast-toast-icon {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+}
+.ast-toast-message {
+    flex: 1;
+}
+.ast-toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    border-radius: 0 0 12px 12px;
+    background: rgba(255,255,255,0.35);
+    animation: ast-toast-progress 4s linear forwards;
+}
+@keyframes ast-toast-progress {
+    from { width: 100%; }
+    to { width: 0%; }
+}
 </style>
+
+<div class="ast-toast-container" id="ast-toast-container"></div>
+
+<script>
+(function() {
+    function showToast(message, type) {
+        var container = document.getElementById('ast-toast-container');
+        if (!container) return;
+        var icons = { success: '\u2713', error: '\u2717', warning: '\u26A0' };
+        var toast = document.createElement('div');
+        toast.className = 'ast-toast ast-toast-' + type;
+        toast.innerHTML = '<span class="ast-toast-icon">' + (icons[type] || '') + '</span>' +
+            '<span class="ast-toast-message">' + message + '</span>' +
+            '<span class="ast-toast-progress"></span>';
+        container.appendChild(toast);
+        requestAnimationFrame(function() {
+            requestAnimationFrame(function() { toast.classList.add('ast-toast-visible'); });
+        });
+        setTimeout(function() {
+            toast.classList.remove('ast-toast-visible');
+            toast.classList.add('ast-toast-exit');
+            setTimeout(function() { toast.remove(); }, 400);
+        }, 4000);
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        var alerts = document.querySelectorAll('.module_confirmation, .module_error, .module_warning, .alert.alert-success, .alert.alert-danger, .alert.alert-warning');
+        alerts.forEach(function(el) {
+            var type = 'success';
+            if (el.classList.contains('module_error') || el.classList.contains('alert-danger')) type = 'error';
+            else if (el.classList.contains('module_warning') || el.classList.contains('alert-warning')) type = 'warning';
+            var text = el.textContent.trim().replace(/^[\s\u00d7]+/, '').trim();
+            if (text) showToast(text, type);
+            el.style.display = 'none';
+        });
+    });
+
+    window.astShowToast = showToast;
+})();
+</script>
 
 <div class="ast-app">
     {* ===== HEADER ===== *}
@@ -1948,32 +2004,6 @@ a.ast-btn-success:hover {
                             </div>
                             <input type="hidden" name="sync_filter_categories" id="sync_filter_categories" value="">
 
-                            {* Step 3: Product types (compact secondary filter) *}
-                            <div class="ast-types-bar">
-                                <span class="ast-types-label">{l s='Product types to sync:' mod='aismarttalk'}</span>
-                                <div class="ast-types-chips">
-                                    <label class="ast-type-chip {if in_array('standard', $syncFilterConfig.product_types)}checked{/if}">
-                                        <input type="checkbox" name="sync_filter_product_types[]" value="standard" class="ast-type-checkbox" {if in_array('standard', $syncFilterConfig.product_types)}checked{/if}>
-                                        <span class="ast-type-chip-label">{l s='Standard' mod='aismarttalk'}</span>
-                                        <span class="ast-type-chip-count">{$syncFilterProductTypeCounts.standard|intval}</span>
-                                    </label>
-                                    <label class="ast-type-chip {if in_array('virtual', $syncFilterConfig.product_types)}checked{/if}">
-                                        <input type="checkbox" name="sync_filter_product_types[]" value="virtual" class="ast-type-checkbox" {if in_array('virtual', $syncFilterConfig.product_types)}checked{/if}>
-                                        <span class="ast-type-chip-label">{l s='Virtual' mod='aismarttalk'}</span>
-                                        <span class="ast-type-chip-count">{$syncFilterProductTypeCounts.virtual|intval}</span>
-                                    </label>
-                                    <label class="ast-type-chip {if in_array('pack', $syncFilterConfig.product_types)}checked{/if}">
-                                        <input type="checkbox" name="sync_filter_product_types[]" value="pack" class="ast-type-checkbox" {if in_array('pack', $syncFilterConfig.product_types)}checked{/if}>
-                                        <span class="ast-type-chip-label">{l s='Pack' mod='aismarttalk'}</span>
-                                        <span class="ast-type-chip-count">{$syncFilterProductTypeCounts.pack|intval}</span>
-                                    </label>
-                                </div>
-                            </div>
-                            <div id="type-warning" class="ast-filter-warning" style="display: none;">
-                                <i class="icon icon-warning"></i>
-                                {l s='No product type selected. No products will be synchronized.' mod='aismarttalk'}
-                            </div>
-
                             <div style="margin-top: 24px; display: flex; align-items: center; gap: 16px;">
                                 <button type="submit" name="submitSyncFilters" class="ast-btn ast-btn-primary">
                                     <i class="icon icon-save"></i> {l s='Save Filters' mod='aismarttalk'}
@@ -2255,7 +2285,7 @@ a.ast-btn-success:hover {
                         <h3><i class="icon icon-cog"></i> {l s='Advanced Settings' mod='aismarttalk'}</h3>
                     </div>
                     <div class="ast-card-body">
-                        <div class="alert alert-warning" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px;">
+                        <div class="ast-inline-warning" style="display: flex; align-items: center; gap: 10px; margin-bottom: 20px; padding: 12px 16px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; color: #9a3412; font-size: 13px;">
                             <i class="icon icon-warning"></i>
                             <span>{l s='Only modify these settings if you have a custom/whitelabel deployment.' mod='aismarttalk'}</span>
                         </div>
@@ -2406,31 +2436,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ===== SYNC FILTERS =====
-
-    // --- Product Type Chips ---
-    var typeCheckboxes = document.querySelectorAll('.ast-type-checkbox');
-    var typeWarning = document.getElementById('type-warning');
-
-    function updateTypeChips() {
-        var anyChecked = false;
-        typeCheckboxes.forEach(function(cb) {
-            var chip = cb.closest('.ast-type-chip');
-            if (chip) {
-                if (cb.checked) {
-                    chip.classList.add('checked');
-                    anyChecked = true;
-                } else {
-                    chip.classList.remove('checked');
-                }
-            }
-        });
-        if (typeWarning) typeWarning.style.display = anyChecked ? 'none' : 'flex';
-    }
-
-    typeCheckboxes.forEach(function(cb) {
-        cb.addEventListener('change', updateTypeChips);
-    });
-    updateTypeChips();
 
     // --- Category Mode Selector ---
     var categoryModeRadios = document.querySelectorAll('input[name="sync_filter_category_mode"]');

@@ -71,9 +71,16 @@ class SynchProductsToAiSmartTalk
         return $this->context;
     }
 
+    /**
+     * @return int|false Number of synced products on success, false on error
+     */
     private function sendProductsToApi()
     {
         $products = $this->getProductsToSynchronize();
+
+        if (empty($products)) {
+            return 0;
+        }
 
         $link = $this->getContext()->link;
 
@@ -137,7 +144,7 @@ class SynchProductsToAiSmartTalk
             $this->markProductsAsSynchronized($synchronizedProductIds);
         }
 
-        return true;
+        return count($synchronizedProductIds);
     }
 
     private function postIfDataExists($documentDatas)
@@ -216,12 +223,11 @@ class SynchProductsToAiSmartTalk
                    sp.reduction as price_reduction,
                    sp.reduction_type
             FROM ' . _DB_PREFIX_ . 'product p
-            JOIN ' . _DB_PREFIX_ . 'product_lang pl ON p.id_product = pl.id_product
-            JOIN ' . _DB_PREFIX_ . 'category_lang cl ON p.id_category_default = cl.id_category
-            LEFT JOIN ' . _DB_PREFIX_ . 'image i ON p.id_product = i.id_product AND i.cover = 1
-            LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa ON p.id_product = sa.id_product
-                AND sa.id_product_attribute = 0
-                AND sa.id_shop = ' . $defaultShopId . '
+            JOIN ' . _DB_PREFIX_ . 'product_lang pl ON p.id_product = pl.id_product AND pl.id_shop = ' . $defaultShopId . '
+            JOIN ' . _DB_PREFIX_ . 'category_lang cl ON p.id_category_default = cl.id_category AND cl.id_shop = ' . $defaultShopId . '
+            LEFT JOIN ' . _DB_PREFIX_ . 'image_shop ims ON p.id_product = ims.id_product AND ims.cover = 1 AND ims.id_shop = ' . $defaultShopId . '
+            LEFT JOIN ' . _DB_PREFIX_ . 'image i ON i.id_image = ims.id_image
+            ' . SyncFilterHelper::buildStockAvailableJoin($defaultShopId) . '
             LEFT JOIN ' . _DB_PREFIX_ . 'currency c ON c.id_currency = ' . $defaultCurrencyId . '
             LEFT JOIN ' . _DB_PREFIX_ . 'specific_price sp ON p.id_product = sp.id_product
                 AND (sp.from = "0000-00-00 00:00:00" OR sp.from <= NOW())
@@ -230,7 +236,8 @@ class SynchProductsToAiSmartTalk
             LEFT JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product
                 AND aps.id_shop = ' . $defaultShopId . '
             WHERE pl.id_lang = ' . $defaultLangId . ' AND cl.id_lang = ' . $defaultLangId . ' AND p.active = 1
-                AND COALESCE(sa.quantity, 0) > 0';
+                AND COALESCE(sa.quantity, 0) > 0
+            GROUP BY p.id_product';
 
         // If not forcing sync, only get products that are not yet synced
         if ($this->forceSync === false) {
@@ -247,12 +254,6 @@ class SynchProductsToAiSmartTalk
         $categoryFilter = SyncFilterHelper::buildCategoryFilterSQL($defaultShopId);
         if (!empty($categoryFilter)) {
             $sql .= $categoryFilter;
-        }
-
-        // Apply product type filters from SyncFilterHelper
-        $typeFilter = SyncFilterHelper::buildProductTypeFilterSQL();
-        if (!empty($typeFilter)) {
-            $sql .= $typeFilter;
         }
 
         $products = \Db::getInstance()->executeS($sql);
@@ -272,9 +273,7 @@ class SynchProductsToAiSmartTalk
                 FROM ' . _DB_PREFIX_ . 'product p
                 INNER JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product
                     AND aps.id_shop = ' . $defaultShopId . '
-                LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa ON p.id_product = sa.id_product
-                    AND sa.id_product_attribute = 0
-                    AND sa.id_shop = ' . $defaultShopId . '
+                ' . SyncFilterHelper::buildStockAvailableJoin($defaultShopId) . '
                 WHERE aps.synced = 1
                     AND (COALESCE(sa.quantity, 0) <= 0 OR p.active = 0)';
 
