@@ -1805,6 +1805,14 @@ a.ast-btn-success:hover {
                                         <option value="off" {if $enableVoiceMode == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
                                     </select>
                                 </div>
+                                <div class="ast-feature-toggle">
+                                    <span class="label"><i class="icon icon-user"></i> {l s='Auto-Login' mod='aismarttalk'}</span>
+                                    <select name="AI_SMART_TALK_ENABLE_AUTO_LOGIN" class="ast-select" style="width: auto;">
+                                        <option value="" {if $enableAutoLogin == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="on" {if $enableAutoLogin == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
+                                        <option value="off" {if $enableAutoLogin == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>

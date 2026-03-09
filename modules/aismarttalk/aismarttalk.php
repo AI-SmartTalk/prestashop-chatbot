@@ -528,6 +528,7 @@ class AiSmartTalk extends Module
             $enableFeedback = Tools::getValue('AI_SMART_TALK_ENABLE_FEEDBACK', '');
             $enableVoiceInput = Tools::getValue('AI_SMART_TALK_ENABLE_VOICE_INPUT', '');
             $enableVoiceMode = Tools::getValue('AI_SMART_TALK_ENABLE_VOICE_MODE', '');
+            $enableAutoLogin = Tools::getValue('AI_SMART_TALK_ENABLE_AUTO_LOGIN', '');
 
             // Validate feature toggles
             $validToggleValues = ['', 'on', 'off'];
@@ -542,6 +543,9 @@ class AiSmartTalk extends Module
             }
             if (!in_array($enableVoiceMode, $validToggleValues)) {
                 $enableVoiceMode = '';
+            }
+            if (!in_array($enableAutoLogin, $validToggleValues)) {
+                $enableAutoLogin = '';
             }
 
             // Note: Avatar URL is already uploaded via uploadChatModelAvatarFile above
@@ -562,6 +566,7 @@ class AiSmartTalk extends Module
             Configuration::updateValue('AI_SMART_TALK_ENABLE_FEEDBACK', $enableFeedback);
             Configuration::updateValue('AI_SMART_TALK_ENABLE_VOICE_INPUT', $enableVoiceInput);
             Configuration::updateValue('AI_SMART_TALK_ENABLE_VOICE_MODE', $enableVoiceMode);
+            Configuration::updateValue('AI_SMART_TALK_ENABLE_AUTO_LOGIN', $enableAutoLogin);
 
             // GDPR settings
             $gdprEnabled = Tools::getValue('AI_SMART_TALK_GDPR_ENABLED', '');
@@ -669,8 +674,17 @@ class AiSmartTalk extends Module
         // Fetch and merge embed config from API (as base defaults)
         $embedConfig = $this->fetchEmbedConfig();
 
-        // Get or refresh user token for auto-login (only if enabled in embed config, defaults to true)
-        $autoLoginEnabled = !is_array($embedConfig) || !isset($embedConfig['enableAutoLogin']) || $embedConfig['enableAutoLogin'] === true;
+        // Get or refresh user token for auto-login
+        // PrestaShop setting takes priority over API embed config
+        $psAutoLogin = Configuration::get('AI_SMART_TALK_ENABLE_AUTO_LOGIN') ?: '';
+        if ($psAutoLogin === 'on') {
+            $autoLoginEnabled = true;
+        } elseif ($psAutoLogin === 'off') {
+            $autoLoginEnabled = false;
+        } else {
+            // Fall back to API embed config (defaults to true if not set)
+            $autoLoginEnabled = !is_array($embedConfig) || !isset($embedConfig['enableAutoLogin']) || $embedConfig['enableAutoLogin'] === true;
+        }
         if ($autoLoginEnabled) {
             $userToken = OAuthTokenHandler::getOrRefreshUserToken();
             if ($userToken) {
@@ -679,7 +693,7 @@ class AiSmartTalk extends Module
         }
         $embedConfigAvatarUrl = '';
         if ($embedConfig && is_array($embedConfig)) {
-            $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang', 'enableAutoLogin'];
+            $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang'];
             foreach ($embedConfig as $key => $value) {
                 if (!in_array($key, $protectedSettings)) {
                     $chatbotSettings[$key] = $value;
@@ -761,6 +775,7 @@ class AiSmartTalk extends Module
             'enableFeedback' => Configuration::get('AI_SMART_TALK_ENABLE_FEEDBACK') ?: '',
             'enableVoiceInput' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_INPUT') ?: '',
             'enableVoiceMode' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_MODE') ?: '',
+            'enableAutoLogin' => Configuration::get('AI_SMART_TALK_ENABLE_AUTO_LOGIN') ?: '',
 
             // GDPR settings
             'gdprEnabled' => Configuration::get('AI_SMART_TALK_GDPR_ENABLED') ?: '',
@@ -1408,8 +1423,17 @@ class AiSmartTalk extends Module
             'source' => 'PRESTASHOP',
         ];
 
-        // Get or refresh user token for auto-login (only if enabled in embed config, defaults to true)
-        $autoLoginEnabled = !is_array($embedConfig) || !isset($embedConfig['enableAutoLogin']) || $embedConfig['enableAutoLogin'] === true;
+        // Get or refresh user token for auto-login
+        // PrestaShop setting takes priority over API embed config
+        $psAutoLogin = Configuration::get('AI_SMART_TALK_ENABLE_AUTO_LOGIN') ?: '';
+        if ($psAutoLogin === 'on') {
+            $autoLoginEnabled = true;
+        } elseif ($psAutoLogin === 'off') {
+            $autoLoginEnabled = false;
+        } else {
+            // Fall back to API embed config (defaults to true if not set)
+            $autoLoginEnabled = !is_array($embedConfig) || !isset($embedConfig['enableAutoLogin']) || $embedConfig['enableAutoLogin'] === true;
+        }
         if ($autoLoginEnabled) {
             $userToken = OAuthTokenHandler::getOrRefreshUserToken();
             if ($userToken) {
@@ -1419,7 +1443,7 @@ class AiSmartTalk extends Module
 
         // Merge with API embed config if available (as base defaults)
         if ($embedConfig && is_array($embedConfig)) {
-            $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang', 'enableAutoLogin'];
+            $protectedSettings = ['chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang'];
 
             foreach ($embedConfig as $key => $value) {
                 // Only merge settings that are not protected
@@ -1465,6 +1489,7 @@ class AiSmartTalk extends Module
         $enableFeedback = Configuration::get('AI_SMART_TALK_ENABLE_FEEDBACK');
         $enableVoiceInput = Configuration::get('AI_SMART_TALK_ENABLE_VOICE_INPUT');
         $enableVoiceMode = Configuration::get('AI_SMART_TALK_ENABLE_VOICE_MODE');
+        $enableAutoLogin = Configuration::get('AI_SMART_TALK_ENABLE_AUTO_LOGIN');
 
         // Note: GDPR settings come from AI SmartTalk backend, not overridden locally
 
@@ -1517,6 +1542,12 @@ class AiSmartTalk extends Module
             $chatbotSettings['enableVoiceMode'] = true;
         } elseif ($enableVoiceMode === 'off') {
             $chatbotSettings['enableVoiceMode'] = false;
+        }
+
+        if ($enableAutoLogin === 'on') {
+            $chatbotSettings['enableAutoLogin'] = true;
+        } elseif ($enableAutoLogin === 'off') {
+            $chatbotSettings['enableAutoLogin'] = false;
         }
 
         // Apply color theme overrides (build nested theme structure)
