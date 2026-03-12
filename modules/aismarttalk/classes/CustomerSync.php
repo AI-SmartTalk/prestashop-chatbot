@@ -222,6 +222,11 @@ class CustomerSync
      */
     public static function customerMatchesConsentFilter(\Customer $customer)
     {
+        // Never sync inactive customers regardless of consent filter
+        if (!(bool) $customer->active) {
+            return false;
+        }
+
         $consentFilter = \Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT') ?: self::CONSENT_ALL;
 
         switch ($consentFilter) {
