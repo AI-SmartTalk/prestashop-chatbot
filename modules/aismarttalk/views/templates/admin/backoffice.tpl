@@ -37,13 +37,45 @@
                               </div>
                           </div>
                       </div>
+                      {if $customerSyncEnabled}
+                      <div class="form-group">
+                          <label class="control-label col-lg-4">
+                              {l s='Consent Filter' mod='aismarttalk'}
+                          </label>
+                          <div class="col-lg-8">
+                              <select name="AI_SMART_TALK_CUSTOMER_SYNC_CONSENT" class="form-control">
+                                  <option value="all" {if $customerSyncConsent == 'all'}selected{/if}>{l s='All customers (no filter)' mod='aismarttalk'}</option>
+                                  <option value="newsletter" {if $customerSyncConsent == 'newsletter'}selected{/if}>{l s='Newsletter subscribers only' mod='aismarttalk'}</option>
+                                  <option value="optin" {if $customerSyncConsent == 'optin'}selected{/if}>{l s='Partner offers opt-in only' mod='aismarttalk'}</option>
+                                  <option value="newsletter_or_optin" {if $customerSyncConsent == 'newsletter_or_optin'}selected{/if}>{l s='Newsletter OR partner offers' mod='aismarttalk'}</option>
+                                  <option value="newsletter_and_optin" {if $customerSyncConsent == 'newsletter_and_optin'}selected{/if}>{l s='Newsletter AND partner offers' mod='aismarttalk'}</option>
+                              </select>
+                              <p class="help-block">{l s='Only sync customers who have given their consent. Based on PrestaShop native fields.' mod='aismarttalk'}</p>
+                          </div>
+                      </div>
+                      <div class="form-group">
+                          <label class="control-label col-lg-4">
+                              {l s='Encrypt Payloads' mod='aismarttalk'}
+                          </label>
+                          <div class="col-lg-8">
+                              <div class="switch prestashop-switch">
+                                  <input type="radio" name="AI_SMART_TALK_ENCRYPT_PAYLOADS" id="AI_SMART_TALK_ENCRYPT_PAYLOADS_on" value="1" {if $encryptPayloads}checked="checked"{/if}>
+                                  <label for="AI_SMART_TALK_ENCRYPT_PAYLOADS_on">{l s='Yes' mod='aismarttalk'}</label>
+                                  <input type="radio" name="AI_SMART_TALK_ENCRYPT_PAYLOADS" id="AI_SMART_TALK_ENCRYPT_PAYLOADS_off" value="0" {if !$encryptPayloads}checked="checked"{/if}>
+                                  <label for="AI_SMART_TALK_ENCRYPT_PAYLOADS_off">{l s='No' mod='aismarttalk'}</label>
+                                  <a class="slide-button btn"></a>
+                              </div>
+                              <p class="help-block">{l s='AES-256-GCM encryption for customer data in transit' mod='aismarttalk'}</p>
+                          </div>
+                      </div>
+                      {/if}
                       <div class="form-group">
                           <div class="col-lg-8 col-lg-offset-4">
                               <button type="submit" name="submitCustomerSync" class="btn btn-success">
                                   <i class="icon icon-save"></i> {l s='Save Settings' mod='aismarttalk'}
                               </button>
-                              <a href="{$smarty.server.REQUEST_URI|escape:'html':'UTF-8'}&amp;exportCustomers=1" class="btn btn-info">
-                                  <i class="icon icon-upload"></i> {l s='Export Customers' mod='aismarttalk'}
+                              <a href="{$smarty.server.REQUEST_URI|escape:'html':'UTF-8'}&amp;syncCustomers=1" class="btn btn-warning">
+                                  <i class="icon icon-refresh"></i> {l s='Sync All' mod='aismarttalk'}
                               </a>
                           </div>
                       </div>
@@ -76,22 +108,22 @@ window.chatbotSettings = JSON.parse(atob("{$chatbotSettingsEncoded|escape:'html'
 
 <script type="text/javascript">
 $(document).ready(function() {
-    $('#export-customers').click(function() {
+    $('#sync-customers').click(function() {
         var $btn = $(this);
         $btn.prop('disabled', true);
-        
+
         $.ajax({
-            url: '{$currentIndex|escape:'javascript':'UTF-8'}&token={$token|escape:'javascript':'UTF-8'}&action=exportCustomers',
+            url: '{$currentIndex|escape:'javascript':'UTF-8'}&token={$token|escape:'javascript':'UTF-8'}&action=syncCustomers',
             method: 'POST',
             success: function(response) {
                 if (response.success) {
-                    showSuccessMessage('{l s='Customers exported successfully!' mod='aismarttalk'}');
+                    showSuccessMessage('{l s='Customer sync completed successfully!' mod='aismarttalk'}');
                 } else {
-                    showErrorMessage('{l s='Export failed. Please check the logs.' mod='aismarttalk'}');
+                    showErrorMessage('{l s='Customer sync failed. Please check the logs.' mod='aismarttalk'}');
                 }
             },
             error: function() {
-                showErrorMessage('{l s='An error occurred during export.' mod='aismarttalk'}');
+                showErrorMessage('{l s='An error occurred during customer sync.' mod='aismarttalk'}');
             },
             complete: function() {
                 $btn.prop('disabled', false);

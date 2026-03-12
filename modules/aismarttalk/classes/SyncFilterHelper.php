@@ -29,16 +29,9 @@ class SyncFilterHelper
     const CONFIG_FILTER_MODE = 'AI_SMART_TALK_SYNC_FILTER_MODE';
     const CONFIG_CATEGORIES = 'AI_SMART_TALK_SYNC_CATEGORIES';
     const CONFIG_INCLUDE_SUBCATEGORIES = 'AI_SMART_TALK_SYNC_INCLUDE_SUBCATEGORIES';
-    const CONFIG_PRODUCT_TYPES = 'AI_SMART_TALK_SYNC_PRODUCT_TYPES';
-
     /** Filter modes */
     const MODE_INCLUDE = 'include';
     const MODE_EXCLUDE = 'exclude';
-
-    /** Product types */
-    const TYPE_STANDARD = 'standard';
-    const TYPE_VIRTUAL = 'virtual';
-    const TYPE_PACK = 'pack';
 
     /**
      * Get the category tree with product counts
@@ -49,6 +42,10 @@ class SyncFilterHelper
      */
     public static function getCategoryTree(int $langId, int $shopId): array
     {
+        // Get the shop's root category to skip the global "Root" category
+        $shop = new \Shop($shopId);
+        $rootCategoryId = (int) $shop->id_category;
+
         $sql = 'SELECT c.id_category, c.id_parent, c.nleft, c.nright, c.level_depth, cl.name,
                        COUNT(DISTINCT cp.id_product) as product_count
                 FROM ' . _DB_PREFIX_ . 'category c
@@ -57,6 +54,9 @@ class SyncFilterHelper
                 LEFT JOIN ' . _DB_PREFIX_ . 'category_product cp ON c.id_category = cp.id_category
                 LEFT JOIN ' . _DB_PREFIX_ . 'product_shop ps ON cp.id_product = ps.id_product AND ps.id_shop = ' . (int) $shopId . ' AND ps.active = 1
                 WHERE c.active = 1
+                    AND c.id_category != 1
+                    AND c.nleft >= (SELECT nleft FROM ' . _DB_PREFIX_ . 'category WHERE id_category = ' . $rootCategoryId . ')
+                    AND c.nright <= (SELECT nright FROM ' . _DB_PREFIX_ . 'category WHERE id_category = ' . $rootCategoryId . ')
                 GROUP BY c.id_category
                 ORDER BY c.level_depth ASC, c.position ASC';
 
@@ -151,56 +151,29 @@ class SyncFilterHelper
     }
 
     /**
-     * Get product counts by type (standard, virtual, pack)
+     * Build the SQL JOIN clause for stock_available that handles both
+     * shop-level stock (id_shop = X) and shop-group-level stock (id_shop = 0).
+     *
+     * PrestaShop 1.7 with multistore/shared stock stores quantities with id_shop = 0
+     * and id_shop_group = X. PrestaShop 8+ always uses id_shop = X.
+     * This helper ensures compatibility with both configurations.
      *
      * @param int $shopId Shop ID
-     * @return array Counts keyed by type
+     * @param string $productAlias Alias of the product table (default: 'p')
+     * @param string $stockAlias Alias for the stock_available table (default: 'sa')
+     * @return string SQL LEFT JOIN clause
      */
-    public static function getProductTypeCounts(int $shopId): array
+    public static function buildStockAvailableJoin(int $shopId, string $productAlias = 'p', string $stockAlias = 'sa'): string
     {
-        $counts = [
-            self::TYPE_STANDARD => 0,
-            self::TYPE_VIRTUAL => 0,
-            self::TYPE_PACK => 0,
-        ];
+        $shopGroupId = (int) \Shop::getGroupFromShop((int) $shopId);
 
-        // Standard products (not virtual, not pack)
-        $sql = 'SELECT COUNT(p.id_product) as count
-                FROM ' . _DB_PREFIX_ . 'product p
-                INNER JOIN ' . _DB_PREFIX_ . 'product_shop ps ON p.id_product = ps.id_product AND ps.id_shop = ' . (int) $shopId . '
-                LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa ON p.id_product = sa.id_product
-                    AND sa.id_product_attribute = 0
-                    AND sa.id_shop = ' . (int) $shopId . '
-                WHERE ps.active = 1 AND p.is_virtual = 0 AND p.cache_is_pack = 0
-                    AND COALESCE(sa.quantity, 0) > 0';
-        $result = \Db::getInstance()->getRow($sql);
-        $counts[self::TYPE_STANDARD] = (int) ($result['count'] ?? 0);
-
-        // Virtual products
-        $sql = 'SELECT COUNT(p.id_product) as count
-                FROM ' . _DB_PREFIX_ . 'product p
-                INNER JOIN ' . _DB_PREFIX_ . 'product_shop ps ON p.id_product = ps.id_product AND ps.id_shop = ' . (int) $shopId . '
-                LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa ON p.id_product = sa.id_product
-                    AND sa.id_product_attribute = 0
-                    AND sa.id_shop = ' . (int) $shopId . '
-                WHERE ps.active = 1 AND p.is_virtual = 1
-                    AND COALESCE(sa.quantity, 0) > 0';
-        $result = \Db::getInstance()->getRow($sql);
-        $counts[self::TYPE_VIRTUAL] = (int) ($result['count'] ?? 0);
-
-        // Pack products
-        $sql = 'SELECT COUNT(p.id_product) as count
-                FROM ' . _DB_PREFIX_ . 'product p
-                INNER JOIN ' . _DB_PREFIX_ . 'product_shop ps ON p.id_product = ps.id_product AND ps.id_shop = ' . (int) $shopId . '
-                LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa ON p.id_product = sa.id_product
-                    AND sa.id_product_attribute = 0
-                    AND sa.id_shop = ' . (int) $shopId . '
-                WHERE ps.active = 1 AND p.cache_is_pack = 1
-                    AND COALESCE(sa.quantity, 0) > 0';
-        $result = \Db::getInstance()->getRow($sql);
-        $counts[self::TYPE_PACK] = (int) ($result['count'] ?? 0);
-
-        return $counts;
+        return 'LEFT JOIN ' . _DB_PREFIX_ . 'stock_available ' . $stockAlias
+            . ' ON ' . $productAlias . '.id_product = ' . $stockAlias . '.id_product'
+            . ' AND ' . $stockAlias . '.id_product_attribute = 0'
+            . ' AND ('
+            .     $stockAlias . '.id_shop = ' . (int) $shopId
+            .     ' OR (' . $stockAlias . '.id_shop = 0 AND ' . $stockAlias . '.id_shop_group = ' . $shopGroupId . ')'
+            . ')';
     }
 
     /**
@@ -214,7 +187,6 @@ class SyncFilterHelper
             'mode' => \Configuration::get(self::CONFIG_FILTER_MODE) ?: self::MODE_INCLUDE,
             'categories' => [],
             'include_subcategories' => (bool) \Configuration::get(self::CONFIG_INCLUDE_SUBCATEGORIES),
-            'product_types' => [self::TYPE_STANDARD, self::TYPE_VIRTUAL, self::TYPE_PACK],
         ];
 
         // Decode categories JSON
@@ -223,16 +195,6 @@ class SyncFilterHelper
             $decoded = json_decode($categoriesJson, true);
             if (is_array($decoded)) {
                 $config['categories'] = array_map('intval', $decoded);
-            }
-        }
-
-        // Decode product types JSON
-        $typesJson = \Configuration::get(self::CONFIG_PRODUCT_TYPES);
-        if (!empty($typesJson)) {
-            $decoded = json_decode($typesJson, true);
-            if (is_array($decoded)) {
-                $validTypes = [self::TYPE_STANDARD, self::TYPE_VIRTUAL, self::TYPE_PACK];
-                $config['product_types'] = array_intersect($decoded, $validTypes);
             }
         }
 
@@ -274,16 +236,6 @@ class SyncFilterHelper
             $includeSubcategories ? '1' : '0'
         );
 
-        // Validate and save product types
-        $validTypes = [self::TYPE_STANDARD, self::TYPE_VIRTUAL, self::TYPE_PACK];
-        $productTypes = isset($config['product_types']) && is_array($config['product_types'])
-            ? array_intersect($config['product_types'], $validTypes)
-            : $validTypes;
-        $success = $success && \Configuration::updateValue(
-            self::CONFIG_PRODUCT_TYPES,
-            json_encode(array_values($productTypes))
-        );
-
         return $success;
     }
 
@@ -298,12 +250,6 @@ class SyncFilterHelper
 
         // Check if categories are selected
         if (!empty($config['categories'])) {
-            return true;
-        }
-
-        // Check if not all product types are selected
-        $allTypes = [self::TYPE_STANDARD, self::TYPE_VIRTUAL, self::TYPE_PACK];
-        if (count($config['product_types']) < count($allTypes)) {
             return true;
         }
 
@@ -361,48 +307,6 @@ class SyncFilterHelper
     }
 
     /**
-     * Build SQL WHERE clause for product type filtering
-     *
-     * @return string SQL WHERE clause (empty if no filter)
-     */
-    public static function buildProductTypeFilterSQL(): string
-    {
-        $config = self::getFilterConfig();
-        $types = $config['product_types'];
-
-        // All types selected = no filter needed
-        $allTypes = [self::TYPE_STANDARD, self::TYPE_VIRTUAL, self::TYPE_PACK];
-        if (count(array_intersect($types, $allTypes)) === count($allTypes)) {
-            return '';
-        }
-
-        // No types selected = return nothing
-        if (empty($types)) {
-            return ' AND 1 = 0';
-        }
-
-        $conditions = [];
-
-        if (in_array(self::TYPE_STANDARD, $types)) {
-            $conditions[] = '(p.is_virtual = 0 AND p.cache_is_pack = 0)';
-        }
-
-        if (in_array(self::TYPE_VIRTUAL, $types)) {
-            $conditions[] = '(p.is_virtual = 1)';
-        }
-
-        if (in_array(self::TYPE_PACK, $types)) {
-            $conditions[] = '(p.cache_is_pack = 1)';
-        }
-
-        if (empty($conditions)) {
-            return ' AND 1 = 0';
-        }
-
-        return ' AND (' . implode(' OR ', $conditions) . ')';
-    }
-
-    /**
      * Get a summary of active filters for display
      *
      * @param int $langId Language ID
@@ -418,13 +322,6 @@ class SyncFilterHelper
             $count = count($config['categories']);
             $mode = $config['mode'] === self::MODE_EXCLUDE ? 'excluded' : 'selected';
             $parts[] = $count . ' ' . ($count === 1 ? 'category' : 'categories') . ' ' . $mode;
-        }
-
-        // Product types summary
-        $allTypes = [self::TYPE_STANDARD, self::TYPE_VIRTUAL, self::TYPE_PACK];
-        $selectedTypes = $config['product_types'];
-        if (count($selectedTypes) < count($allTypes)) {
-            $parts[] = count($selectedTypes) . ' ' . (count($selectedTypes) === 1 ? 'type' : 'types');
         }
 
         if (empty($parts)) {
@@ -445,7 +342,6 @@ class SyncFilterHelper
         $success = $success && \Configuration::deleteByName(self::CONFIG_FILTER_MODE);
         $success = $success && \Configuration::deleteByName(self::CONFIG_CATEGORIES);
         $success = $success && \Configuration::deleteByName(self::CONFIG_INCLUDE_SUBCATEGORIES);
-        $success = $success && \Configuration::deleteByName(self::CONFIG_PRODUCT_TYPES);
         return $success;
     }
 
@@ -460,64 +356,12 @@ class SyncFilterHelper
     {
         $config = self::getFilterConfig();
 
-        // Check product type filter
-        if (!self::productMatchesTypeFilter($productId, $config['product_types'])) {
-            return false;
-        }
-
         // Check category filter
         if (!self::productMatchesCategoryFilter($productId, $shopId, $config)) {
             return false;
         }
 
         return true;
-    }
-
-    /**
-     * Check if product matches the configured product type filter
-     *
-     * @param int $productId Product ID
-     * @param array $allowedTypes Allowed product types
-     * @return bool True if product type is allowed
-     */
-    private static function productMatchesTypeFilter(int $productId, array $allowedTypes): bool
-    {
-        // All types allowed = no filter
-        $allTypes = [self::TYPE_STANDARD, self::TYPE_VIRTUAL, self::TYPE_PACK];
-        if (count(array_intersect($allowedTypes, $allTypes)) === count($allTypes)) {
-            return true;
-        }
-
-        // No types allowed = nothing matches
-        if (empty($allowedTypes)) {
-            return false;
-        }
-
-        // Get product type info
-        $sql = 'SELECT p.is_virtual, p.cache_is_pack
-                FROM ' . _DB_PREFIX_ . 'product p
-                WHERE p.id_product = ' . (int) $productId;
-        $product = \Db::getInstance()->getRow($sql);
-
-        if (!$product) {
-            return false;
-        }
-
-        $isVirtual = (bool) $product['is_virtual'];
-        $isPack = (bool) $product['cache_is_pack'];
-
-        // Determine product type
-        if ($isPack && in_array(self::TYPE_PACK, $allowedTypes)) {
-            return true;
-        }
-        if ($isVirtual && in_array(self::TYPE_VIRTUAL, $allowedTypes)) {
-            return true;
-        }
-        if (!$isVirtual && !$isPack && in_array(self::TYPE_STANDARD, $allowedTypes)) {
-            return true;
-        }
-
-        return false;
     }
 
     /**

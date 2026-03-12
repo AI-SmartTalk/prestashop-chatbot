@@ -20,8 +20,6 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-require_once dirname(__FILE__) . '/../vendor/autoload.php';
-
 class CleanProductDocuments
 {
     private $productIds;
@@ -51,40 +49,23 @@ class CleanProductDocuments
     {
         $productIds = $this->productIds ? $this->productIds : $this->fetchAllProductIds();
 
-        // Use OAuthHandler for backend API URL and credentials
-        $aiSmartTalkUrl = OAuthHandler::getBackendApiUrl();
-        $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
+        $client = ApiClient::fromConfig();
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $aiSmartTalkUrl . '/api/document/clean');
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode(
-            [
-                'productIds' => $productIds,
-                'chatModelId' => $chatModelId,
-                'chatModelToken' => $chatModelToken,
-                'deleteFromIds' => [] !== $this->productIds ? true : false,
-                'source' => 'PRESTASHOP',
-                'siteIdentifier' => OAuthHandler::getSiteIdentifier(),
-            ],
-        ));
+        $response = $client->post('/api/document/clean', [
+            'productIds' => $productIds,
+            'chatModelId' => $client->getChatModelId(),
+            'chatModelToken' => $client->getAccessToken(),
+            'deleteFromIds' => [] !== $this->productIds ? true : false,
+            'source' => 'PRESTASHOP',
+            'siteIdentifier' => $client->getSiteIdentifier(),
+        ]);
 
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type:application/json']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-        $result = curl_exec($ch);
-        if ($result === false) {
-            \Configuration::updateValue('CLEAN_PRODUCT_DOCUMENTS_ERROR', curl_error($ch));
+        if (!$response->isSuccess()) {
+            \Configuration::updateValue('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->error ?: 'HTTP ' . $response->httpCode);
+        } elseif ($response->get('status') === 'error') {
+            \Configuration::updateValue('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->get('message'));
         } else {
-            $response = json_decode($result, true);
-            if (isset($response['status']) && $response['status'] == 'error') {
-                \Configuration::updateValue('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response['message']);
-            } else {
-                \Configuration::deleteByName('CLEAN_PRODUCT_DOCUMENTS_ERROR');
-            }
+            \Configuration::deleteByName('CLEAN_PRODUCT_DOCUMENTS_ERROR');
         }
-
-        curl_close($ch);
     }
 }

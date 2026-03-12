@@ -24,19 +24,19 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-// If your module folder is named "aismarttalk", you can do:
-require_once _PS_MODULE_DIR_ . 'aismarttalk/vendor/autoload.php';
+
 
 /**
  * Class CustomerSync
- * Handles batch exporting of PrestaShop customers to AI SmartTalk
+ * Handles batch syncing of PrestaShop customers to AI SmartTalk CRM.
+ * Mirrors the Product Sync pattern: tracking table, debounce, sync+clean.
  */
 class CustomerSync
 {
-    /** @var int Number of customers to export per batch */
+    /** @var int Number of customers to sync per batch */
     private $batchSize = 50;
 
-    /** @var int Total count of customers to export */
+    /** @var int Total count of customers to sync */
     private $totalCustomers = 0;
 
     /** @var int Number of customers processed so far */
@@ -44,6 +44,13 @@ class CustomerSync
 
     /** @var \Context PrestaShop context */
     private $context;
+
+    /** Customer sync consent filter options */
+    const CONSENT_ALL = 'all';
+    const CONSENT_NEWSLETTER = 'newsletter';
+    const CONSENT_OPTIN = 'optin';
+    const CONSENT_NEWSLETTER_OR_OPTIN = 'newsletter_or_optin';
+    const CONSENT_NEWSLETTER_AND_OPTIN = 'newsletter_and_optin';
 
     /**
      * CustomerSync constructor.
@@ -72,6 +79,62 @@ class CustomerSync
     }
 
     /**
+     * Sync a single customer: export to CRM and mark as synced in tracking table.
+     *
+     * @param \Customer $customer
+     *
+     * @return bool
+     */
+    public function syncCustomer(\Customer $customer)
+    {
+        if ($this->exportCustomerBatch([$customer])) {
+            AiSmartTalkCustomerSync::markAsSynced((int) $customer->id);
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Remove a single customer from CRM and mark as not synced in tracking table.
+     *
+     * @param \Customer $customer
+     *
+     * @return bool
+     */
+    public function unsyncCustomer(\Customer $customer)
+    {
+        $result = $this->removeCustomer($customer->email);
+        AiSmartTalkCustomerSync::markAsNotSynced((int) $customer->id);
+
+        return $result;
+    }
+
+    /**
+     * Sync or remove a customer based on consent filter.
+     * If customer matches consent -> sync. If not -> remove from CRM.
+     * Includes debounce check.
+     *
+     * @param \Customer $customer
+     *
+     * @return void
+     */
+    public function syncOrRemove(\Customer $customer)
+    {
+        // Debounce: skip if synced less than 3 seconds ago
+        if (!AiSmartTalkCustomerSync::canSync((int) $customer->id)) {
+            return;
+        }
+
+        if (self::customerMatchesConsentFilter($customer)) {
+            $this->syncCustomer($customer);
+        } else {
+            $this->unsyncCustomer($customer);
+        }
+    }
+
+    /**
      * Export a batch of customers to AI SmartTalk.
      *
      * @param \Customer[] $customers Array of PrestaShop Customer objects
@@ -80,10 +143,7 @@ class CustomerSync
      */
     public function exportCustomerBatch(array $customers)
     {
-        // Use OAuthHandler for backend API URL and credentials
-        $aiSmartTalkUrl = OAuthHandler::getBackendApiUrl();
-        $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
+        $client = ApiClient::fromConfig();
 
         // Map PrestaShop customer data to the expected AI SmartTalk format
         $customerData = array_map([$this, 'mapCustomerData'], $customers);
@@ -91,56 +151,33 @@ class CustomerSync
         // Prepare the payload
         $payload = [
             'customers' => $customerData,
-            'chatModelId' => $chatModelId,
-            'chatModelToken' => $chatModelToken,
+            'chatModelId' => $client->getChatModelId(),
+            'chatModelToken' => $client->getAccessToken(),
             'source' => 'PRESTASHOP',
-            'siteIdentifier' => OAuthHandler::getSiteIdentifier(),
+            'siteIdentifier' => $client->getSiteIdentifier(),
         ];
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $aiSmartTalkUrl . '/api/v1/crm/importCustomer');
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        // Optional: set timeouts and SSL settings as needed
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
-        // curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+        // Encrypt sensitive data if enabled
+        $encrypted = PayloadEncryptor::encrypt(
+            ['customers' => $customerData],
+            $client->getAccessToken(),
+            $client->getChatModelId()
+        );
+        if ($encrypted !== null) {
+            $payload['encrypted'] = $encrypted;
+            unset($payload['customers']);
+        }
 
-        $result = curl_exec($ch);
-        $error = curl_error($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
+        $response = $client->post('/api/v1/crm/importCustomer', $payload);
 
-        // Check for cURL execution errors
-        if ($result === false || !empty($error)) {
+        if (!$response->isSuccess()) {
             \PrestaShopLogger::addLog(
-                'AI SmartTalk customer sync cURL error: ' . $error,
-                3,
-                null,
-                'Customer',
-                null,
-                true
+                'AI SmartTalk customer sync ' . ($response->error ? 'cURL error: ' . $response->error : 'failed. HTTP code: ' . $response->httpCode),
+                3, null, 'Customer', null, true
             );
-
             return false;
         }
 
-        // Check the HTTP status code (consider 2xx as success)
-        if ($httpCode < 200 || $httpCode > 299) {
-            \PrestaShopLogger::addLog(
-                'AI SmartTalk customer sync failed. HTTP code: ' . $httpCode . ' - Response: ' . $result,
-                3,
-                null,
-                'Customer',
-                null,
-                true
-            );
-
-            return false;
-        }
-
-        // If we reach here, it's a success
         return true;
     }
 
@@ -169,46 +206,161 @@ class CustomerSync
             'city' => $firstAddress ? $firstAddress['city'] : null,
             'country' => $firstAddress ? $firstAddress['country'] : null,
             'postalCode' => $firstAddress ? $firstAddress['postcode'] : null,
+            'newsletter' => (bool) $customer->newsletter,
+            'optin' => (bool) $customer->optin,
         ];
 
         return $mappedData;
     }
 
     /**
-     * Export all customers in batches to AI SmartTalk.
+     * Check if a customer matches the configured consent filter.
      *
-     * @return array Status of the export with keys: success, total, processed, errors
+     * @param \Customer $customer The customer to check
+     *
+     * @return bool True if the customer passes the consent filter
      */
-    public function exportAllCustomers()
+    public static function customerMatchesConsentFilter(\Customer $customer)
+    {
+        // Never sync inactive customers regardless of consent filter
+        if (!(bool) $customer->active) {
+            return false;
+        }
+
+        $consentFilter = \Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT') ?: self::CONSENT_ALL;
+
+        switch ($consentFilter) {
+            case self::CONSENT_NEWSLETTER:
+                return (bool) $customer->newsletter;
+            case self::CONSENT_OPTIN:
+                return (bool) $customer->optin;
+            case self::CONSENT_NEWSLETTER_OR_OPTIN:
+                return (bool) $customer->newsletter || (bool) $customer->optin;
+            case self::CONSENT_NEWSLETTER_AND_OPTIN:
+                return (bool) $customer->newsletter && (bool) $customer->optin;
+            case self::CONSENT_ALL:
+            default:
+                return true;
+        }
+    }
+
+    /**
+     * Remove a customer from AI SmartTalk CRM by email.
+     *
+     * @param string $email The customer email to remove
+     *
+     * @return bool True on success, false otherwise
+     */
+    public function removeCustomer($email)
+    {
+        $client = ApiClient::fromConfig();
+
+        $payload = [
+            'email' => $email,
+            'chatModelId' => $client->getChatModelId(),
+            'chatModelToken' => $client->getAccessToken(),
+            'source' => 'PRESTASHOP',
+            'siteIdentifier' => $client->getSiteIdentifier(),
+        ];
+
+        // Encrypt sensitive data if enabled
+        $encrypted = PayloadEncryptor::encrypt(
+            ['email' => $email],
+            $client->getAccessToken(),
+            $client->getChatModelId()
+        );
+        if ($encrypted !== null) {
+            $payload['encrypted'] = $encrypted;
+            unset($payload['email']);
+        }
+
+        $response = $client->post('/api/v1/crm/removeCustomer', $payload);
+
+        if (!$response->isSuccess()) {
+            \PrestaShopLogger::addLog(
+                'AI SmartTalk customer remove ' . ($response->error ? 'cURL error: ' . $response->error : 'failed. HTTP code: ' . $response->httpCode),
+                3, null, 'Customer', null, true
+            );
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Sync all customers: export those matching consent filter, remove those that don't.
+     * Mirrors the Product Sync "Sync All" pattern.
+     *
+     * @return array Status with keys: success, total, synced, removed, errors
+     */
+    public function syncAllCustomers()
     {
         try {
-            // Retrieve all customers in PrestaShop
-            $customers = \Customer::getCustomers(true);
-            $this->totalCustomers = count($customers);
+            // Retrieve all active customers in PrestaShop
+            $allCustomers = \Customer::getCustomers(true);
+            $this->totalCustomers = count($allCustomers);
             $this->processedCustomers = 0;
-            $offset = 0;
-            $errors = [];
 
-            // Process in batches
-            while ($customerBatch = array_slice($customers, $offset, $this->batchSize)) {
-                // Convert each array-of-data to a Customer object
-                // (Alternatively, getCustomers() already returns arrays;
-                // you might need to re-instantiate Customer objects if required)
-                $customerObjects = array_map(function ($cData) {
-                    return new \Customer((int) $cData['id_customer']);
-                }, $customerBatch);
+            $toSync = [];
+            $toRemove = [];
 
-                if (!$this->exportCustomerBatch($customerObjects)) {
-                    $errors[] = sprintf('Failed to export batch starting at offset %d', $offset);
+            // Partition customers based on consent filter
+            foreach ($allCustomers as $cData) {
+                $customer = new \Customer((int) $cData['id_customer']);
+                if (self::customerMatchesConsentFilter($customer)) {
+                    $toSync[] = $customer;
+                } else {
+                    $toRemove[] = $customer;
                 }
+            }
 
-                $this->processedCustomers += count($customerBatch);
-                $offset += $this->batchSize;
+            // Also find previously synced customers that no longer exist (deleted)
+            $syncedIds = AiSmartTalkCustomerSync::getSyncedCustomerIds();
+            $activeIds = array_column($allCustomers, 'id_customer');
+            $orphanedIds = array_diff($syncedIds, $activeIds);
+            foreach ($orphanedIds as $orphanedId) {
+                AiSmartTalkCustomerSync::markAsNotSynced((int) $orphanedId);
+            }
+
+            $errors = [];
+            $syncedCount = 0;
+            $removedCount = 0;
+
+            // Sync matching customers in batches
+            $batches = array_chunk($toSync, $this->batchSize);
+            foreach ($batches as $batch) {
+                if ($this->exportCustomerBatch($batch)) {
+                    foreach ($batch as $customer) {
+                        AiSmartTalkCustomerSync::markAsSynced((int) $customer->id);
+                    }
+                    $syncedCount += count($batch);
+                } else {
+                    $errors[] = sprintf('Failed to sync batch of %d customers', count($batch));
+                }
+                $this->processedCustomers += count($batch);
+            }
+
+            // Remove customers that don't match consent filter but were previously synced
+            foreach ($toRemove as $customer) {
+                if (AiSmartTalkCustomerSync::getByCustomerId((int) $customer->id) !== null) {
+                    $wasSynced = AiSmartTalkCustomerSync::getByCustomerId((int) $customer->id);
+                    if ($wasSynced && $wasSynced->synced) {
+                        if ($this->removeCustomer($customer->email)) {
+                            $removedCount++;
+                        } else {
+                            $errors[] = sprintf('Failed to remove customer #%d from CRM', $customer->id);
+                        }
+                    }
+                    AiSmartTalkCustomerSync::markAsNotSynced((int) $customer->id);
+                }
+                $this->processedCustomers++;
             }
 
             return [
                 'success' => empty($errors),
                 'total' => $this->totalCustomers,
+                'synced' => $syncedCount,
+                'removed' => $removedCount,
                 'processed' => $this->processedCustomers,
                 'errors' => $errors,
             ];
@@ -245,7 +397,7 @@ class CustomerSync
     }
 
     /**
-     * Get current export progress in terms of total customers and processed customers.
+     * Get current sync progress in terms of total customers and processed customers.
      *
      * @return array Progress with keys: total, processed, percentage
      */
