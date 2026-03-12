@@ -291,14 +291,22 @@
 .ast-toggle-card {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 20px 24px;
+    gap: 16px;
+    padding: 16px 20px;
     background: #f8fafc;
     border-radius: 12px;
     transition: all 0.2s;
 }
 .ast-toggle-card:hover {
     background: #f1f5f9;
+}
+.ast-toggle-info {
+    flex: 1;
+    min-width: 0;
+}
+.ast-toggle-card .ast-switch {
+    flex-shrink: 0;
+    margin-left: auto;
 }
 .ast-toggle-info h4 {
     margin: 0 0 4px;
@@ -404,6 +412,120 @@ a.ast-btn-warning:hover {
     gap: 10px;
     flex-wrap: wrap;
     margin-top: 16px;
+}
+
+/* Sync Tab - Activation Cards */
+.ast-sync-toggles {
+    align-items: stretch;
+}
+.ast-sync-card {
+    border-left: 4px solid #cbd5e1;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+.ast-sync-card.ast-sync-active {
+    border-left-color: #10b981;
+    box-shadow: 0 2px 12px rgba(16, 185, 129, 0.1);
+}
+.ast-sync-card .ast-card-body {
+    display: flex;
+    align-items: center;
+    min-height: 80px;
+}
+.ast-sync-card .ast-toggle-card {
+    width: 100%;
+}
+
+/* Sync Settings - sections inside wrapper card */
+.ast-sync-settings-row {
+    align-items: start;
+}
+.ast-sync-section {
+    min-width: 0;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+}
+.ast-sync-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 16px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #334155;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f1f5f9;
+}
+.ast-sync-section-title i {
+    color: #667eea;
+}
+
+/* Sync Save Bar */
+.ast-sync-save-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 2px solid #f1f5f9;
+}
+.ast-sync-save-hint {
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+/* Sync Actions Card */
+.ast-sync-actions-card {
+    background: linear-gradient(135deg, #fafbff 0%, #f8fafc 100%);
+    border: 2px dashed #e2e8f0;
+}
+.ast-sync-actions-card .ast-card-header {
+    border-bottom-style: dashed;
+}
+.ast-sync-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.ast-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+    justify-content: center;
+}
+.ast-action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+}
+.ast-action-product {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #fff !important;
+}
+.ast-action-clean {
+    background: #f1f5f9;
+    color: #475569 !important;
+    border: 1px solid #e2e8f0;
+}
+.ast-action-clean:hover {
+    background: #e2e8f0;
+    color: #334155 !important;
+}
+.ast-action-customer {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: #fff !important;
+}
+.ast-action-icon {
+    font-size: 16px;
+    display: flex;
+    align-items: center;
 }
 
 /* Stat Cards */
@@ -1085,6 +1207,11 @@ a.ast-btn-warning:hover {
 /* Advanced Settings */
 .ast-advanced-form .ast-form-group {
     max-width: 500px;
+}
+.ast-wl-field[readonly] {
+    opacity: 0.55;
+    cursor: default;
+    background: #f8fafc;
 }
 
 /* Responsive */
@@ -1874,17 +2001,16 @@ a.ast-btn-success:hover {
 
             {* ===== TAB 3: SYNC ===== *}
             <div class="ast-panel" id="panel-sync" role="tabpanel">
-                <div class="ast-grid ast-grid-2">
-                    {* Product Sync *}
-                    <div class="ast-card">
-                        <div class="ast-card-header">
-                            <h3><i class="icon icon-cube"></i> {l s='Product Sync' mod='aismarttalk'}</h3>
-                        </div>
+
+                {* === Row 1: Activation toggles === *}
+                <div class="ast-grid ast-grid-2 ast-sync-toggles">
+                    {* Product Sync Toggle *}
+                    <div class="ast-card ast-sync-card {if $productSyncEnabled}ast-sync-active{/if}">
                         <div class="ast-card-body">
                             <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
                                 <div class="ast-toggle-card">
                                     <div class="ast-toggle-info">
-                                        <h4>{l s='Auto-sync Products' mod='aismarttalk'}</h4>
+                                        <h4><i class="icon icon-cube" style="color: #667eea; margin-right: 6px;"></i>{l s='Product Sync' mod='aismarttalk'}</h4>
                                         <p>{l s='Your products will be available to the AI chatbot' mod='aismarttalk'}</p>
                                     </div>
                                     <label class="ast-switch">
@@ -1894,30 +2020,16 @@ a.ast-btn-success:hover {
                                     <input type="hidden" name="submitProductSync" value="1">
                                 </div>
                             </form>
-
-                            {if $productSyncEnabled}
-                            <div class="ast-quick-actions">
-                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;forceSync=true" class="ast-btn ast-btn-warning ast-btn-sm">
-                                    <i class="icon icon-refresh"></i> {l s='Sync All' mod='aismarttalk'}
-                                </a>
-                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;clean=1" class="ast-btn ast-btn-secondary ast-btn-sm">
-                                    <i class="icon icon-trash"></i> {l s='Clean' mod='aismarttalk'}
-                                </a>
-                            </div>
-                            {/if}
                         </div>
                     </div>
 
-                    {* Customer Sync *}
-                    <div class="ast-card">
-                        <div class="ast-card-header">
-                            <h3><i class="icon icon-users"></i> {l s='Customer Sync' mod='aismarttalk'}</h3>
-                        </div>
+                    {* Customer Sync Toggle *}
+                    <div class="ast-card ast-sync-card {if $customerSyncEnabled}ast-sync-active{/if}">
                         <div class="ast-card-body">
                             <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
                                 <div class="ast-toggle-card">
                                     <div class="ast-toggle-info">
-                                        <h4>{l s='Sync Customer Data' mod='aismarttalk'}</h4>
+                                        <h4><i class="icon icon-users" style="color: #667eea; margin-right: 6px;"></i>{l s='Customer Sync' mod='aismarttalk'}</h4>
                                         <p>{l s='Connect customers with AI SmartTalk CRM' mod='aismarttalk'}</p>
                                     </div>
                                     <label class="ast-switch">
@@ -1926,147 +2038,186 @@ a.ast-btn-success:hover {
                                     </label>
                                     <input type="hidden" name="submitCustomerSync" value="1">
                                 </div>
-
-                                {if $customerSyncEnabled}
-                                <div class="ast-consent-filter" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
-                                    <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #334155;">
-                                        <i class="icon icon-shield"></i> {l s='Consent Filter' mod='aismarttalk'}
-                                    </label>
-                                    <p style="color: #64748b; font-size: 13px; margin: 0 0 12px;">{l s='Only sync customers who have given their consent. Based on PrestaShop native fields.' mod='aismarttalk'}</p>
-                                    <select name="AI_SMART_TALK_CUSTOMER_SYNC_CONSENT" class="ast-select" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;" onchange="this.form.submit()">
-                                        <option value="all" {if $customerSyncConsent == 'all'}selected{/if}>{l s='All customers (no filter)' mod='aismarttalk'}</option>
-                                        <option value="newsletter" {if $customerSyncConsent == 'newsletter'}selected{/if}>{l s='Newsletter subscribers only' mod='aismarttalk'}</option>
-                                        <option value="optin" {if $customerSyncConsent == 'optin'}selected{/if}>{l s='Partner offers opt-in only' mod='aismarttalk'}</option>
-                                        <option value="newsletter_or_optin" {if $customerSyncConsent == 'newsletter_or_optin'}selected{/if}>{l s='Newsletter OR partner offers' mod='aismarttalk'}</option>
-                                        <option value="newsletter_and_optin" {if $customerSyncConsent == 'newsletter_and_optin'}selected{/if}>{l s='Newsletter AND partner offers' mod='aismarttalk'}</option>
-                                    </select>
-                                </div>
-
-                                <div class="ast-toggle-card" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
-                                    <div class="ast-toggle-info">
-                                        <h4><i class="icon icon-lock"></i> {l s='Encrypt Payloads' mod='aismarttalk'}</h4>
-                                        <p>{l s='AES-256-GCM encryption for customer data in transit' mod='aismarttalk'}</p>
-                                    </div>
-                                    <label class="ast-switch">
-                                        <input type="checkbox" name="AI_SMART_TALK_ENCRYPT_PAYLOADS" value="1" {if $encryptPayloads}checked{/if} onchange="this.form.submit()">
-                                        <span class="ast-switch-slider"></span>
-                                    </label>
-                                </div>
-                                {/if}
                             </form>
-
-                            {if $customerSyncEnabled}
-                            <div class="ast-quick-actions">
-                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;syncCustomers=1" class="ast-btn ast-btn-warning ast-btn-sm">
-                                    <i class="icon icon-refresh"></i> {l s='Sync All' mod='aismarttalk'}
-                                </a>
-                            </div>
-                            {/if}
                         </div>
                     </div>
                 </div>
 
-                {* Sync Filters *}
-                {if $productSyncEnabled}
+                {* === Row 2: Settings (inside a wrapper card with Save inside) === *}
+                {if $productSyncEnabled || $customerSyncEnabled}
                 <div class="ast-card">
                     <div class="ast-card-header">
-                        <h3>
-                            <i class="icon icon-filter"></i> {l s='Sync Filters' mod='aismarttalk'}
-                            {if $syncFilterHasActiveFilters}
-                                <span class="ast-filter-badge" style="margin-left: 10px;">{l s='Active' mod='aismarttalk'}</span>
-                            {/if}
-                        </h3>
+                        <h3><i class="icon icon-cog"></i> {l s='Sync Settings' mod='aismarttalk'}</h3>
+                        {if $syncFilterHasActiveFilters}
+                            <span class="ast-filter-badge">{l s='Filters active' mod='aismarttalk'}</span>
+                        {/if}
                     </div>
                     <div class="ast-card-body">
-                        <p style="color: #64748b; margin: 0 0 20px;">{l s='Choose which products to synchronize with AI SmartTalk.' mod='aismarttalk'}</p>
+                        <form action="{$formAction|escape:'html':'UTF-8'}" method="post" id="sync-settings-form">
+                            <div class="ast-grid ast-grid-2 ast-sync-settings-row">
 
-                        <form action="{$formAction|escape:'html':'UTF-8'}" method="post" id="sync-filters-form">
+                                {* Product Filters *}
+                                {if $productSyncEnabled}
+                                <div class="ast-sync-section">
+                                    <h4 class="ast-sync-section-title"><i class="icon icon-filter"></i> {l s='Product Filters' mod='aismarttalk'}</h4>
 
-                            {* Step 1: Category filter (main decision) *}
-                            <div class="ast-category-mode-selector">
-                                <label class="ast-mode-option {if $syncFilterCategoryMode == 'all'}active{/if}">
-                                    <input type="radio" name="sync_filter_category_mode" value="all" {if $syncFilterCategoryMode == 'all'}checked{/if}>
-                                    <div class="ast-mode-content">
-                                        <strong>{l s='All categories' mod='aismarttalk'}</strong>
-                                        <small>{l s='Sync products from every category' mod='aismarttalk'}</small>
-                                    </div>
-                                </label>
-                                <label class="ast-mode-option {if $syncFilterCategoryMode == 'include'}active{/if}">
-                                    <input type="radio" name="sync_filter_category_mode" value="include" {if $syncFilterCategoryMode == 'include'}checked{/if}>
-                                    <div class="ast-mode-content">
-                                        <strong>{l s='Only selected' mod='aismarttalk'}</strong>
-                                        <small>{l s='Sync only from checked categories' mod='aismarttalk'}</small>
-                                    </div>
-                                </label>
-                                <label class="ast-mode-option {if $syncFilterCategoryMode == 'exclude'}active{/if}">
-                                    <input type="radio" name="sync_filter_category_mode" value="exclude" {if $syncFilterCategoryMode == 'exclude'}checked{/if}>
-                                    <div class="ast-mode-content">
-                                        <strong>{l s='All except selected' mod='aismarttalk'}</strong>
-                                        <small>{l s='Exclude checked categories' mod='aismarttalk'}</small>
-                                    </div>
-                                </label>
-                            </div>
-
-                            {* Step 2: Category tree (only when filtering) *}
-                            <div id="category-tree-wrapper" style="{if $syncFilterCategoryMode == 'all'}display: none;{/if}">
-                                <div class="ast-category-box">
-                                    <div class="ast-category-header">
-                                        <input type="text" id="category-search" class="ast-category-search" placeholder="{l s='Search categories...' mod='aismarttalk'}">
-                                        <div style="display: flex; gap: 8px;">
-                                            <button type="button" id="expand-all" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Expand' mod='aismarttalk'}</button>
-                                            <button type="button" id="collapse-all" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Collapse' mod='aismarttalk'}</button>
-                                        </div>
-                                    </div>
-                                    <div class="ast-category-tree" id="category-tree">
-                                        {foreach from=$syncFilterCategoryTree item=category}
-                                            <div class="ast-tree-node"
-                                                 data-id="{$category.id_category|intval}"
-                                                 data-parent="{$category.parent_id|intval}"
-                                                 data-depth="{$category.depth|intval}"
-                                                 data-children="{$category.child_ids|@json_encode|escape:'html':'UTF-8'}"
-                                                 data-name="{$category.name|escape:'html':'UTF-8'|lower}"
-                                                 style="margin-left: {($category.depth * 24)|intval}px; {if $category.depth > 0}display: none;{/if}">
-                                                {if $category.has_children}
-                                                    <span class="ast-tree-toggle" data-id="{$category.id_category|intval}">&#9654;</span>
-                                                {else}
-                                                    <span class="ast-tree-spacer"></span>
-                                                {/if}
-                                                <label class="ast-tree-label">
-                                                    <input type="checkbox"
-                                                           class="ast-tree-checkbox"
-                                                           value="{$category.id_category|intval}"
-                                                           {if in_array($category.id_category, $syncFilterConfig.categories)}checked{/if}>
-                                                    <span class="ast-tree-name">{$category.name|escape:'html':'UTF-8'}</span>
-                                                    {if $category.product_count > 0}
-                                                        <span class="ast-tree-count">{$category.product_count|intval}</span>
-                                                    {/if}
-                                                </label>
+                                    <div class="ast-category-mode-selector">
+                                        <label class="ast-mode-option {if $syncFilterCategoryMode == 'all'}active{/if}">
+                                            <input type="radio" name="sync_filter_category_mode" value="all" {if $syncFilterCategoryMode == 'all'}checked{/if}>
+                                            <div class="ast-mode-content">
+                                                <strong>{l s='All categories' mod='aismarttalk'}</strong>
+                                                <small>{l s='Sync products from every category' mod='aismarttalk'}</small>
                                             </div>
-                                        {/foreach}
+                                        </label>
+                                        <label class="ast-mode-option {if $syncFilterCategoryMode == 'include'}active{/if}">
+                                            <input type="radio" name="sync_filter_category_mode" value="include" {if $syncFilterCategoryMode == 'include'}checked{/if}>
+                                            <div class="ast-mode-content">
+                                                <strong>{l s='Only selected' mod='aismarttalk'}</strong>
+                                                <small>{l s='Sync only from checked categories' mod='aismarttalk'}</small>
+                                            </div>
+                                        </label>
+                                        <label class="ast-mode-option {if $syncFilterCategoryMode == 'exclude'}active{/if}">
+                                            <input type="radio" name="sync_filter_category_mode" value="exclude" {if $syncFilterCategoryMode == 'exclude'}checked{/if}>
+                                            <div class="ast-mode-content">
+                                                <strong>{l s='All except selected' mod='aismarttalk'}</strong>
+                                                <small>{l s='Exclude checked categories' mod='aismarttalk'}</small>
+                                            </div>
+                                        </label>
                                     </div>
-                                    <div class="ast-category-footer">
-                                        <div style="display: flex; gap: 8px;">
-                                            <button type="button" id="select-all-cats" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Select All' mod='aismarttalk'}</button>
-                                            <button type="button" id="clear-categories" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Clear' mod='aismarttalk'}</button>
-                                        </div>
-                                        <span><span id="selected-count">0</span> {l s='selected' mod='aismarttalk'}</span>
-                                    </div>
-                                </div>
-                                <div id="category-warning" class="ast-filter-warning" style="display: none;">
-                                    <i class="icon icon-warning"></i>
-                                    <span id="category-warning-text"></span>
-                                </div>
-                            </div>
-                            <input type="hidden" name="sync_filter_categories" id="sync_filter_categories" value="">
 
-                            <div style="margin-top: 24px; display: flex; align-items: center; gap: 16px;">
-                                <button type="submit" name="submitSyncFilters" class="ast-btn ast-btn-primary">
-                                    <i class="icon icon-save"></i> {l s='Save Filters' mod='aismarttalk'}
+                                    <div id="category-tree-wrapper" style="{if $syncFilterCategoryMode == 'all'}display: none;{/if}">
+                                        <div class="ast-category-box">
+                                            <div class="ast-category-header">
+                                                <input type="text" id="category-search" class="ast-category-search" placeholder="{l s='Search categories...' mod='aismarttalk'}">
+                                                <div style="display: flex; gap: 8px;">
+                                                    <button type="button" id="expand-all" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Expand' mod='aismarttalk'}</button>
+                                                    <button type="button" id="collapse-all" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Collapse' mod='aismarttalk'}</button>
+                                                </div>
+                                            </div>
+                                            <div class="ast-category-tree" id="category-tree">
+                                                {foreach from=$syncFilterCategoryTree item=category}
+                                                    <div class="ast-tree-node"
+                                                         data-id="{$category.id_category|intval}"
+                                                         data-parent="{$category.parent_id|intval}"
+                                                         data-depth="{$category.depth|intval}"
+                                                         data-children="{$category.child_ids|@json_encode|escape:'html':'UTF-8'}"
+                                                         data-name="{$category.name|escape:'html':'UTF-8'|lower}"
+                                                         style="margin-left: {($category.depth * 24)|intval}px; {if $category.depth > 0}display: none;{/if}">
+                                                        {if $category.has_children}
+                                                            <span class="ast-tree-toggle" data-id="{$category.id_category|intval}">&#9654;</span>
+                                                        {else}
+                                                            <span class="ast-tree-spacer"></span>
+                                                        {/if}
+                                                        <label class="ast-tree-label">
+                                                            <input type="checkbox"
+                                                                   class="ast-tree-checkbox"
+                                                                   value="{$category.id_category|intval}"
+                                                                   {if in_array($category.id_category, $syncFilterConfig.categories)}checked{/if}>
+                                                            <span class="ast-tree-name">{$category.name|escape:'html':'UTF-8'}</span>
+                                                            {if $category.product_count > 0}
+                                                                <span class="ast-tree-count">{$category.product_count|intval}</span>
+                                                            {/if}
+                                                        </label>
+                                                    </div>
+                                                {/foreach}
+                                            </div>
+                                            <div class="ast-category-footer">
+                                                <div style="display: flex; gap: 8px;">
+                                                    <button type="button" id="select-all-cats" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Select All' mod='aismarttalk'}</button>
+                                                    <button type="button" id="clear-categories" class="ast-btn ast-btn-secondary ast-btn-sm">{l s='Clear' mod='aismarttalk'}</button>
+                                                </div>
+                                                <span><span id="selected-count">0</span> {l s='selected' mod='aismarttalk'}</span>
+                                            </div>
+                                        </div>
+                                        <div id="category-warning" class="ast-filter-warning" style="display: none;">
+                                            <i class="icon icon-warning"></i>
+                                            <span id="category-warning-text"></span>
+                                        </div>
+                                    </div>
+                                    <input type="hidden" name="sync_filter_categories" id="sync_filter_categories" value="">
+                                </div>
+                                {/if}
+
+                                {* Customer Settings *}
+                                {if $customerSyncEnabled}
+                                <div class="ast-sync-section">
+                                    <h4 class="ast-sync-section-title"><i class="icon icon-shield"></i> {l s='Customer Settings' mod='aismarttalk'}</h4>
+
+                                    <div class="ast-form-group">
+                                        <label class="ast-label">{l s='Consent Filter' mod='aismarttalk'}</label>
+                                        <select name="AI_SMART_TALK_CUSTOMER_SYNC_CONSENT" class="ast-select">
+                                            <option value="all" {if $customerSyncConsent == 'all'}selected{/if}>{l s='All customers (no filter)' mod='aismarttalk'}</option>
+                                            <option value="newsletter" {if $customerSyncConsent == 'newsletter'}selected{/if}>{l s='Newsletter subscribers only' mod='aismarttalk'}</option>
+                                            <option value="optin" {if $customerSyncConsent == 'optin'}selected{/if}>{l s='Partner offers opt-in only' mod='aismarttalk'}</option>
+                                            <option value="newsletter_or_optin" {if $customerSyncConsent == 'newsletter_or_optin'}selected{/if}>{l s='Newsletter OR partner offers' mod='aismarttalk'}</option>
+                                            <option value="newsletter_and_optin" {if $customerSyncConsent == 'newsletter_and_optin'}selected{/if}>{l s='Newsletter AND partner offers' mod='aismarttalk'}</option>
+                                        </select>
+                                        <p class="ast-help">{l s='Only sync customers who have given their consent.' mod='aismarttalk'}</p>
+                                    </div>
+
+                                    <div class="ast-toggle-card">
+                                        <div class="ast-toggle-info">
+                                            <h4><i class="icon icon-lock" style="color: #667eea; margin-right: 4px;"></i> {l s='Encrypt Payloads' mod='aismarttalk'}</h4>
+                                            <p>{l s='AES-256-GCM encryption for data in transit' mod='aismarttalk'}</p>
+                                        </div>
+                                        <label class="ast-switch">
+                                            <input type="checkbox" name="AI_SMART_TALK_ENCRYPT_PAYLOADS" value="1" {if $encryptPayloads}checked{/if}>
+                                            <span class="ast-switch-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                                {/if}
+
+                            </div>
+
+                            <div class="ast-sync-save-bar">
+                                <button type="submit" name="submitSyncSettings" class="ast-btn ast-btn-primary">
+                                    <i class="icon icon-save"></i> {l s='Save Settings' mod='aismarttalk'}
                                 </button>
-                                <span style="font-size: 13px; color: #94a3b8;">{l s='Run "Sync All" after saving to apply changes.' mod='aismarttalk'}</span>
+                                <span class="ast-sync-save-hint">{l s='Run a sync after saving to apply changes.' mod='aismarttalk'}</span>
                             </div>
                         </form>
                     </div>
+                </div>
+                {/if}
+
+                {* === Row 3: Actions (separated visually) === *}
+                {if $productSyncEnabled || $customerSyncEnabled}
+                <div class="ast-grid ast-grid-2 ast-sync-toggles">
+                    {if $productSyncEnabled}
+                    <div class="ast-card ast-sync-actions-card">
+                        <div class="ast-card-header">
+                            <h3><i class="icon icon-cube"></i> {l s='Product Actions' mod='aismarttalk'}</h3>
+                        </div>
+                        <div class="ast-card-body">
+                            <div class="ast-sync-actions">
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;forceSync=true" class="ast-action-btn ast-action-product">
+                                    <span class="ast-action-icon"><i class="icon icon-refresh"></i></span>
+                                    <span class="ast-action-label">{l s='Sync All Products' mod='aismarttalk'}</span>
+                                </a>
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;clean=1" class="ast-action-btn ast-action-clean">
+                                    <span class="ast-action-icon"><i class="icon icon-trash"></i></span>
+                                    <span class="ast-action-label">{l s='Clean Deleted' mod='aismarttalk'}</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {/if}
+                    {if $customerSyncEnabled}
+                    <div class="ast-card ast-sync-actions-card">
+                        <div class="ast-card-header">
+                            <h3><i class="icon icon-users"></i> {l s='Customer Actions' mod='aismarttalk'}</h3>
+                        </div>
+                        <div class="ast-card-body">
+                            <div class="ast-sync-actions">
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;syncCustomers=1" class="ast-action-btn ast-action-customer">
+                                    <span class="ast-action-icon"><i class="icon icon-refresh"></i></span>
+                                    <span class="ast-action-label">{l s='Sync All Customers' mod='aismarttalk'}</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {/if}
                 </div>
                 {/if}
             </div>
@@ -2345,23 +2496,33 @@ a.ast-btn-success:hover {
                             <span>{l s='Only modify these settings if you have a custom/whitelabel deployment.' mod='aismarttalk'}</span>
                         </div>
 
-                        <form action="{$formAction|escape:'html':'UTF-8'}" method="post" class="ast-advanced-form">
+                        <form action="{$formAction|escape:'html':'UTF-8'}" method="post" class="ast-advanced-form" id="ast-whitelabel-form">
                             <div class="ast-form-group">
                                 <label class="ast-label">{l s='API URL' mod='aismarttalk'}</label>
-                                <input type="text" name="AI_SMART_TALK_URL" value="{$apiUrl|escape:'html':'UTF-8'}" class="ast-input">
+                                <input type="text" name="AI_SMART_TALK_URL" value="{$apiUrl|escape:'html':'UTF-8'}" class="ast-input ast-wl-field" readonly>
                             </div>
                             <div class="ast-form-group">
                                 <label class="ast-label">{l s='CDN URL' mod='aismarttalk'}</label>
-                                <input type="text" name="AI_SMART_TALK_CDN" value="{$cdnUrl|escape:'html':'UTF-8'}" class="ast-input">
+                                <input type="text" name="AI_SMART_TALK_CDN" value="{$cdnUrl|escape:'html':'UTF-8'}" class="ast-input ast-wl-field" readonly>
                             </div>
                             <div class="ast-form-group">
                                 <label class="ast-label">{l s='WebSocket URL' mod='aismarttalk'}</label>
-                                <input type="text" name="AI_SMART_TALK_WS" value="{$wsUrl|escape:'html':'UTF-8'}" class="ast-input">
+                                <input type="text" name="AI_SMART_TALK_WS" value="{$wsUrl|escape:'html':'UTF-8'}" class="ast-input ast-wl-field" readonly>
                             </div>
-                            <div style="margin-top: 24px;">
-                                <button type="submit" name="submitWhiteLabel" class="ast-btn ast-btn-warning">
-                                    <i class="icon icon-save"></i> {l s='Save Settings' mod='aismarttalk'}
-                                </button>
+                            <div style="margin-top: 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <a href="#" id="ast-unlock-wl" onclick="document.querySelectorAll('.ast-wl-field').forEach(function(el){literal}{ el.removeAttribute('readonly'); el.style.opacity='1'; el.style.cursor='text'; }{/literal}); this.style.display='none'; document.getElementById('ast-wl-actions').style.display='flex'; return false;" class="ast-btn ast-btn-secondary" style="font-size: 12px; padding: 6px 14px;">
+                                    <i class="icon icon-pencil"></i> {l s='Edit URLs' mod='aismarttalk'}
+                                </a>
+                                <div id="ast-wl-actions" style="display: none; align-items: center; gap: 10px; flex-wrap: wrap;">
+                                    <button type="submit" name="submitWhiteLabel" class="ast-btn ast-btn-warning">
+                                        <i class="icon icon-save"></i> {l s='Save Settings' mod='aismarttalk'}
+                                    </button>
+                                    {if !$urlsAreDefault}
+                                    <a href="{$moduleLink|escape:'html':'UTF-8'}&amp;resetWhiteLabel=1" style="font-size: 11px; color: #94a3b8; text-decoration: none;" title="{l s='Restore default AI SmartTalk URLs' mod='aismarttalk'}">
+                                        <i class="icon icon-undo"></i> {l s='Reset to defaults' mod='aismarttalk'}
+                                    </a>
+                                    {/if}
+                                </div>
                             </div>
                         </form>
                     </div>

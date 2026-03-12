@@ -407,6 +407,14 @@ class AiSmartTalk extends Module
             'apiUrl' => Configuration::get('AI_SMART_TALK_URL') ?: self::DEFAULT_API_URL,
             'cdnUrl' => $cdnUrl,
             'wsUrl' => $wsUrl,
+            'defaultApiUrl' => self::DEFAULT_API_URL,
+            'defaultCdnUrl' => self::DEFAULT_CDN_URL,
+            'defaultWsUrl' => self::DEFAULT_WS_URL,
+            'urlsAreDefault' => (
+                (Configuration::get('AI_SMART_TALK_URL') ?: self::DEFAULT_API_URL) === self::DEFAULT_API_URL
+                && $cdnUrl === self::DEFAULT_CDN_URL
+                && $wsUrl === self::DEFAULT_WS_URL
+            ),
 
             // Chatbot customization settings
             'buttonText' => Configuration::get('AI_SMART_TALK_BUTTON_TEXT') ?: '',

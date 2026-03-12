@@ -147,6 +147,17 @@ class AdminFormHandler
             $output .= $this->handleRefreshEmbedConfig();
         }
 
+        if (\Tools::getValue('resetWhiteLabel')) {
+            \Configuration::updateValue('AI_SMART_TALK_URL', \AiSmartTalk::DEFAULT_API_URL);
+            \Configuration::updateValue('AI_SMART_TALK_FRONT_URL', \AiSmartTalk::DEFAULT_API_URL);
+            \Configuration::updateValue('AI_SMART_TALK_CDN', \AiSmartTalk::DEFAULT_CDN_URL);
+            \Configuration::updateValue('AI_SMART_TALK_WS', \AiSmartTalk::DEFAULT_WS_URL);
+            OAuthHandler::registerRedirectUri($this->context);
+            $output .= $this->module->displayConfirmation(
+                $this->trans('URLs reset to default values.', [], 'Modules.Aismarttalk.Admin')
+            );
+        }
+
         if (\Tools::getValue('resetLocalCustomizations')) {
             $this->clearLocalCustomizations();
             AiSmartTalkCache::delete('embed_config');
@@ -278,7 +289,7 @@ class AdminFormHandler
 
         // Layout settings
         $chatSize = \Tools::getValue('AI_SMART_TALK_CHAT_SIZE', '');
-        $validSizes = ['', 'small', 'medium', 'large'];
+        $validSizes = ['', 'small', 'medium', 'large', 'xlarge', 'full'];
         if (!in_array($chatSize, $validSizes)) {
             $chatSize = '';
         }
@@ -413,33 +424,6 @@ class AdminFormHandler
 
         return $this->module->displayConfirmation(
             $this->trans('Settings saved.', [], 'Modules.Aismarttalk.Admin')
-        );
-    }
-
-    private function handleSyncFilters(): string
-    {
-        $categoryMode = \Tools::getValue('sync_filter_category_mode', 'all');
-
-        $filterConfig = [
-            'mode' => ($categoryMode === 'exclude') ? SyncFilterHelper::MODE_EXCLUDE : SyncFilterHelper::MODE_INCLUDE,
-            'categories' => ($categoryMode === 'all') ? [] : \Tools::getValue('sync_filter_categories', []),
-            'include_subcategories' => false,
-        ];
-
-        // Handle categories as JSON string or array
-        if (is_string($filterConfig['categories'])) {
-            $decoded = json_decode($filterConfig['categories'], true);
-            $filterConfig['categories'] = is_array($decoded) ? $decoded : [];
-        }
-
-        if (SyncFilterHelper::saveFilterConfig($filterConfig)) {
-            return $this->module->displayConfirmation(
-                $this->trans('Sync filters saved successfully.', [], 'Modules.Aismarttalk.Admin')
-            );
-        }
-
-        return $this->module->displayError(
-            $this->trans('Failed to save sync filters.', [], 'Modules.Aismarttalk.Admin')
         );
     }
 
