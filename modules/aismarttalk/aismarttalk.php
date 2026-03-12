@@ -20,6 +20,7 @@ if (!defined('_PS_VERSION_')) {
 require_once dirname(__FILE__) . '/vendor/autoload.php';
 
 use PrestaShop\AiSmartTalk\AiSmartTalkCache;
+use PrestaShop\AiSmartTalk\AiSmartTalkCustomerSync;
 use PrestaShop\AiSmartTalk\AiSmartTalkProductSync;
 use PrestaShop\AiSmartTalk\CleanProductDocuments;
 use PrestaShop\AiSmartTalk\CustomerSync;
@@ -80,6 +81,8 @@ class AiSmartTalk extends Module
             'AI_SMART_TALK_IFRAME_POSITION' => 'footer',
             'AI_SMART_TALK_PRODUCT_SYNC' => false,
             'AI_SMART_TALK_CUSTOMER_SYNC' => false,
+            'AI_SMART_TALK_CUSTOMER_SYNC_CONSENT' => 'all',
+            'AI_SMART_TALK_ENCRYPT_PAYLOADS' => true,
         ];
 
         foreach ($defaults as $key => $value) {
@@ -97,6 +100,11 @@ class AiSmartTalk extends Module
         }
         AiSmartTalkProductSync::migrateFromLegacyColumns();
         AiSmartTalkProductSync::removeLegacyColumns();
+
+        // Create customer sync tracking table
+        if (!AiSmartTalkCustomerSync::createTable()) {
+            return false;
+        }
 
         $this->registerAiSmartTalkHooks();
 
@@ -119,7 +127,8 @@ class AiSmartTalk extends Module
             'actionCustomerLogout',
             'actionCustomerAccountAdd',
             'actionCustomerAccountUpdate',
-            'actionCustomerDelete',
+            'actionObjectCustomerUpdateAfter',
+            'actionObjectCustomerDeleteAfter',
             // Webhook triggers (common)
             'actionPaymentConfirmation',
             'actionValidateOrder',
@@ -165,8 +174,9 @@ class AiSmartTalk extends Module
         // Disconnect OAuth before uninstalling
         OAuthHandler::disconnect();
 
-        // Drop the product sync table
+        // Drop sync tracking tables
         AiSmartTalkProductSync::dropTable();
+        AiSmartTalkCustomerSync::dropTable();
 
         // Unregister all possible hooks (safe to call even if not registered)
         $allHooks = [
@@ -182,7 +192,8 @@ class AiSmartTalk extends Module
             'actionCustomerLogout',
             'actionCustomerAccountAdd',
             'actionCustomerAccountUpdate',
-            'actionCustomerDelete',
+            'actionObjectCustomerUpdateAfter',
+            'actionObjectCustomerDeleteAfter',
             'actionOrderStatusPostUpdate',
             'actionOrderStatusUpdate',
             'actionPaymentConfirmation',
@@ -232,9 +243,13 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_BUTTON_BORDER_RADIUS')
             // Customer sync
             && Configuration::deleteByName('AI_SMART_TALK_CUSTOMER_SYNC')
+            && Configuration::deleteByName('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT')
+            && Configuration::deleteByName('AI_SMART_TALK_ENCRYPT_PAYLOADS')
             // GDPR settings
             && Configuration::deleteByName('AI_SMART_TALK_GDPR_ENABLED')
             && Configuration::deleteByName('AI_SMART_TALK_GDPR_PRIVACY_URL')
+            && Configuration::deleteByName('AI_SMART_TALK_CONSENT_WALL_ENABLED')
+            && Configuration::deleteByName('AI_SMART_TALK_CONSENT_WALL_MESSAGE')
             // Temporary/error config keys
             && Configuration::deleteByName('AI_SMART_TALK_ERROR')
             && Configuration::deleteByName('AI_SMART_TALK_OAUTH_ERROR')
@@ -248,6 +263,12 @@ class AiSmartTalk extends Module
     public function hookActionAuthentication($params)
     {
         try {
+            // Only set token cookie if auto-login is not explicitly disabled
+            $psAutoLogin = Configuration::get('AI_SMART_TALK_ENABLE_AUTO_LOGIN') ?: '';
+            if ($psAutoLogin === 'off') {
+                return;
+            }
+
             if (!isset($params['customer'])) {
                 return;
             }
@@ -260,13 +281,17 @@ class AiSmartTalk extends Module
 
     /**
      * Hook: Back-office header
-     * Sets user OAuth token cookie proactively for employee auto-login.
-     * Cookie check ensures the API is only called once per session.
+     * Only generates employee token when the merchant is on the module config page.
+     * No network call to AI SmartTalk on other back-office pages.
      */
     public function hookDisplayBackOfficeHeader($params)
     {
         try {
-            OAuthTokenHandler::getOrRefreshUserToken();
+            // Only generate BO token when on this module's configuration page
+            $configure = Tools::getValue('configure');
+            if ($configure === $this->name) {
+                OAuthTokenHandler::getOrRefreshUserToken();
+            }
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog('AI SmartTalk hookDisplayBackOfficeHeader error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
@@ -289,6 +314,9 @@ class AiSmartTalk extends Module
 
         // Ensure all hooks are registered (for existing installations that may miss new hooks)
         $this->ensureHooksRegistered();
+
+        // Ensure customer sync tracking table exists (for existing installations)
+        AiSmartTalkCustomerSync::createTable();
 
         // Ensure default URLs are always available
         $this->ensureDefaultUrls();
@@ -338,14 +366,20 @@ class AiSmartTalk extends Module
             $output .= $this->sync($force, $output);
         }
 
-        if (Tools::getValue('exportCustomers')) {
+        if (Tools::getValue('syncCustomers')) {
+            // Ensure customer sync tracking table exists (for existing installations)
+            AiSmartTalkCustomerSync::createTable();
+
             $sync = new CustomerSync($this->context);
-            $result = $sync->exportAllCustomers();
+            $result = $sync->syncAllCustomers();
 
             if ($result['success']) {
-                $output .= $this->displayConfirmation($this->l('Customers exported successfully!'));
+                $synced = isset($result['synced']) ? (int) $result['synced'] : 0;
+                $removed = isset($result['removed']) ? (int) $result['removed'] : 0;
+                $msg = sprintf($this->l('Customer sync completed: %d synced, %d removed.'), $synced, $removed);
+                $output .= $this->displayConfirmation($msg);
             } else {
-                $output .= $this->displayError($this->l('Failed to export customers. Please check the logs.'));
+                $output .= $this->displayError($this->l('Customer sync failed. Please check the logs.'));
                 if (!empty($result['errors'])) {
                     foreach ($result['errors'] as $error) {
                         $output .= $this->displayError($error);
@@ -386,6 +420,17 @@ class AiSmartTalk extends Module
         if (Tools::isSubmit('submitCustomerSync')) {
             $syncEnabled = (bool) Tools::getValue('AI_SMART_TALK_CUSTOMER_SYNC');
             Configuration::updateValue('AI_SMART_TALK_CUSTOMER_SYNC', $syncEnabled);
+
+            $consentFilter = Tools::getValue('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT', 'all');
+            $validConsentValues = ['all', 'newsletter', 'optin', 'newsletter_or_optin', 'newsletter_and_optin'];
+            if (!in_array($consentFilter, $validConsentValues)) {
+                $consentFilter = 'all';
+            }
+            Configuration::updateValue('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT', $consentFilter);
+
+            $encryptPayloads = (bool) Tools::getValue('AI_SMART_TALK_ENCRYPT_PAYLOADS');
+            Configuration::updateValue('AI_SMART_TALK_ENCRYPT_PAYLOADS', $encryptPayloads);
+
             $output .= $this->displayConfirmation($this->l('Customer sync settings updated.'));
         }
 
@@ -586,6 +631,16 @@ class AiSmartTalk extends Module
             Configuration::updateValue('AI_SMART_TALK_GDPR_ENABLED', $gdprEnabled);
             Configuration::updateValue('AI_SMART_TALK_GDPR_PRIVACY_URL', pSQL($gdprPrivacyUrl));
 
+            // GDPR Consent Wall settings
+            $consentWallEnabled = Tools::getValue('AI_SMART_TALK_CONSENT_WALL_ENABLED', '');
+            if (!in_array($consentWallEnabled, $validToggleValues)) {
+                $consentWallEnabled = '';
+            }
+            Configuration::updateValue('AI_SMART_TALK_CONSENT_WALL_ENABLED', $consentWallEnabled);
+
+            $consentWallMessage = Tools::getValue('AI_SMART_TALK_CONSENT_WALL_MESSAGE', '');
+            Configuration::updateValue('AI_SMART_TALK_CONSENT_WALL_MESSAGE', pSQL($consentWallMessage));
+
             $output .= $this->displayConfirmation($this->trans('Chatbot customization saved.', [], 'Modules.Aismarttalk.Admin'));
         }
 
@@ -596,6 +651,17 @@ class AiSmartTalk extends Module
 
             Configuration::updateValue('AI_SMART_TALK_PRODUCT_SYNC', $productSyncEnabled);
             Configuration::updateValue('AI_SMART_TALK_CUSTOMER_SYNC', $customerSyncEnabled);
+
+            $consentFilter = Tools::getValue('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT', 'all');
+            $validConsentValues = ['all', 'newsletter', 'optin', 'newsletter_or_optin', 'newsletter_and_optin'];
+            if (!in_array($consentFilter, $validConsentValues)) {
+                $consentFilter = 'all';
+            }
+            Configuration::updateValue('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT', $consentFilter);
+
+            $encryptPayloads = (bool) Tools::getValue('AI_SMART_TALK_ENCRYPT_PAYLOADS');
+            Configuration::updateValue('AI_SMART_TALK_ENCRYPT_PAYLOADS', $encryptPayloads);
+
             $output .= $this->displayConfirmation($this->trans('Synchronization settings saved.', [], 'Modules.Aismarttalk.Admin'));
         }
 
@@ -739,6 +805,8 @@ class AiSmartTalk extends Module
             // Sync settings
             'productSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC'),
             'customerSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC'),
+            'customerSyncConsent' => Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT') ?: 'all',
+            'encryptPayloads' => (bool) Configuration::get('AI_SMART_TALK_ENCRYPT_PAYLOADS'),
 
             // Sync filter settings
             'syncFilterConfig' => $syncFilterConfig,
@@ -780,6 +848,8 @@ class AiSmartTalk extends Module
             // GDPR settings
             'gdprEnabled' => Configuration::get('AI_SMART_TALK_GDPR_ENABLED') ?: '',
             'gdprPrivacyUrl' => Configuration::get('AI_SMART_TALK_GDPR_PRIVACY_URL') ?: '',
+            'consentWallEnabled' => Configuration::get('AI_SMART_TALK_CONSENT_WALL_ENABLED') ?: '',
+            'consentWallMessage' => Configuration::get('AI_SMART_TALK_CONSENT_WALL_MESSAGE') ?: '',
 
             // Cache and override status
             'hasLocalOverrides' => $hasLocalOverrides,
@@ -1573,13 +1643,15 @@ class AiSmartTalk extends Module
         // GDPR settings (override API defaults if configured locally)
         $gdprEnabled = Configuration::get('AI_SMART_TALK_GDPR_ENABLED');
         $gdprPrivacyUrl = Configuration::get('AI_SMART_TALK_GDPR_PRIVACY_URL');
+        $consentWallEnabled = Configuration::get('AI_SMART_TALK_CONSENT_WALL_ENABLED');
+        $consentWallMessage = Configuration::get('AI_SMART_TALK_CONSENT_WALL_MESSAGE');
 
         // Build default privacy policy URL from AI SmartTalk
         $apiUrl = Configuration::get('AI_SMART_TALK_URL') ?: self::DEFAULT_API_URL;
         $currentLang = isset($this->context->language) ? substr($this->context->language->iso_code, 0, 2) : 'en';
         $defaultPrivacyUrl = rtrim($apiUrl, '/') . '/' . $currentLang . '/privacy-policy';
 
-        if ($gdprEnabled === 'on' || $gdprEnabled === 'off' || !empty($gdprPrivacyUrl)) {
+        if ($gdprEnabled === 'on' || $gdprEnabled === 'off' || !empty($gdprPrivacyUrl) || $consentWallEnabled === 'on' || $consentWallEnabled === 'off') {
             if (!isset($chatbotSettings['gdprConsent'])) {
                 $chatbotSettings['gdprConsent'] = [];
             }
@@ -1590,6 +1662,16 @@ class AiSmartTalk extends Module
                 $chatbotSettings['gdprConsent']['privacyPolicyUrl'] = !empty($gdprPrivacyUrl) ? $gdprPrivacyUrl : $defaultPrivacyUrl;
             } elseif ($gdprEnabled === 'off') {
                 $chatbotSettings['gdprConsent']['enabled'] = false;
+            }
+
+            // Consent wall: require explicit consent before chatbot access
+            if ($consentWallEnabled === 'on') {
+                $chatbotSettings['gdprConsent']['consentWallEnabled'] = true;
+                if (!empty($consentWallMessage)) {
+                    $chatbotSettings['gdprConsent']['consentWallMessage'] = $consentWallMessage;
+                }
+            } elseif ($consentWallEnabled === 'off') {
+                $chatbotSettings['gdprConsent']['consentWallEnabled'] = false;
             }
 
             if (!empty($gdprPrivacyUrl)) {
@@ -1870,10 +1952,12 @@ class AiSmartTalk extends Module
             }
             $customer = $params['newCustomer'];
 
-            // Customer sync
-            if (\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
+            // Customer sync (with consent filter + tracking)
+            if (\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')
+                && CustomerSync::customerMatchesConsentFilter($customer)
+            ) {
                 $sync = new CustomerSync($this->context);
-                $sync->exportCustomerBatch([$customer]);
+                $sync->syncCustomer($customer);
             }
 
             // Webhook: customer registered
@@ -1897,20 +1981,59 @@ class AiSmartTalk extends Module
                 return;
             }
             $customer = $params['customer'];
+
             $sync = new CustomerSync($this->context);
-            $sync->exportCustomerBatch([$customer]);
+            $sync->syncOrRemove($customer);
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog('AI SmartTalk hookActionCustomerAccountUpdate error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
     }
 
-    public function hookActionCustomerDelete($params)
+    /**
+     * Hook: Customer object updated (fires for both FO and BO changes).
+     * Catches consent field changes made by admin in back office.
+     */
+    public function hookActionObjectCustomerUpdateAfter($params)
     {
         try {
-            // Implementation for customer deletion sync
-            // This would call a different API endpoint to remove the customer from AI SmartTalk
+            if (!\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
+                return;
+            }
+
+            if (!isset($params['object']) || !($params['object'] instanceof \Customer)) {
+                return;
+            }
+
+            $customer = $params['object'];
+
+            $sync = new CustomerSync($this->context);
+            $sync->syncOrRemove($customer);
         } catch (\Throwable $e) {
-            PrestaShopLogger::addLog('AI SmartTalk hookActionCustomerDelete error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+            PrestaShopLogger::addLog('AI SmartTalk hookActionObjectCustomerUpdateAfter error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
+    }
+
+    public function hookActionObjectCustomerDeleteAfter($params)
+    {
+        try {
+            if (!\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
+                return;
+            }
+
+            if (!isset($params['object']) || !($params['object'] instanceof \Customer)) {
+                return;
+            }
+
+            $customer = $params['object'];
+            if (empty($customer->email)) {
+                return;
+            }
+
+            $sync = new CustomerSync($this->context);
+            $sync->removeCustomer($customer->email);
+            AiSmartTalkCustomerSync::deleteByCustomerId((int) $customer->id);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionObjectCustomerDeleteAfter error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
     }
 

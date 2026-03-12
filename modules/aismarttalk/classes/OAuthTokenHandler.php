@@ -48,11 +48,11 @@ class OAuthTokenHandler
             $responseData = json_decode($response, true);
             if (isset($responseData['userToken'])) {
                 $loginCookieLifetime = time() + (int) \Configuration::get('PS_COOKIE_LIFETIME_BO') * 3600;
-                setcookie('ai_smarttalk_oauth_token', $responseData['userToken'], $loginCookieLifetime, '/', '', \Tools::usingSecureMode(), false);
+                setcookie('ai_smarttalk_oauth_token', $responseData['userToken'], $loginCookieLifetime, '/', '', \Tools::usingSecureMode(), true);
                 $_COOKIE['ai_smarttalk_oauth_token'] = $responseData['userToken'];
             } else {
                 \PrestaShopLogger::addLog(
-                    'AI SmartTalk: No userToken found in API response. Response: ' . substr($response, 0, 200),
+                    'AI SmartTalk: No userToken found in API response.',
                     3,
                     null,
                     'OAuthTokenHandler',
@@ -68,7 +68,7 @@ class OAuthTokenHandler
      */
     public static function unsetOAuthTokenCookie()
     {
-        setcookie('ai_smarttalk_oauth_token', '', time() - 3600, '/', '', \Tools::usingSecureMode(), false);
+        setcookie('ai_smarttalk_oauth_token', '', time() - 3600, '/', '', \Tools::usingSecureMode(), true);
         unset($_COOKIE['ai_smarttalk_oauth_token']);
     }
 
@@ -116,7 +116,7 @@ class OAuthTokenHandler
         $responseData = json_decode($response, true);
         if (isset($responseData['userToken'])) {
             $loginCookieLifetime = time() + (int) \Configuration::get('PS_COOKIE_LIFETIME_BO') * 3600;
-            setcookie('ai_smarttalk_oauth_token', $responseData['userToken'], $loginCookieLifetime, '/', '', \Tools::usingSecureMode(), false);
+            setcookie('ai_smarttalk_oauth_token', $responseData['userToken'], $loginCookieLifetime, '/', '', \Tools::usingSecureMode(), true);
             $_COOKIE['ai_smarttalk_oauth_token'] = $responseData['userToken'];
             return $responseData['userToken'];
         }

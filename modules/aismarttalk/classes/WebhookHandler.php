@@ -150,6 +150,17 @@ class WebhookHandler
             'siteIdentifier' => OAuthHandler::getSiteIdentifier(),
         ];
 
+        // Encrypt the payload portion if enabled
+        $encrypted = PayloadEncryptor::encrypt(
+            $payload,
+            $accessToken,
+            $chatModelId
+        );
+        if ($encrypted !== null) {
+            $data['encrypted'] = $encrypted;
+            unset($data['payload']);
+        }
+
         $ch = curl_init();
         curl_setopt_array($ch, [
             CURLOPT_URL => $webhookUrl,
@@ -179,7 +190,7 @@ class WebhookHandler
 
         if ($httpCode < 200 || $httpCode >= 300) {
             \PrestaShopLogger::addLog(
-                'AI SmartTalk webhook failed [' . $trigger . ']. HTTP ' . $httpCode . ': ' . substr($response, 0, 500),
+                'AI SmartTalk webhook failed [' . $trigger . ']. HTTP ' . $httpCode,
                 3, null, 'WebhookHandler', null, true
             );
             return false;
@@ -198,6 +209,10 @@ class WebhookHandler
      */
     public function triggerOrderStatusChanged(\Order $order, \OrderState $newOrderState, ?\OrderState $oldOrderState = null): bool
     {
+        if (!$this->customerPassesConsentFilter((int) $order->id_customer)) {
+            return false;
+        }
+
         $langId = (int) \Configuration::get('PS_LANG_DEFAULT');
 
         $payload = [
@@ -239,6 +254,10 @@ class WebhookHandler
      */
     public function triggerPaymentReceived(\Order $order, string $paymentMethod = '', string $transactionId = ''): bool
     {
+        if (!$this->customerPassesConsentFilter((int) $order->id_customer)) {
+            return false;
+        }
+
         $payload = [
             'order_id' => (int) $order->id,
             'order_reference' => $order->reference,
@@ -301,6 +320,10 @@ class WebhookHandler
      */
     public function triggerReturnRequested(\OrderReturn $orderReturn): bool
     {
+        if (!$this->customerPassesConsentFilter((int) $orderReturn->id_customer)) {
+            return false;
+        }
+
         $order = new \Order((int) $orderReturn->id_order);
         if (!\Validate::isLoadedObject($order)) {
             return false;
@@ -382,6 +405,10 @@ class WebhookHandler
      */
     public function triggerNewOrder(\Order $order, \Customer $customer, ?\OrderState $orderStatus = null): bool
     {
+        if (!$this->customerPassesConsentFilter((int) $customer->id)) {
+            return false;
+        }
+
         $langId = (int) \Configuration::get('PS_LANG_DEFAULT');
         $currency = new \Currency((int) $order->id_currency);
 
@@ -425,6 +452,10 @@ class WebhookHandler
      */
     public function triggerCustomerRegistered(\Customer $customer): bool
     {
+        if (!CustomerSync::customerMatchesConsentFilter($customer)) {
+            return false;
+        }
+
         $payload = [
             'customer_id' => (int) $customer->id,
             'email' => $customer->email,
@@ -447,6 +478,10 @@ class WebhookHandler
      */
     public function triggerCartUpdated(\Cart $cart): bool
     {
+        if ($cart->id_customer && !$this->customerPassesConsentFilter((int) $cart->id_customer)) {
+            return false;
+        }
+
         $langId = (int) \Configuration::get('PS_LANG_DEFAULT');
         $products = [];
 
@@ -488,6 +523,10 @@ class WebhookHandler
      */
     public function triggerRefundCreated(\Order $order, array $productList = [], array $qtyList = []): bool
     {
+        if (!$this->customerPassesConsentFilter((int) $order->id_customer)) {
+            return false;
+        }
+
         $products = [];
         if (!empty($productList)) {
             foreach ($productList as $index => $productRefund) {
@@ -552,6 +591,33 @@ class WebhookHandler
         ];
 
         return $this->sendWebhook(self::TRIGGER_PRODUCT_CREATED, $payload);
+    }
+
+    /**
+     * Check if a customer passes the consent filter for webhook data.
+     * When customer sync consent filter is active (not 'all'), webhooks
+     * must also respect it to avoid leaking non-consenting customer PII.
+     *
+     * @param int $customerId
+     * @return bool True if customer data can be sent, false if blocked by consent
+     */
+    private function customerPassesConsentFilter(int $customerId): bool
+    {
+        if ($customerId <= 0) {
+            return true; // Guest / anonymous — no PII to protect
+        }
+
+        $consentFilter = \Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT') ?: 'all';
+        if ($consentFilter === 'all') {
+            return true;
+        }
+
+        $customer = new \Customer($customerId);
+        if (!\Validate::isLoadedObject($customer)) {
+            return false;
+        }
+
+        return CustomerSync::customerMatchesConsentFilter($customer);
     }
 
     /**

@@ -1842,6 +1842,22 @@ a.ast-btn-success:hover {
                                 <input type="url" name="AI_SMART_TALK_GDPR_PRIVACY_URL" value="{$gdprPrivacyUrl|escape:'html':'UTF-8'}" class="ast-input" placeholder="{$apiUrl|escape:'html':'UTF-8'}/{$currentLang|escape:'html':'UTF-8'}/privacy-policy">
                                 <p class="ast-help">{l s='Link to your privacy policy. Leave empty to use AI SmartTalk\'s default privacy policy.' mod='aismarttalk'}</p>
                             </div>
+
+                            <div class="ast-feature-toggle" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                                <span class="label"><i class="icon icon-lock"></i> {l s='Consent Wall' mod='aismarttalk'} <span class="ast-badge ast-badge-info" style="font-size: 10px; margin-left: 4px;">STRICT</span></span>
+                                <select name="AI_SMART_TALK_CONSENT_WALL_ENABLED" class="ast-select" style="width: auto;">
+                                    <option value="" {if $consentWallEnabled == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                    <option value="on" {if $consentWallEnabled == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
+                                    <option value="off" {if $consentWallEnabled == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
+                                </select>
+                            </div>
+                            <p style="color: #64748b; font-size: 12px; margin: 8px 0 0;">{l s='When enabled, users must explicitly accept data processing terms before using the chatbot. Recommended for strict GDPR compliance.' mod='aismarttalk'}</p>
+
+                            <div class="ast-form-group" style="margin-top: 16px;">
+                                <label class="ast-label">{l s='Custom Consent Message (optional)' mod='aismarttalk'}</label>
+                                <input type="text" name="AI_SMART_TALK_CONSENT_WALL_MESSAGE" value="{$consentWallMessage|escape:'html':'UTF-8'}" class="ast-input" placeholder="{l s='Leave empty for default message' mod='aismarttalk'}">
+                                <p class="ast-help">{l s='Custom legal text shown on the consent screen before users can access the chatbot.' mod='aismarttalk'}</p>
+                            </div>
                         </div>
                     </div>
 
@@ -1908,13 +1924,42 @@ a.ast-btn-success:hover {
                                     </label>
                                     <input type="hidden" name="submitCustomerSync" value="1">
                                 </div>
+
+                                {if $customerSyncEnabled}
+                                <div class="ast-consent-filter" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                                    <label style="display: block; font-weight: 600; margin-bottom: 8px; color: #334155;">
+                                        <i class="icon icon-shield"></i> {l s='Consent Filter' mod='aismarttalk'}
+                                    </label>
+                                    <p style="color: #64748b; font-size: 13px; margin: 0 0 12px;">{l s='Only sync customers who have given their consent. Based on PrestaShop native fields.' mod='aismarttalk'}</p>
+                                    <select name="AI_SMART_TALK_CUSTOMER_SYNC_CONSENT" class="ast-select" style="width: 100%; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;" onchange="this.form.submit()">
+                                        <option value="all" {if $customerSyncConsent == 'all'}selected{/if}>{l s='All customers (no filter)' mod='aismarttalk'}</option>
+                                        <option value="newsletter" {if $customerSyncConsent == 'newsletter'}selected{/if}>{l s='Newsletter subscribers only' mod='aismarttalk'}</option>
+                                        <option value="optin" {if $customerSyncConsent == 'optin'}selected{/if}>{l s='Partner offers opt-in only' mod='aismarttalk'}</option>
+                                        <option value="newsletter_or_optin" {if $customerSyncConsent == 'newsletter_or_optin'}selected{/if}>{l s='Newsletter OR partner offers' mod='aismarttalk'}</option>
+                                        <option value="newsletter_and_optin" {if $customerSyncConsent == 'newsletter_and_optin'}selected{/if}>{l s='Newsletter AND partner offers' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+
+                                <div class="ast-toggle-card" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
+                                    <div class="ast-toggle-info">
+                                        <h4><i class="icon icon-lock"></i> {l s='Encrypt Payloads' mod='aismarttalk'}</h4>
+                                        <p>{l s='AES-256-GCM encryption for customer data in transit' mod='aismarttalk'}</p>
+                                    </div>
+                                    <label class="ast-switch">
+                                        <input type="checkbox" name="AI_SMART_TALK_ENCRYPT_PAYLOADS" value="1" {if $encryptPayloads}checked{/if} onchange="this.form.submit()">
+                                        <span class="ast-switch-slider"></span>
+                                    </label>
+                                </div>
+                                {/if}
                             </form>
 
+                            {if $customerSyncEnabled}
                             <div class="ast-quick-actions">
-                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;exportCustomers=1" class="ast-btn ast-btn-secondary ast-btn-sm">
-                                    <i class="icon icon-upload"></i> {l s='Export All' mod='aismarttalk'}
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;syncCustomers=1" class="ast-btn ast-btn-warning ast-btn-sm">
+                                    <i class="icon icon-refresh"></i> {l s='Sync All' mod='aismarttalk'}
                                 </a>
                             </div>
+                            {/if}
                         </div>
                     </div>
                 </div>
