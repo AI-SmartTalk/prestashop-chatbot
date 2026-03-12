@@ -24,8 +24,7 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-// If your module folder is named "aismarttalk", you can do:
-require_once _PS_MODULE_DIR_ . 'aismarttalk/vendor/autoload.php';
+
 
 /**
  * Class CustomerSync
@@ -144,10 +143,7 @@ class CustomerSync
      */
     public function exportCustomerBatch(array $customers)
     {
-        // Use OAuthHandler for backend API URL and credentials
-        $aiSmartTalkUrl = OAuthHandler::getBackendApiUrl();
-        $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
+        $client = ApiClient::fromConfig();
 
         // Map PrestaShop customer data to the expected AI SmartTalk format
         $customerData = array_map([$this, 'mapCustomerData'], $customers);
@@ -155,65 +151,33 @@ class CustomerSync
         // Prepare the payload
         $payload = [
             'customers' => $customerData,
-            'chatModelId' => $chatModelId,
-            'chatModelToken' => $chatModelToken,
+            'chatModelId' => $client->getChatModelId(),
+            'chatModelToken' => $client->getAccessToken(),
             'source' => 'PRESTASHOP',
-            'siteIdentifier' => OAuthHandler::getSiteIdentifier(),
+            'siteIdentifier' => $client->getSiteIdentifier(),
         ];
 
         // Encrypt sensitive data if enabled
         $encrypted = PayloadEncryptor::encrypt(
             ['customers' => $customerData],
-            $chatModelToken,
-            $chatModelId
+            $client->getAccessToken(),
+            $client->getChatModelId()
         );
         if ($encrypted !== null) {
             $payload['encrypted'] = $encrypted;
             unset($payload['customers']);
         }
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $aiSmartTalkUrl . '/api/v1/crm/importCustomer');
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        $response = $client->post('/api/v1/crm/importCustomer', $payload);
 
-        $result = curl_exec($ch);
-        $error = curl_error($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        // Check for cURL execution errors
-        if ($result === false || !empty($error)) {
+        if (!$response->isSuccess()) {
             \PrestaShopLogger::addLog(
-                'AI SmartTalk customer sync cURL error: ' . $error,
-                3,
-                null,
-                'Customer',
-                null,
-                true
+                'AI SmartTalk customer sync ' . ($response->error ? 'cURL error: ' . $response->error : 'failed. HTTP code: ' . $response->httpCode),
+                3, null, 'Customer', null, true
             );
-
             return false;
         }
 
-        // Check the HTTP status code (consider 2xx as success)
-        if ($httpCode < 200 || $httpCode > 299) {
-            \PrestaShopLogger::addLog(
-                'AI SmartTalk customer sync failed. HTTP code: ' . $httpCode,
-                3,
-                null,
-                'Customer',
-                null,
-                true
-            );
-
-            return false;
-        }
-
-        // If we reach here, it's a success
         return true;
     }
 
@@ -284,65 +248,34 @@ class CustomerSync
      */
     public function removeCustomer($email)
     {
-        $aiSmartTalkUrl = OAuthHandler::getBackendApiUrl();
-        $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
+        $client = ApiClient::fromConfig();
 
         $payload = [
             'email' => $email,
-            'chatModelId' => $chatModelId,
-            'chatModelToken' => $chatModelToken,
+            'chatModelId' => $client->getChatModelId(),
+            'chatModelToken' => $client->getAccessToken(),
             'source' => 'PRESTASHOP',
-            'siteIdentifier' => OAuthHandler::getSiteIdentifier(),
+            'siteIdentifier' => $client->getSiteIdentifier(),
         ];
 
         // Encrypt sensitive data if enabled
         $encrypted = PayloadEncryptor::encrypt(
             ['email' => $email],
-            $chatModelToken,
-            $chatModelId
+            $client->getAccessToken(),
+            $client->getChatModelId()
         );
         if ($encrypted !== null) {
             $payload['encrypted'] = $encrypted;
             unset($payload['email']);
         }
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $aiSmartTalkUrl . '/api/v1/crm/removeCustomer');
-        curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+        $response = $client->post('/api/v1/crm/removeCustomer', $payload);
 
-        $result = curl_exec($ch);
-        $error = curl_error($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        curl_close($ch);
-
-        if ($result === false || !empty($error)) {
+        if (!$response->isSuccess()) {
             \PrestaShopLogger::addLog(
-                'AI SmartTalk customer remove cURL error: ' . $error,
-                3,
-                null,
-                'Customer',
-                null,
-                true
+                'AI SmartTalk customer remove ' . ($response->error ? 'cURL error: ' . $response->error : 'failed. HTTP code: ' . $response->httpCode),
+                3, null, 'Customer', null, true
             );
-
-            return false;
-        }
-
-        if ($httpCode < 200 || $httpCode > 299) {
-            \PrestaShopLogger::addLog(
-                'AI SmartTalk customer remove failed. HTTP code: ' . $httpCode,
-                3,
-                null,
-                'Customer',
-                null,
-                true
-            );
-
             return false;
         }
 

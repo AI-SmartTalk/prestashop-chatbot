@@ -131,66 +131,37 @@ class WebhookHandler
             return false;
         }
 
-        $apiUrl = OAuthHandler::getBackendApiUrl();
-        $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
-        $accessToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
-
-        if (empty($apiUrl) || empty($chatModelId) || empty($accessToken)) {
+        $client = ApiClient::fromConfig();
+        if (!$client->hasCredentials()) {
             return false;
         }
-
-        $webhookUrl = rtrim($apiUrl, '/') . '/api/v1/integrations/webhook';
 
         $data = [
             'trigger' => $trigger,
             'source' => 'PRESTASHOP',
-            'chatModelId' => $chatModelId,
+            'chatModelId' => $client->getChatModelId(),
             'timestamp' => date('c'),
             'payload' => $payload,
-            'siteIdentifier' => OAuthHandler::getSiteIdentifier(),
+            'siteIdentifier' => $client->getSiteIdentifier(),
         ];
 
         // Encrypt the payload portion if enabled
         $encrypted = PayloadEncryptor::encrypt(
             $payload,
-            $accessToken,
-            $chatModelId
+            $client->getAccessToken(),
+            $client->getChatModelId()
         );
         if ($encrypted !== null) {
             $data['encrypted'] = $encrypted;
             unset($data['payload']);
         }
 
-        $ch = curl_init();
-        curl_setopt_array($ch, [
-            CURLOPT_URL => $webhookUrl,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => json_encode($data),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT => self::REQUEST_TIMEOUT,
-            CURLOPT_HTTPHEADER => [
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . $accessToken,
-                'x-chat-model-id: ' . $chatModelId,
-            ],
-        ]);
+        $response = $client->post('/api/v1/integrations/webhook', $data, self::REQUEST_TIMEOUT);
 
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
-
-        if ($response === false || !empty($error)) {
+        if (!$response->isSuccess()) {
             \PrestaShopLogger::addLog(
-                'AI SmartTalk webhook error [' . $trigger . ']: ' . $error,
-                3, null, 'WebhookHandler', null, true
-            );
-            return false;
-        }
-
-        if ($httpCode < 200 || $httpCode >= 300) {
-            \PrestaShopLogger::addLog(
-                'AI SmartTalk webhook failed [' . $trigger . ']. HTTP ' . $httpCode,
+                'AI SmartTalk webhook ' . ($response->error ? 'error' : 'failed') . ' [' . $trigger . ']. '
+                . ($response->error ?: 'HTTP ' . $response->httpCode),
                 3, null, 'WebhookHandler', null, true
             );
             return false;

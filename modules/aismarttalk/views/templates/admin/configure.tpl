@@ -1704,6 +1704,8 @@ a.ast-btn-success:hover {
                                         <option value="small" {if $chatSize == 'small'}selected{/if}>{l s='Small' mod='aismarttalk'}</option>
                                         <option value="medium" {if $chatSize == 'medium'}selected{/if}>{l s='Medium' mod='aismarttalk'}</option>
                                         <option value="large" {if $chatSize == 'large'}selected{/if}>{l s='Large' mod='aismarttalk'}</option>
+                                        <option value="xlarge" {if $chatSize == 'xlarge'}selected{/if}>{l s='Extra Large' mod='aismarttalk'}</option>
+                                        <option value="full" {if $chatSize == 'full'}selected{/if}>{l s='Full Screen' mod='aismarttalk'}</option>
                                     </select>
                                 </div>
                                 <div class="ast-form-group">

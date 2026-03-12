@@ -8,9 +8,13 @@ $baseDir = dirname($vendorDir);
 return array(
     'AiSmartTalk' => $baseDir . '/aismarttalk.php',
     'Composer\\InstalledVersions' => $vendorDir . '/composer/InstalledVersions.php',
+    'PrestaShop\\AiSmartTalk\\AdminFormHandler' => $baseDir . '/classes/AdminFormHandler.php',
     'PrestaShop\\AiSmartTalk\\AiSmartTalkCache' => $baseDir . '/classes/AiSmartTalkCache.php',
     'PrestaShop\\AiSmartTalk\\AiSmartTalkCustomerSync' => $baseDir . '/classes/AiSmartTalkCustomerSync.php',
     'PrestaShop\\AiSmartTalk\\AiSmartTalkProductSync' => $baseDir . '/classes/AiSmartTalkProductSync.php',
+    'PrestaShop\\AiSmartTalk\\ApiClient' => $baseDir . '/classes/ApiClient.php',
+    'PrestaShop\\AiSmartTalk\\ApiResponse' => $baseDir . '/classes/ApiResponse.php',
+    'PrestaShop\\AiSmartTalk\\ChatbotSettingsBuilder' => $baseDir . '/classes/ChatbotSettingsBuilder.php',
     'PrestaShop\\AiSmartTalk\\CleanProductDocuments' => $baseDir . '/classes/CleanProductDocuments.php',
     'PrestaShop\\AiSmartTalk\\CustomerSync' => $baseDir . '/classes/CustomerSync.php',
     'PrestaShop\\AiSmartTalk\\OAuthHandler' => $baseDir . '/classes/OAuthHandler.php',

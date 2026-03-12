@@ -20,8 +20,6 @@ if (!defined('_PS_VERSION_')) {
     exit;
 }
 
-require_once dirname(__FILE__) . '/../vendor/autoload.php';
-
 class SynchProductsToAiSmartTalk
 {
     private $forceSync = false;
@@ -164,45 +162,29 @@ class SynchProductsToAiSmartTalk
 
     private function postToApi($documentDatas)
     {
-        // Use OAuthHandler for backend API URL and credentials
-        $aiSmartTalkUrl = OAuthHandler::getBackendApiUrl();
-        $chatModelId = OAuthHandler::getChatModelId() ?? \Configuration::get('CHAT_MODEL_ID');
-        $chatModelToken = OAuthHandler::getAccessToken() ?? \Configuration::get('CHAT_MODEL_TOKEN');
+        $client = ApiClient::fromConfig();
 
-        $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL, $aiSmartTalkUrl . '/api/document/source');
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode([
+        $response = $client->post('/api/document/source', [
             'documentDatas' => $documentDatas,
-            'chatModelId' => $chatModelId,
-            'chatModelToken' => $chatModelToken,
+            'chatModelId' => $client->getChatModelId(),
+            'chatModelToken' => $client->getAccessToken(),
             'source' => 'PRESTASHOP',
-            'siteIdentifier' => OAuthHandler::getSiteIdentifier(),
-        ]));
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type:application/json']);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            'siteIdentifier' => $client->getSiteIdentifier(),
+        ]);
 
-        $result = curl_exec($ch);
-        if ($result === false) {
-            \Configuration::updateValue('AI_SMART_TALK_ERROR', curl_error($ch));
-            curl_close($ch);
-
-            return false;
-        } else {
-            \Configuration::deleteByName('AI_SMART_TALK_ERROR');
-        }
-
-        curl_close($ch);
-
-        $response = json_decode($result, true);
-        if (isset($response['status']) && $response['status'] == 'error') {
-            \Configuration::updateValue('AI_SMART_TALK_ERROR', $response['message']);
-
+        if (!$response->isSuccess()) {
+            \Configuration::updateValue('AI_SMART_TALK_ERROR', $response->error ?: 'HTTP ' . $response->httpCode);
             return false;
         }
 
-        return $result;
+        \Configuration::deleteByName('AI_SMART_TALK_ERROR');
+
+        if ($response->get('status') === 'error') {
+            \Configuration::updateValue('AI_SMART_TALK_ERROR', $response->get('message'));
+            return false;
+        }
+
+        return $response->body;
     }
 
     private function getProductsToSynchronize()
