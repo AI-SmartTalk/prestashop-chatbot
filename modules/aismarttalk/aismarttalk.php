@@ -47,7 +47,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.4.1';
+        $this->version = '3.4.2';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -358,10 +358,11 @@ class AiSmartTalk extends Module
             $chatModelId, $lang, $frontendApiUrl, $cdnUrl, $wsUrl, $embedConfig
         );
 
-        // Extract avatar URLs for admin display
+        // Extract avatar URLs and chat model info for admin display
         $embedConfigAvatarUrl = ChatbotSettingsBuilder::getEmbedConfigAvatarUrl($embedConfig);
         $localAvatarUrl = Configuration::get('AI_SMART_TALK_AVATAR_URL') ?: '';
         $effectiveAvatarUrl = !empty($localAvatarUrl) ? $localAvatarUrl : $embedConfigAvatarUrl;
+        $chatModelInfo = $this->fetchChatModelInfo();
 
         // Get cache metadata for display
         $cacheMetadata = AiSmartTalkCache::getMetadata('embed_config');
@@ -422,7 +423,9 @@ class AiSmartTalk extends Module
             'avatarUrl' => $localAvatarUrl,
             'embedConfigAvatarUrl' => $embedConfigAvatarUrl,
             'effectiveAvatarUrl' => $effectiveAvatarUrl,
-            'chatModelAvatarUrl' => $this->fetchChatModelAvatar() ?: '',
+            'chatModelAvatarUrl' => $chatModelInfo['avatarUrl'] ?: '',
+            'chatModelName' => $chatModelInfo['name']
+                ?: (is_array($embedConfig) && !empty($embedConfig['name']) ? $embedConfig['name'] : ''),
             'buttonPosition' => Configuration::get('AI_SMART_TALK_BUTTON_POSITION') ?: '',
             'chatSize' => Configuration::get('AI_SMART_TALK_CHAT_SIZE') ?: '',
             'colorMode' => Configuration::get('AI_SMART_TALK_COLOR_MODE') ?: '',
@@ -634,34 +637,52 @@ class AiSmartTalk extends Module
     }
 
     /**
-     * Fetch the chat model avatar from the API with caching
+     * Fetch the chat model info (avatar + name) from the API with caching
      *
      * @param bool $forceRefresh Force refresh from API
-     * @return string|null The avatar URL or null if not available
+     * @return array{avatarUrl: string|null, name: string|null}
      */
-    private function fetchChatModelAvatar(bool $forceRefresh = false)
+    private function fetchChatModelInfo(bool $forceRefresh = false): array
     {
+        $default = ['avatarUrl' => null, 'name' => null];
+
         if (!$forceRefresh) {
-            $cached = AiSmartTalkCache::get('chat_model_avatar');
-            if ($cached !== null) {
+            $cached = AiSmartTalkCache::get('chat_model_info');
+            if (is_array($cached)) {
                 return $cached;
             }
         }
 
         $client = ApiClient::fromConfig();
         if (!$client->hasCredentials()) {
-            return null;
+            return $default;
         }
 
         $response = $client->get('/api/v1/chatModel/' . urlencode($client->getChatModelId()) . '/avatar');
 
-        $avatarUrl = $response->get('data.avatarUrl');
-        if ($response->isSuccess() && $avatarUrl) {
-            AiSmartTalkCache::set('chat_model_avatar', $avatarUrl, 3600);
-            return $avatarUrl;
+        if (!$response->isSuccess()) {
+            return $default;
         }
 
-        return null;
+        $info = [
+            'avatarUrl' => $response->get('data.avatarUrl') ?: null,
+            'name' => $response->get('data.chatModelName') ?: null,
+        ];
+
+        AiSmartTalkCache::set('chat_model_info', $info, 3600);
+
+        return $info;
+    }
+
+    /**
+     * Fetch the chat model avatar from the API with caching (convenience wrapper)
+     *
+     * @param bool $forceRefresh Force refresh from API
+     * @return string|null The avatar URL or null if not available
+     */
+    private function fetchChatModelAvatar(bool $forceRefresh = false)
+    {
+        return $this->fetchChatModelInfo($forceRefresh)['avatarUrl'];
     }
 
     /**
