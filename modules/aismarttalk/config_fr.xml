@@ -3,13 +3,11 @@
     <name>aismarttalk</name>
     <displayName><![CDATA[AI SmartTalk]]></displayName>
     <version><![CDATA[3.5.0]]></version>
-    <description><![CDATA[https://aismarttalk.tech/]]></description>
+    <description><![CDATA[Int&eacute;grez le chatbot AI SmartTalk pour am&eacute;liorer le support client et l&#039;engagement.]]></description>
     <author><![CDATA[AI SmartTalk]]></author>
     <tab><![CDATA[front_office_features]]></tab>
+	<confirmUninstall><![CDATA[Êtes-vous sûr de vouloir désinstaller ?]]></confirmUninstall>
     <is_configurable>1</is_configurable>
     <need_instance>0</need_instance>
-    <limited_countries></limited_countries>
-    <translations>
-        <translation key="Modules.Aismarttalk.Admin" dir="translations" />
-    </translations>
+	<limited_countries></limited_countries>
 </module>

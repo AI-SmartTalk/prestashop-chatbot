@@ -55,17 +55,13 @@
                       </div>
                       <div class="form-group">
                           <label class="control-label col-lg-4">
-                              {l s='Encrypt Payloads' mod='aismarttalk'}
+                              {l s='Payload Encryption' mod='aismarttalk'}
                           </label>
                           <div class="col-lg-8">
-                              <div class="switch prestashop-switch">
-                                  <input type="radio" name="AI_SMART_TALK_ENCRYPT_PAYLOADS" id="AI_SMART_TALK_ENCRYPT_PAYLOADS_on" value="1" {if $encryptPayloads}checked="checked"{/if}>
-                                  <label for="AI_SMART_TALK_ENCRYPT_PAYLOADS_on">{l s='Yes' mod='aismarttalk'}</label>
-                                  <input type="radio" name="AI_SMART_TALK_ENCRYPT_PAYLOADS" id="AI_SMART_TALK_ENCRYPT_PAYLOADS_off" value="0" {if !$encryptPayloads}checked="checked"{/if}>
-                                  <label for="AI_SMART_TALK_ENCRYPT_PAYLOADS_off">{l s='No' mod='aismarttalk'}</label>
-                                  <a class="slide-button btn"></a>
-                              </div>
-                              <p class="help-block">{l s='AES-256-GCM encryption for customer data in transit' mod='aismarttalk'}</p>
+                              <p class="form-control-static" style="color: #27ae60; font-weight: 600;">
+                                  <i class="icon icon-check-circle"></i> {l s='Always active' mod='aismarttalk'}
+                              </p>
+                              <p class="help-block">{l s='All data is encrypted with AES-256-GCM before transmission.' mod='aismarttalk'}</p>
                           </div>
                       </div>
                       {/if}

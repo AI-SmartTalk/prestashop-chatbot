@@ -30,28 +30,18 @@ class PayloadEncryptor
     private const HKDF_INFO = 'aismarttalk-payload-encryption-v1';
 
     /**
-     * Check if payload encryption is enabled.
-     *
-     * @return bool
-     */
-    public static function isEnabled()
-    {
-        return (bool) \Configuration::get('AI_SMART_TALK_ENCRYPT_PAYLOADS');
-    }
-
-    /**
      * Encrypt a payload array. Returns the encrypted envelope.
-     * If encryption is disabled, returns null (caller should send plain).
+     * Returns null only if credentials are missing or encryption fails.
      *
      * @param array  $payload     The data to encrypt (will be JSON-encoded)
      * @param string $token       The access token (used to derive key)
      * @param string $chatModelId The chat model ID (used as HKDF salt)
      *
-     * @return array|null Encrypted envelope {v, iv, tag, data} or null if disabled
+     * @return array|null Encrypted envelope {v, iv, tag, data} or null on failure
      */
     public static function encrypt(array $payload, $token, $chatModelId)
     {
-        if (!self::isEnabled() || empty($token) || empty($chatModelId)) {
+        if (empty($token) || empty($chatModelId)) {
             return null;
         }
 
