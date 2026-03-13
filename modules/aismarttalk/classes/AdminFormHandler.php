@@ -111,15 +111,18 @@ class AdminFormHandler
     {
         $output = '';
 
+        // Display flash messages from previous action redirect
+        $output .= $this->displayFlashMessages();
+
         if (\Tools::getValue('resetConfiguration') === $this->module->name) {
             $this->resetConfiguration();
         }
 
         if (\Tools::getValue('disconnectOAuth')) {
             OAuthHandler::disconnect();
-            $output .= $this->module->displayConfirmation(
+            $this->flashAndRedirect($this->module->displayConfirmation(
                 $this->trans('Successfully disconnected from AI SmartTalk.', [], 'Modules.Aismarttalk.Admin')
-            );
+            ));
         }
 
         if (\Tools::getValue('connectOAuth')) {
@@ -129,22 +132,22 @@ class AdminFormHandler
 
         if (\Tools::getValue('forceSync')) {
             $force = \Tools::getValue('forceSync') === 'true';
-            $output .= $this->handleProductSync($force);
+            $this->flashAndRedirect($this->handleProductSync($force));
         }
 
         if (\Tools::getValue('syncCustomers')) {
-            $output .= $this->handleCustomerSync();
+            $this->flashAndRedirect($this->handleCustomerSync());
         }
 
         if (\Tools::getValue('clean')) {
             (new CleanProductDocuments())();
-            $output .= $this->module->displayConfirmation(
+            $this->flashAndRedirect($this->module->displayConfirmation(
                 $this->trans('Deleted and inactive products have been cleaned.', [], 'Modules.Aismarttalk.Admin')
-            );
+            ));
         }
 
         if (\Tools::getValue('refreshEmbedConfig')) {
-            $output .= $this->handleRefreshEmbedConfig();
+            $this->flashAndRedirect($this->handleRefreshEmbedConfig());
         }
 
         if (\Tools::getValue('resetWhiteLabel')) {
@@ -153,17 +156,17 @@ class AdminFormHandler
             \Configuration::updateValue('AI_SMART_TALK_CDN', \AiSmartTalk::DEFAULT_CDN_URL);
             \Configuration::updateValue('AI_SMART_TALK_WS', \AiSmartTalk::DEFAULT_WS_URL);
             OAuthHandler::registerRedirectUri($this->context);
-            $output .= $this->module->displayConfirmation(
+            $this->flashAndRedirect($this->module->displayConfirmation(
                 $this->trans('URLs reset to default values.', [], 'Modules.Aismarttalk.Admin')
-            );
+            ));
         }
 
         if (\Tools::getValue('resetLocalCustomizations')) {
             $this->clearLocalCustomizations();
             AiSmartTalkCache::delete('embed_config');
-            $output .= $this->module->displayConfirmation(
+            $this->flashAndRedirect($this->module->displayConfirmation(
                 $this->trans('Local customizations cleared. Using AI SmartTalk defaults.', [], 'Modules.Aismarttalk.Admin')
-            );
+            ));
         }
 
         return $output;
@@ -626,6 +629,44 @@ class AdminFormHandler
         return $this->module->displayError(
             $this->trans('Failed to synchronize configuration from AI SmartTalk.', [], 'Modules.Aismarttalk.Admin')
         );
+    }
+
+    // =========================================================================
+    // Flash message helpers (PRG pattern)
+    // =========================================================================
+
+    /**
+     * Store HTML message(s) in Configuration and redirect to clean URL.
+     * Prevents action re-execution on browser refresh.
+     *
+     * @param string $html Rendered HTML from displayConfirmation/displayError/displayWarning
+     */
+    private function flashAndRedirect(string $html): void
+    {
+        \Configuration::updateValue('AI_SMART_TALK_FLASH_MSG', $html, true);
+
+        $redirectUrl = $this->context->link->getAdminLink('AdminModules', true, [], [
+            'configure' => $this->module->name,
+        ]);
+        \Tools::redirect($redirectUrl);
+        exit;
+    }
+
+    /**
+     * Display and clear any stored flash messages.
+     *
+     * @return string HTML output
+     */
+    private function displayFlashMessages(): string
+    {
+        $html = \Configuration::get('AI_SMART_TALK_FLASH_MSG');
+        if (!empty($html)) {
+            \Configuration::deleteByName('AI_SMART_TALK_FLASH_MSG');
+
+            return (string) $html;
+        }
+
+        return '';
     }
 
     // =========================================================================
