@@ -153,10 +153,10 @@ class ChatbotSettingsBuilder
     public static function applyCustomizationOverrides(array $settings): array
     {
         // Text/select overrides (only if non-empty)
+        // Note: avatarUrl is NOT overridden locally — the platform embed config is the source of truth
         $textOverrides = [
             'AI_SMART_TALK_BUTTON_TEXT' => 'buttonText',
             'AI_SMART_TALK_BUTTON_TYPE' => 'buttonType',
-            'AI_SMART_TALK_AVATAR_URL' => 'avatarUrl',
             'AI_SMART_TALK_BUTTON_POSITION' => 'position',
             'AI_SMART_TALK_CHAT_SIZE' => 'chatSize',
             'AI_SMART_TALK_COLOR_MODE' => 'initialColorMode',

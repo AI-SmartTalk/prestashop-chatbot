@@ -218,8 +218,7 @@ class SynchProductsToAiSmartTalk
             LEFT JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product
                 AND aps.id_shop = ' . $defaultShopId . '
             WHERE pl.id_lang = ' . $defaultLangId . ' AND cl.id_lang = ' . $defaultLangId . ' AND p.active = 1
-                AND COALESCE(sa.quantity, 0) > 0
-            GROUP BY p.id_product';
+                AND COALESCE(sa.quantity, 0) > 0';
 
         // If not forcing sync, only get products that are not yet synced
         if ($this->forceSync === false) {
@@ -237,6 +236,8 @@ class SynchProductsToAiSmartTalk
         if (!empty($categoryFilter)) {
             $sql .= $categoryFilter;
         }
+
+        $sql .= ' GROUP BY p.id_product';
 
         $products = \Db::getInstance()->executeS($sql);
 

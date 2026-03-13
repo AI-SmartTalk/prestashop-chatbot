@@ -268,12 +268,14 @@ class AdminFormHandler
             $buttonType = '';
         }
 
-        // Handle avatar file upload
-        $avatarUrl = \Configuration::get('AI_SMART_TALK_AVATAR_URL') ?: '';
+        // Handle avatar file upload (uploaded to platform API, not stored locally)
         if (isset($_FILES['AI_SMART_TALK_AVATAR_FILE']) && $_FILES['AI_SMART_TALK_AVATAR_FILE']['error'] === UPLOAD_ERR_OK) {
             $uploadResult = $this->uploadChatModelAvatarFile($_FILES['AI_SMART_TALK_AVATAR_FILE']);
             if ($uploadResult['success']) {
-                $avatarUrl = $uploadResult['avatarUrl'];
+                // Clear any stale local avatar URL — the platform is the source of truth
+                \Configuration::updateValue('AI_SMART_TALK_AVATAR_URL', '');
+                AiSmartTalkCache::delete('embed_config');
+                AiSmartTalkCache::delete('chat_model_info');
                 $output .= $this->module->displayConfirmation(
                     $this->trans('Avatar uploaded successfully.', [], 'Modules.Aismarttalk.Admin')
                 );
@@ -346,9 +348,9 @@ class AdminFormHandler
         }
 
         // Save all customization settings
+        // Note: AI_SMART_TALK_AVATAR_URL is not saved here — avatar is managed on the platform
         \Configuration::updateValue('AI_SMART_TALK_BUTTON_TEXT', pSQL($buttonText));
         \Configuration::updateValue('AI_SMART_TALK_BUTTON_TYPE', $buttonType);
-        \Configuration::updateValue('AI_SMART_TALK_AVATAR_URL', pSQL($avatarUrl));
         \Configuration::updateValue('AI_SMART_TALK_BUTTON_POSITION', $buttonPosition);
         \Configuration::updateValue('AI_SMART_TALK_CHAT_SIZE', $chatSize);
         \Configuration::updateValue('AI_SMART_TALK_COLOR_MODE', $colorMode);
@@ -404,9 +406,6 @@ class AdminFormHandler
             $consentFilter = 'all';
         }
         \Configuration::updateValue('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT', $consentFilter);
-
-        $encryptPayloads = (bool) \Tools::getValue('AI_SMART_TALK_ENCRYPT_PAYLOADS');
-        \Configuration::updateValue('AI_SMART_TALK_ENCRYPT_PAYLOADS', $encryptPayloads);
 
         // Handle sync filters in the same form submission
         $categoryMode = \Tools::getValue('sync_filter_category_mode', '');
@@ -604,6 +603,7 @@ class AdminFormHandler
     private function handleRefreshEmbedConfig(): string
     {
         AiSmartTalkCache::delete('embed_config');
+        AiSmartTalkCache::delete('chat_model_info');
 
         $client = ApiClient::fromConfig();
         if (!$client->hasCredentials()) {

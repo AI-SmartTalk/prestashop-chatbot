@@ -527,6 +527,102 @@ a.ast-btn-warning:hover {
     background: #e2e8f0;
     color: #334155 !important;
 }
+/* Confirm Modal */
+.ast-modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 99999;
+    justify-content: center;
+    align-items: center;
+    animation: ast-fade-in 0.2s ease;
+}
+.ast-modal-overlay.active { display: flex; }
+@keyframes ast-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ast-modal-in { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+.ast-modal {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.2);
+    max-width: 440px;
+    width: 90%;
+    animation: ast-modal-in 0.25s ease;
+    overflow: hidden;
+}
+.ast-modal-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin: 0 auto 16px;
+}
+.ast-modal-icon.warning {
+    background: linear-gradient(135deg, #fef3c7, #fde68a);
+    color: #d97706;
+}
+.ast-modal-icon.clean {
+    background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
+    color: #64748b;
+}
+.ast-modal-header {
+    padding: 28px 28px 0;
+    text-align: center;
+}
+.ast-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+}
+.ast-modal-body {
+    padding: 12px 28px 0;
+    text-align: center;
+}
+.ast-modal-body p {
+    margin: 0;
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.6;
+}
+.ast-modal-footer {
+    padding: 24px 28px 28px;
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+.ast-modal-btn {
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s ease;
+}
+.ast-modal-btn:hover { transform: translateY(-1px); }
+.ast-modal-btn.cancel {
+    background: #f1f5f9;
+    color: #475569;
+}
+.ast-modal-btn.cancel:hover { background: #e2e8f0; }
+.ast-modal-btn.confirm-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+.ast-modal-btn.confirm-warning:hover { box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4); }
+.ast-modal-btn.confirm-clean {
+    background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(100, 116, 139, 0.3);
+}
+.ast-modal-btn.confirm-clean:hover { box-shadow: 0 6px 16px rgba(100, 116, 139, 0.4); }
+
 .ast-action-customer {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff !important;
@@ -1862,6 +1958,20 @@ a.ast-btn-success:hover {
                                 </label>
                             </div>
 
+                            {if $chatModelId}
+                            <div class="ast-avatar-hint" id="ast-avatar-hint" style="display:{if $buttonType == 'avatar'}flex{else}none{/if}; align-items:center; gap:6px; margin-top:12px; padding:8px 12px; background:#f0f4f8; border-radius:6px; font-size:12px; color:#637381;">
+                                <i class="icon icon-external-link" style="font-size:11px; color:#95a5b6;"></i>
+                                <span>
+                                    {l s='Customize your avatar (or generate one with AI) on' mod='aismarttalk'}
+                                    <a href="https://aismarttalk.tech/{$currentLang|escape:'html':'UTF-8'}/admin/chatModel/{$chatModelId|escape:'html':'UTF-8'}/settings/theme"
+                                       target="_blank" rel="noopener noreferrer"
+                                       style="color:#3f8cff; text-decoration:none; font-weight:500;">
+                                        AI SmartTalk
+                                    </a>
+                                </span>
+                            </div>
+                            {/if}
+
                             <div class="ast-form-group" style="margin-top: 20px;">
                                 <label class="ast-label">{l s='Button Text' mod='aismarttalk'}</label>
                                 <input type="text" name="AI_SMART_TALK_BUTTON_TEXT" value="{$buttonText|escape:'html':'UTF-8'}" class="ast-input" placeholder="{l s='e.g., Need help?' mod='aismarttalk'}">
@@ -2208,13 +2318,10 @@ a.ast-btn-success:hover {
 
                                     <div class="ast-toggle-card">
                                         <div class="ast-toggle-info">
-                                            <h4><i class="icon icon-lock" style="color: #667eea; margin-right: 4px;"></i> {l s='Encrypt Payloads' mod='aismarttalk'}</h4>
-                                            <p>{l s='AES-256-GCM encryption for data in transit' mod='aismarttalk'}</p>
+                                            <h4><i class="icon icon-lock" style="color: #667eea; margin-right: 4px;"></i> {l s='Payload Encryption' mod='aismarttalk'}</h4>
+                                            <p>{l s='All data is encrypted with AES-256-GCM before transmission.' mod='aismarttalk'}</p>
                                         </div>
-                                        <label class="ast-switch">
-                                            <input type="checkbox" name="AI_SMART_TALK_ENCRYPT_PAYLOADS" value="1" {if $encryptPayloads}checked{/if}>
-                                            <span class="ast-switch-slider"></span>
-                                        </label>
+                                        <span style="color: #27ae60; font-weight: 600; font-size: 13px;"><i class="icon icon-check-circle" style="margin-right: 4px;"></i>{l s='Always active' mod='aismarttalk'}</span>
                                     </div>
                                 </div>
                                 {/if}
@@ -2242,11 +2349,11 @@ a.ast-btn-success:hover {
                         </div>
                         <div class="ast-card-body" style="padding: 12px 24px 24px;">
                             <div class="ast-sync-actions">
-                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;forceSync=true" class="ast-action-btn ast-action-product">
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;forceSync=true" class="ast-action-btn ast-action-product" {if $hasExistingProductSync}onclick="return astConfirm(event, this.href, '{l s='Sync All Products' mod='aismarttalk' js=1}', '{l s='This will re-send ALL your products to AI SmartTalk, not just new ones. Existing products will be updated.' mod='aismarttalk' js=1}', 'warning');"{/if}>
                                     <span class="ast-action-icon"><i class="icon icon-refresh"></i></span>
                                     <span class="ast-action-label">{l s='Sync All Products' mod='aismarttalk'}</span>
                                 </a>
-                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;clean=1" class="ast-action-btn ast-action-clean">
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;clean=1" class="ast-action-btn ast-action-clean" {if $hasExistingProductSync}onclick="return astConfirm(event, this.href, '{l s='Clean Deleted Products' mod='aismarttalk' js=1}', '{l s='This will remove deleted and inactive products from AI SmartTalk. Active products are not affected.' mod='aismarttalk' js=1}', 'clean');"{/if}>
                                     <span class="ast-action-icon"><i class="icon icon-trash"></i></span>
                                     <span class="ast-action-label">{l s='Clean Deleted' mod='aismarttalk'}</span>
                                 </a>
@@ -2261,7 +2368,7 @@ a.ast-btn-success:hover {
                         </div>
                         <div class="ast-card-body" style="padding: 12px 24px 24px;">
                             <div class="ast-sync-actions">
-                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;syncCustomers=1" class="ast-action-btn ast-action-customer">
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;syncCustomers=1" class="ast-action-btn ast-action-customer" {if $hasExistingCustomerSync}onclick="return astConfirm(event, this.href, '{l s='Sync All Customers' mod='aismarttalk' js=1}', '{l s='This will re-send ALL your customers to AI SmartTalk, not just new ones. Existing customers will be updated.' mod='aismarttalk' js=1}', 'warning');"{/if}>
                                     <span class="ast-action-icon"><i class="icon icon-refresh"></i></span>
                                     <span class="ast-action-label">{l s='Sync All Customers' mod='aismarttalk'}</span>
                                 </a>
@@ -2684,10 +2791,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===== BUTTON TYPE SELECTOR =====
     var buttonTypes = document.querySelectorAll('.ast-button-type');
+    var avatarHint = document.getElementById('ast-avatar-hint');
     buttonTypes.forEach(function(btn) {
         btn.addEventListener('click', function() {
             buttonTypes.forEach(function(b) { b.classList.remove('selected'); });
             this.classList.add('selected');
+            if (avatarHint) {
+                var val = this.querySelector('input[type="radio"]').value;
+                avatarHint.style.display = (val === 'avatar') ? 'flex' : 'none';
+            }
         });
     });
 
@@ -2910,7 +3022,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // On page load: expand parents of checked items
+        // On page load: expand parents of checked items and show their siblings
+        var expandedParents = {};
         Object.values(treeData).forEach(function(data) {
             if (data.checkbox && data.checkbox.checked) {
                 data.node.style.display = 'flex';
@@ -2921,11 +3034,22 @@ document.addEventListener('DOMContentLoaded', function() {
                         parentData.node.style.display = 'flex';
                         var toggle = parentData.node.querySelector('.ast-tree-toggle');
                         if (toggle) toggle.classList.add('expanded');
+                        expandedParents[parentId] = true;
                         parentId = parentData.parentId;
                     } else {
                         parentId = null;
                     }
                 }
+            }
+        });
+        // Show all direct children of expanded parents (not just checked ones)
+        Object.keys(expandedParents).forEach(function(parentId) {
+            var parentData = treeData[parseInt(parentId)];
+            if (parentData && parentData.childIds) {
+                parentData.childIds.forEach(function(childId) {
+                    var childData = treeData[childId];
+                    if (childData) childData.node.style.display = 'flex';
+                });
             }
         });
 
@@ -3359,6 +3483,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
 });
 
+</script>
+
+{* ===== CONFIRM MODAL ===== *}
+<div class="ast-modal-overlay" id="astConfirmModal">
+    <div class="ast-modal">
+        <div class="ast-modal-header">
+            <div class="ast-modal-icon" id="astConfirmIcon"><i class="icon icon-warning"></i></div>
+            <h3 id="astConfirmTitle"></h3>
+        </div>
+        <div class="ast-modal-body">
+            <p id="astConfirmMessage"></p>
+        </div>
+        <div class="ast-modal-footer">
+            <button type="button" class="ast-modal-btn cancel" onclick="astConfirmClose();">{l s='Cancel' mod='aismarttalk'}</button>
+            <a href="#" class="ast-modal-btn" id="astConfirmBtn">{l s='Continue' mod='aismarttalk'}</a>
+        </div>
+    </div>
+</div>
+<script>
+function astConfirm(e, url, title, message, type) {
+    e.preventDefault();
+    var modal = document.getElementById('astConfirmModal');
+    document.getElementById('astConfirmTitle').textContent = title;
+    document.getElementById('astConfirmMessage').textContent = message;
+    var icon = document.getElementById('astConfirmIcon');
+    icon.className = 'ast-modal-icon ' + type;
+    icon.innerHTML = type === 'clean' ? '<i class="icon icon-trash"></i>' : '<i class="icon icon-warning"></i>';
+    var btn = document.getElementById('astConfirmBtn');
+    btn.className = 'ast-modal-btn confirm-' + type;
+    btn.href = url;
+    modal.classList.add('active');
+    return false;
+}
+function astConfirmClose() {
+    document.getElementById('astConfirmModal').classList.remove('active');
+}
+document.getElementById('astConfirmModal').addEventListener('click', function(e) {
+    if (e.target === this) astConfirmClose();
+});
 </script>
 
 {* ===== CHATBOT PREVIEW IN ADMIN ===== *}

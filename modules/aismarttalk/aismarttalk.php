@@ -47,7 +47,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.4.2';
+        $this->version = '3.5.0';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -85,7 +85,6 @@ class AiSmartTalk extends Module
             'AI_SMART_TALK_PRODUCT_SYNC' => false,
             'AI_SMART_TALK_CUSTOMER_SYNC' => false,
             'AI_SMART_TALK_CUSTOMER_SYNC_CONSENT' => 'all',
-            'AI_SMART_TALK_ENCRYPT_PAYLOADS' => true,
         ];
 
         foreach ($defaults as $key => $value) {
@@ -247,7 +246,6 @@ class AiSmartTalk extends Module
             // Customer sync
             && Configuration::deleteByName('AI_SMART_TALK_CUSTOMER_SYNC')
             && Configuration::deleteByName('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT')
-            && Configuration::deleteByName('AI_SMART_TALK_ENCRYPT_PAYLOADS')
             // GDPR settings
             && Configuration::deleteByName('AI_SMART_TALK_GDPR_ENABLED')
             && Configuration::deleteByName('AI_SMART_TALK_GDPR_PRIVACY_URL')
@@ -358,11 +356,8 @@ class AiSmartTalk extends Module
             $chatModelId, $lang, $frontendApiUrl, $cdnUrl, $wsUrl, $embedConfig
         );
 
-        // Extract avatar URLs and chat model info for admin display
-        $embedConfigAvatarUrl = ChatbotSettingsBuilder::getEmbedConfigAvatarUrl($embedConfig);
-        $localAvatarUrl = Configuration::get('AI_SMART_TALK_AVATAR_URL') ?: '';
-        $effectiveAvatarUrl = !empty($localAvatarUrl) ? $localAvatarUrl : $embedConfigAvatarUrl;
-        $chatModelInfo = $this->fetchChatModelInfo();
+        // Fetch chat model info (always fresh in admin — cheap API call, avoids stale avatar)
+        $chatModelInfo = $this->fetchChatModelInfo(true);
 
         // Get cache metadata for display
         $cacheMetadata = AiSmartTalkCache::getMetadata('embed_config');
@@ -388,9 +383,10 @@ class AiSmartTalk extends Module
 
             // Sync settings
             'productSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC'),
+            'hasExistingProductSync' => !empty(AiSmartTalkProductSync::getSyncedProductIds((int) $this->context->shop->id)),
             'customerSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC'),
+            'hasExistingCustomerSync' => !empty(AiSmartTalkCustomerSync::getSyncedCustomerIds()),
             'customerSyncConsent' => Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT') ?: 'all',
-            'encryptPayloads' => (bool) Configuration::get('AI_SMART_TALK_ENCRYPT_PAYLOADS'),
 
             // Sync filter settings
             'syncFilterConfig' => $syncFilterConfig,
@@ -420,9 +416,6 @@ class AiSmartTalk extends Module
             // Chatbot customization settings
             'buttonText' => Configuration::get('AI_SMART_TALK_BUTTON_TEXT') ?: '',
             'buttonType' => Configuration::get('AI_SMART_TALK_BUTTON_TYPE') ?: '',
-            'avatarUrl' => $localAvatarUrl,
-            'embedConfigAvatarUrl' => $embedConfigAvatarUrl,
-            'effectiveAvatarUrl' => $effectiveAvatarUrl,
             'chatModelAvatarUrl' => $chatModelInfo['avatarUrl'] ?: '',
             'chatModelName' => $chatModelInfo['name']
                 ?: (is_array($embedConfig) && !empty($embedConfig['name']) ? $embedConfig['name'] : ''),
@@ -1007,8 +1000,11 @@ class AiSmartTalk extends Module
             }
 
             // Sync product if it hasn't been synced yet (new product or restock)
+            // and it matches category filters
+            $shopId = (int) $this->context->shop->id;
             if ((bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')
                 && !AiSmartTalkProductSync::isSynced($idProduct)
+                && SyncFilterHelper::shouldProductBeSynced($idProduct, $shopId)
             ) {
                 $api = new SynchProductsToAiSmartTalk($this->context);
                 $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
@@ -1499,7 +1495,6 @@ class AiSmartTalk extends Module
         $settingsToCheck = [
             'AI_SMART_TALK_BUTTON_TEXT',
             'AI_SMART_TALK_BUTTON_TYPE',
-            'AI_SMART_TALK_AVATAR_URL',
             'AI_SMART_TALK_BUTTON_POSITION',
             'AI_SMART_TALK_CHAT_SIZE',
             'AI_SMART_TALK_COLOR_MODE',
