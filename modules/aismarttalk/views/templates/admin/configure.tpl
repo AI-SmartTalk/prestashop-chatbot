@@ -1656,9 +1656,15 @@ a.ast-btn-success:hover {
                         </div>
                         <div class="ast-card-body">
                             <div class="ast-stat-card" style="margin-bottom: 20px;">
-                                <div class="ast-stat-icon">💬</div>
-                                <div class="ast-stat-label">{l s='Chat Model' mod='aismarttalk'}</div>
-                                <div class="ast-stat-value" style="font-size: 14px; word-break: break-all;">{$chatModelId|escape:'html':'UTF-8'|truncate:20:'...'}</div>
+                                {if $chatModelAvatarUrl}
+                                    <img src="{$chatModelAvatarUrl|escape:'html':'UTF-8'}" alt="" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                                {else}
+                                    <div class="ast-stat-icon">💬</div>
+                                {/if}
+                                <div class="ast-stat-label">{l s='Assistant' mod='aismarttalk'}</div>
+                                <div class="ast-stat-value" style="font-size: 15px;">
+                                    {if $chatModelName}{$chatModelName|escape:'html':'UTF-8'}{else}{$chatModelId|escape:'html':'UTF-8'|truncate:20:'...'}{/if}
+                                </div>
                             </div>
                             <a href="{$backofficeUrl|escape:'html':'UTF-8'}" target="_blank" class="ast-btn ast-btn-primary" style="width: 100%; justify-content: center;">
                                 <i class="icon icon-external-link"></i>
@@ -1801,6 +1807,27 @@ a.ast-btn-success:hover {
 
             {* ===== TAB 2: APPEARANCE ===== *}
             <div class="ast-panel" id="panel-appearance" role="tabpanel">
+                <div class="ast-card" style="margin-bottom: 20px;">
+                    <div class="ast-card-header">
+                        <h3><i class="icon icon-user"></i> {l s='Assistant' mod='aismarttalk'}</h3>
+                    </div>
+                    <div class="ast-card-body">
+                        <div style="display: flex; align-items: center; gap: 16px;">
+                            {if $chatModelAvatarUrl}
+                                <img src="{$chatModelAvatarUrl|escape:'html':'UTF-8'}" alt="" style="width: 48px; height: 48px; border-radius: 50%; object-fit: cover; flex-shrink: 0;">
+                            {else}
+                                <div class="ast-stat-icon" style="flex-shrink: 0;">💬</div>
+                            {/if}
+                            <div>
+                                <div style="font-weight: 600; font-size: 16px; color: #1e293b;">
+                                    {if $chatModelName}{$chatModelName|escape:'html':'UTF-8'}{else}{$chatModelId|escape:'html':'UTF-8'|truncate:20:'...'}{/if}
+                                </div>
+                                <div style="color: #64748b; font-size: 13px; margin-top: 2px;">{l s='Your AI assistant' mod='aismarttalk'}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <form action="{$formAction|escape:'html':'UTF-8'}" method="post" enctype="multipart/form-data">
                     <div class="ast-card">
                         <div class="ast-card-header">
@@ -2627,12 +2654,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // Save to localStorage
             localStorage.setItem('ast_active_tab', this.dataset.tab);
 
-            // Show/hide chatbot widget only on the sync tab
+            // Show/hide chatbot widget only on the appearance tab
             toggleChatbotVisibility(this.dataset.tab);
         });
     });
 
-    // Show/hide chatbot widget only on the sync tab (use a <style> tag to avoid
+    // Show/hide chatbot widget only on the appearance tab (use a <style> tag to avoid
     // toggling display which can re-trigger the widget open animation)
     var astHideStyle = document.createElement('style');
     astHideStyle.id = 'ast-hide-chatbot-widget';
@@ -2645,7 +2672,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function toggleChatbotVisibility(tab) {
-        astHideStyle.disabled = (tab === 'sync');
+        astHideStyle.disabled = (tab === 'appearance');
     }
 
     // Restore last active tab
