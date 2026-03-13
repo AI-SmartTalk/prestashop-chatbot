@@ -26,6 +26,15 @@
     margin: -20px;
     padding: 0;
 }
+/* Override PrestaShop 1.7 admin theme h3/h4 styles */
+#content.bootstrap .ast-app h3:not(.modal-title),
+#content.bootstrap .ast-app h4:not(.modal-title) {
+    background-color: transparent;
+    border-bottom: none;
+    margin: 0;
+    padding: 0;
+    line-height: normal;
+}
 
 /* Header */
 .ast-header {
@@ -225,19 +234,14 @@
     align-items: center;
     justify-content: space-between;
 }
-.ast-card-header h3,
-#content.bootstrap .ast-card-header h3:not(.modal-title) {
+.ast-card-header h3 {
     margin: 0;
-    padding: 0;
     font-size: 16px;
     font-weight: 600;
     color: #1e293b;
     display: flex;
     align-items: center;
     gap: 10px;
-    background-color: transparent;
-    border-bottom: none;
-    line-height: normal;
 }
 .ast-card-header h3 i {
     color: #667eea;
