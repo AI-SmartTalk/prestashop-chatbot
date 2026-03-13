@@ -1458,7 +1458,7 @@ class AiSmartTalk extends Module
     private function getCleanFormAction(): string
     {
         $uri = $_SERVER['REQUEST_URI'];
-        $actionParams = ['forceSync', 'syncCustomers', 'clean', 'refreshEmbedConfig', 'resetLocalCustomizations', 'disconnectOAuth', 'connectOAuth', 'resetConfiguration'];
+        $actionParams = ['forceSync', 'syncCustomers', 'clean', 'refreshEmbedConfig', 'resetLocalCustomizations', 'resetWhiteLabel', 'disconnectOAuth', 'connectOAuth', 'resetConfiguration'];
         $parsed = parse_url($uri);
         if (!isset($parsed['query'])) {
             return $uri;

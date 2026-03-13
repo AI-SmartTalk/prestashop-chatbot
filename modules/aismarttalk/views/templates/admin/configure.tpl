@@ -225,14 +225,19 @@
     align-items: center;
     justify-content: space-between;
 }
-.ast-card-header h3 {
+.ast-card-header h3,
+#content.bootstrap .ast-card-header h3:not(.modal-title) {
     margin: 0;
+    padding: 0;
     font-size: 16px;
     font-weight: 600;
     color: #1e293b;
     display: flex;
     align-items: center;
     gap: 10px;
+    background-color: transparent;
+    border-bottom: none;
+    line-height: normal;
 }
 .ast-card-header h3 i {
     color: #667eea;
@@ -431,6 +436,9 @@ a.ast-btn-warning:hover {
     align-items: center;
     min-height: 80px;
 }
+.ast-sync-card .ast-card-body > form {
+    width: 100%;
+}
 .ast-sync-card .ast-toggle-card {
     width: 100%;
 }
@@ -450,12 +458,12 @@ a.ast-btn-warning:hover {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin: 0 0 16px;
+    margin: 0 0 14px;
     font-size: 15px;
     font-weight: 600;
     color: #334155;
-    padding-bottom: 12px;
-    border-bottom: 2px solid #f1f5f9;
+    padding-bottom: 0;
+    border-bottom: none;
 }
 .ast-sync-section-title i {
     color: #667eea;
@@ -466,8 +474,8 @@ a.ast-btn-warning:hover {
     display: flex;
     align-items: center;
     gap: 16px;
-    margin-top: 24px;
-    padding-top: 20px;
+    margin-top: 20px;
+    padding-top: 16px;
     border-top: 2px solid #f1f5f9;
 }
 .ast-sync-save-hint {
@@ -479,9 +487,6 @@ a.ast-btn-warning:hover {
 .ast-sync-actions-card {
     background: linear-gradient(135deg, #fafbff 0%, #f8fafc 100%);
     border: 2px dashed #e2e8f0;
-}
-.ast-sync-actions-card .ast-card-header {
-    border-bottom-style: dashed;
 }
 .ast-sync-actions {
     display: flex;
@@ -1505,12 +1510,27 @@ a.ast-btn-success:hover {
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Keywords from PrestaShop core "untrusted module" warnings (all languages)
+        var psNoisePatterns = [
+            'prestashop addons', 'n\'a pas pu être vérifié', 'not been verified',
+            'nicht verifiziert', 'no compatible con tu país', 'not compatible with your country',
+            'n\'est pas compatible avec votre pays', 'confirmmodule', 'vous êtes sur le point',
+            'could not be verified', 'about to install'
+        ];
         var alerts = document.querySelectorAll('.module_confirmation, .module_error, .module_warning, .alert.alert-success, .alert.alert-danger, .alert.alert-warning');
         alerts.forEach(function(el) {
+            var text = el.textContent.trim().replace(/^[\s\u00d7]+/, '').trim();
+            // Skip PrestaShop core "untrusted module" alerts
+            var lc = text.toLowerCase();
+            for (var i = 0; i < psNoisePatterns.length; i++) {
+                if (lc.indexOf(psNoisePatterns[i]) !== -1) {
+                    el.style.display = 'none';
+                    return;
+                }
+            }
             var type = 'success';
             if (el.classList.contains('module_error') || el.classList.contains('alert-danger')) type = 'error';
             else if (el.classList.contains('module_warning') || el.classList.contains('alert-warning')) type = 'warning';
-            var text = el.textContent.trim().replace(/^[\s\u00d7]+/, '').trim();
             if (text) showToast(text, type);
             el.style.display = 'none';
         });
@@ -2045,14 +2065,14 @@ a.ast-btn-success:hover {
 
                 {* === Row 2: Settings (inside a wrapper card with Save inside) === *}
                 {if $productSyncEnabled || $customerSyncEnabled}
-                <div class="ast-card">
-                    <div class="ast-card-header">
+                <div class="ast-card" style="background: #fff;">
+                    <div class="ast-card-header" style="border-bottom: none; padding: 20px 24px 0; background: transparent;">
                         <h3><i class="icon icon-cog"></i> {l s='Sync Settings' mod='aismarttalk'}</h3>
                         {if $syncFilterHasActiveFilters}
                             <span class="ast-filter-badge">{l s='Filters active' mod='aismarttalk'}</span>
                         {/if}
                     </div>
-                    <div class="ast-card-body">
+                    <div class="ast-card-body" style="padding: 8px 24px 24px;">
                         <form action="{$formAction|escape:'html':'UTF-8'}" method="post" id="sync-settings-form">
                             <div class="ast-grid ast-grid-2 ast-sync-settings-row">
 
@@ -2186,10 +2206,10 @@ a.ast-btn-success:hover {
                 <div class="ast-grid ast-grid-2 ast-sync-toggles">
                     {if $productSyncEnabled}
                     <div class="ast-card ast-sync-actions-card">
-                        <div class="ast-card-header">
+                        <div class="ast-card-header" style="border-bottom: none; padding: 24px 24px 4px;">
                             <h3><i class="icon icon-cube"></i> {l s='Product Actions' mod='aismarttalk'}</h3>
                         </div>
-                        <div class="ast-card-body">
+                        <div class="ast-card-body" style="padding: 12px 24px 24px;">
                             <div class="ast-sync-actions">
                                 <a href="{$formAction|escape:'html':'UTF-8'}&amp;forceSync=true" class="ast-action-btn ast-action-product">
                                     <span class="ast-action-icon"><i class="icon icon-refresh"></i></span>
@@ -2205,10 +2225,10 @@ a.ast-btn-success:hover {
                     {/if}
                     {if $customerSyncEnabled}
                     <div class="ast-card ast-sync-actions-card">
-                        <div class="ast-card-header">
+                        <div class="ast-card-header" style="border-bottom: none; padding: 24px 24px 4px;">
                             <h3><i class="icon icon-users"></i> {l s='Customer Actions' mod='aismarttalk'}</h3>
                         </div>
-                        <div class="ast-card-body">
+                        <div class="ast-card-body" style="padding: 12px 24px 24px;">
                             <div class="ast-sync-actions">
                                 <a href="{$formAction|escape:'html':'UTF-8'}&amp;syncCustomers=1" class="ast-action-btn ast-action-customer">
                                     <span class="ast-action-icon"><i class="icon icon-refresh"></i></span>
@@ -2602,8 +2622,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Save to localStorage
             localStorage.setItem('ast_active_tab', this.dataset.tab);
+
+            // Show/hide chatbot widget only on the sync tab
+            toggleChatbotVisibility(this.dataset.tab);
         });
     });
+
+    // Show/hide chatbot widget only on the sync tab (use a <style> tag to avoid
+    // toggling display which can re-trigger the widget open animation)
+    var astHideStyle = document.createElement('style');
+    astHideStyle.id = 'ast-hide-chatbot-widget';
+    astHideStyle.textContent = '#universal-chatbot-container, #universal-chat-button, #universal-chatbot-iframe, [data-chatbot-widget] { display: none !important; }';
+    document.head.appendChild(astHideStyle);
+
+    function getActiveTab() {
+        var active = document.querySelector('.ast-tab.active');
+        return active ? active.dataset.tab : 'chatbot';
+    }
+
+    function toggleChatbotVisibility(tab) {
+        astHideStyle.disabled = (tab === 'sync');
+    }
 
     // Restore last active tab
     var savedTab = localStorage.getItem('ast_active_tab');
