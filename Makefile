@@ -1,4 +1,4 @@
-.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all
+.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 e2e e2e-install e2e-ps17
 
 # ──────────────────────────────────────────────
 # Unit Tests (no DB needed)
@@ -52,7 +52,39 @@ test-integration: test-db-up
 test-integration-verbose: test-db-up
 	@cd $(MODULE_DIR) && TEST_SQL_LOG=2 $(PHPUNIT) --configuration $(PHPUNIT_INT_CFG) --verbose
 
+# ──────────────────────────────────────────────
+# Smoke Tests (run inside a real PS container)
+# ──────────────────────────────────────────────
+# Requires a running PS container (make up, make ps17, etc.)
+
+# Smoke test on PS 9 (default container)
+smoke-test:
+	docker exec prestashop php modules/aismarttalk/tests/Smoke/run_smoke_tests.php
+
+# Smoke test on PS 1.7
+smoke-test-ps17:
+	docker exec prestashop17 php modules/aismarttalk/tests/Smoke/run_smoke_tests.php
+
+# ──────────────────────────────────────────────
+# E2E Tests (Playwright — browser-based)
+# ──────────────────────────────────────────────
+# Requires: a running PS container + Node.js installed
+
+# Install Playwright
+e2e-install:
+	cd tests/e2e && npm install && npx playwright install chromium
+
+# Run E2E on PS 9 (http://localhost)
+e2e:
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test
+
+# Run E2E on PS 1.7 (http://localhost:8091)
+e2e-ps17:
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$$(docker exec prestashop17 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") ADMIN_PASS=Admin_Presta17! npx playwright test
+
+# ──────────────────────────────────────────────
 # Run ALL tests (unit + integration)
+# ──────────────────────────────────────────────
 test-all: test test-integration
 
 # Define the services

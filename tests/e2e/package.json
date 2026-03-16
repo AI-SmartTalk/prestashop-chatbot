@@ -1,0 +1,12 @@
+{
+  "name": "aismarttalk-e2e-tests",
+  "private": true,
+  "scripts": {
+    "test": "npx playwright test",
+    "test:headed": "npx playwright test --headed",
+    "install-browsers": "npx playwright install chromium"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.45.0"
+  }
+}
