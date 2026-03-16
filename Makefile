@@ -47,6 +47,11 @@ test-db-down:
 test-integration: test-db-up
 	@cd $(MODULE_DIR) && composer install --quiet 2>/dev/null; $(PHPUNIT) --configuration $(PHPUNIT_INT_CFG)
 
+# Run integration tests with SQL query logging
+# Level 1: show queries | Level 2: show queries + results
+test-integration-verbose: test-db-up
+	@cd $(MODULE_DIR) && TEST_SQL_LOG=2 $(PHPUNIT) --configuration $(PHPUNIT_INT_CFG) --verbose
+
 # Run ALL tests (unit + integration)
 test-all: test test-integration
 

@@ -82,15 +82,25 @@ if (!defined('_MYSQL_ENGINE_')) {
 /**
  * Real Db adapter backed by PDO.
  * Only implements the methods used by our module classes.
+ *
+ * Set TEST_SQL_LOG=1 to print every SQL query to stderr during tests.
+ * Set TEST_SQL_LOG=2 to also print result counts and values.
  */
 class Db
 {
     private static $instance;
     private $pdo;
 
+    /** @var int 0=off, 1=queries, 2=queries+results */
+    private static $logLevel = 0;
+
+    /** @var int Query counter */
+    private static $queryCount = 0;
+
     public function __construct()
     {
         $this->pdo = $GLOBALS['test_pdo'];
+        self::$logLevel = (int) (getenv('TEST_SQL_LOG') ?: 0);
     }
 
     public static function getInstance(): self
@@ -104,13 +114,65 @@ class Db
     public static function reset(): void
     {
         self::$instance = null;
+        self::$queryCount = 0;
+    }
+
+    public static function getQueryCount(): int
+    {
+        return self::$queryCount;
+    }
+
+    private function log(string $method, string $sql, $result = null): void
+    {
+        if (self::$logLevel < 1) {
+            return;
+        }
+
+        self::$queryCount++;
+        $num = self::$queryCount;
+        $shortSql = trim(preg_replace('/\s+/', ' ', $sql));
+        if (strlen($shortSql) > 200) {
+            $shortSql = substr($shortSql, 0, 200) . '…';
+        }
+
+        fwrite(STDERR, "\n  \033[36m[$num] $method:\033[0m $shortSql\n");
+
+        if (self::$logLevel >= 2 && $result !== null) {
+            if (is_array($result)) {
+                $count = count($result);
+                fwrite(STDERR, "  \033[33m   → $count row(s)\033[0m");
+                if ($count > 0 && $count <= 5) {
+                    foreach ($result as $row) {
+                        $line = json_encode($row, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        if (strlen($line) > 120) {
+                            $line = substr($line, 0, 120) . '…';
+                        }
+                        fwrite(STDERR, "\n  \033[90m     $line\033[0m");
+                    }
+                } elseif ($count > 5) {
+                    fwrite(STDERR, " (showing first 3)");
+                    for ($i = 0; $i < 3; $i++) {
+                        $line = json_encode($result[$i], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        if (strlen($line) > 120) {
+                            $line = substr($line, 0, 120) . '…';
+                        }
+                        fwrite(STDERR, "\n  \033[90m     $line\033[0m");
+                    }
+                }
+                fwrite(STDERR, "\n");
+            } else {
+                fwrite(STDERR, "  \033[33m   → " . var_export($result, true) . "\033[0m\n");
+            }
+        }
     }
 
     public function executeS($sql)
     {
         try {
             $stmt = $this->pdo->query($sql);
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $this->log('executeS', $sql, $result);
+            return $result;
         } catch (PDOException $e) {
             throw new RuntimeException("SQL Error in executeS:\n$sql\n\n" . $e->getMessage());
         }
@@ -121,7 +183,9 @@ class Db
         try {
             $stmt = $this->pdo->query($sql);
             $result = $stmt->fetchColumn();
-            return $result !== false ? $result : false;
+            $val = $result !== false ? $result : false;
+            $this->log('getValue', $sql, $val);
+            return $val;
         } catch (PDOException $e) {
             throw new RuntimeException("SQL Error in getValue:\n$sql\n\n" . $e->getMessage());
         }
@@ -130,7 +194,9 @@ class Db
     public function execute($sql)
     {
         try {
-            return $this->pdo->exec($sql) !== false;
+            $ok = $this->pdo->exec($sql) !== false;
+            $this->log('execute', $sql);
+            return $ok;
         } catch (PDOException $e) {
             throw new RuntimeException("SQL Error in execute:\n$sql\n\n" . $e->getMessage());
         }
