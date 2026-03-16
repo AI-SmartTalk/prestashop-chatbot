@@ -236,6 +236,18 @@ class Context
     /** @var object */
     public $language;
 
+    /** @var object */
+    public $customer;
+
+    /** @var object */
+    public $link;
+
+    /** @var object */
+    public $employee;
+
+    /** @var Cookie */
+    public $cookie;
+
     public function __construct()
     {
         $this->shop = new \stdClass();
@@ -245,6 +257,15 @@ class Context
         $this->language = new \stdClass();
         $this->language->id = 1;
         $this->language->iso_code = 'en';
+
+        $this->customer = new MockCustomer();
+
+        $this->employee = new \stdClass();
+        $this->employee->id = null;
+
+        $this->cookie = new Cookie();
+
+        $this->link = new MockLink();
     }
 
     public static function getContext(): self
@@ -356,6 +377,16 @@ class Module
     public $bootstrap;
 
     public function l($string) { return $string; }
+    public function displayConfirmation($msg) { return '<ok>' . $msg . '</ok>'; }
+    public function displayError($msg) { return '<err>' . $msg . '</err>'; }
+    public function displayWarning($msg) { return '<warn>' . $msg . '</warn>'; }
+}
+
+class AiSmartTalk extends Module
+{
+    const DEFAULT_API_URL = 'https://aismarttalk.tech';
+    const DEFAULT_CDN_URL = 'https://cdn.aismarttalk.tech';
+    const DEFAULT_WS_URL = 'https://ws.223.io.aismarttalk.tech';
 }
 
 class Tools
@@ -377,6 +408,8 @@ class Tools
 
     public static function redirect($url) {}
     public static function getAdminTokenLite($controller) { return 'test_token'; }
+    public static function usingSecureMode() { return true; }
+    public static function getShopDomainSsl() { return 'localhost'; }
 }
 
 class Validate
@@ -455,6 +488,72 @@ class HelperForm
     public $fields_value = [];
 
     public function generateForm($fields_form) { return ''; }
+}
+
+class MockCustomer
+{
+    public $id = null;
+    public $logged = false;
+    public function isLogged() { return $this->logged; }
+}
+
+class MockLink
+{
+    public function getModuleLink($module, $controller = null, $params = [], $ssl = true) {
+        return 'https://localhost/module/' . $module . '/' . ($controller ?: '');
+    }
+    public function getAdminLink($controller, $withToken = true, $params = [], $extra = []) {
+        return 'https://localhost/admin/' . $controller;
+    }
+    public function getProductLink($product, $alias = null, $category = null, $ean13 = null, $idLang = null, $idShop = null) {
+        return 'https://localhost/product/' . ($product->id ?? 0);
+    }
+    public function getImageLink($rewrite, $ids, $type = null) {
+        return 'https://localhost/img/' . $ids;
+    }
+}
+
+class Cookie
+{
+    private $data = [];
+    public function __get($key) { return $this->data[$key] ?? null; }
+    public function __set($key, $value) { $this->data[$key] = $value; }
+    public function __isset($key) { return isset($this->data[$key]); }
+    public function __unset($key) { unset($this->data[$key]); }
+    public function write() {}
+}
+
+class Order extends ObjectModel
+{
+    public $id_customer;
+    public $current_state;
+    public $payment;
+    public $reference;
+    public $total_paid;
+    public $id_currency;
+    public function __construct($id = null) { $this->id = $id; }
+}
+
+class OrderState extends ObjectModel
+{
+    public $name;
+    public $paid;
+    public function __construct($id = null) { $this->id = $id; }
+}
+
+class OrderReturn extends ObjectModel
+{
+    public $id_order;
+    public $question;
+    public function __construct($id = null) { $this->id = $id; }
+}
+
+class Cart extends ObjectModel
+{
+    public $id_customer;
+    public function __construct($id = null) { $this->id = $id; }
+    public function getProducts() { return []; }
+    public function getOrderTotal() { return 0; }
 }
 
 // Utility functions
