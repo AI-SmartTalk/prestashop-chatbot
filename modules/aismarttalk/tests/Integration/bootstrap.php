@@ -42,29 +42,37 @@ for ($i = 0; $i < $maxRetries; $i++) {
     }
 }
 
-// ──────────────────────────────────────────────
-// 2. Load schema + seed data
-// ──────────────────────────────────────────────
-$schemaDir = __DIR__;
-
-// Drop all tables first (clean slate)
-$pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
-$tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
-foreach ($tables as $table) {
-    $pdo->exec("DROP TABLE IF EXISTS `$table`");
-}
-$pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
-
-// Load schema
-$schema = file_get_contents($schemaDir . '/schema.sql');
-$pdo->exec($schema);
-
-// Load seed data
-$seed = file_get_contents($schemaDir . '/seed.sql');
-$pdo->exec($seed);
-
 // Store PDO globally for tests
 $GLOBALS['test_pdo'] = $pdo;
+$GLOBALS['test_schema_dir'] = __DIR__;
+
+/**
+ * Load a seed file into the test database (drops + recreates all tables).
+ * Call from setUp() or setUpBeforeClass() to switch test data.
+ *
+ * @param string $seedFile Filename in tests/Integration/ (e.g. 'seed.sql', 'seed_single_shop.sql')
+ */
+function loadTestSeed(string $seedFile = 'seed.sql'): void
+{
+    $pdo = $GLOBALS['test_pdo'];
+    $dir = $GLOBALS['test_schema_dir'];
+
+    $pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+    $tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
+    foreach ($tables as $table) {
+        $pdo->exec("DROP TABLE IF EXISTS `$table`");
+    }
+    $pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+
+    $pdo->exec(file_get_contents($dir . '/schema.sql'));
+    $pdo->exec(file_get_contents($dir . '/' . $seedFile));
+
+    // Reset Db singleton so it picks up fresh state
+    Db::reset();
+}
+
+// Load default seed (multistore) for backward compatibility
+loadTestSeed('seed.sql');
 
 // ──────────────────────────────────────────────
 // 3. PrestaShop compatibility layer (real DB)
@@ -396,6 +404,24 @@ class ObjectModel
 class PrestaShopLogger
 {
     public static function addLog($msg, $sev = 1, $code = null, $obj = null, $id = null, $dup = false) {}
+}
+
+class Tools
+{
+    public static function getValue($key, $default = false) { return $default; }
+    public static function isSubmit($key) { return false; }
+    public static function usingSecureMode() { return true; }
+    public static function getShopDomainSsl() { return 'localhost'; }
+    public static function redirect($url) {}
+    public static function getAdminTokenLite($c) { return 'test'; }
+}
+
+class Module
+{
+    public $name;
+    public function l($s) { return $s; }
+    public function displayConfirmation($m) { return $m; }
+    public function displayError($m) { return $m; }
 }
 
 if (!function_exists('pSQL')) {
