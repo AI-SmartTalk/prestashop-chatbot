@@ -1023,7 +1023,7 @@ class AiSmartTalk extends Module
 
             // Sync product if it hasn't been synced yet (new product or restock)
             // and it matches category filters
-            if ((bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')
+            if ((bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')
                 && !AiSmartTalkProductSync::isSynced($idProduct)
                 && SyncFilterHelper::shouldProductBeSynced($idProduct, MultistoreHelper::getDefaultShopId())
             ) {

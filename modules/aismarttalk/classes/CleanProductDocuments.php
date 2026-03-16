@@ -71,11 +71,11 @@ class CleanProductDocuments
         ]);
 
         if (!$response->isSuccess()) {
-            \Configuration::updateValue('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->error ?: 'HTTP ' . $response->httpCode);
+            MultistoreHelper::updateConfig('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->error ?: 'HTTP ' . $response->httpCode);
         } elseif ($response->get('status') === 'error') {
-            \Configuration::updateValue('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->get('message'));
+            MultistoreHelper::updateConfig('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->get('message'));
         } else {
-            \Configuration::deleteByName('CLEAN_PRODUCT_DOCUMENTS_ERROR');
+            MultistoreHelper::deleteConfig('CLEAN_PRODUCT_DOCUMENTS_ERROR');
         }
     }
 }

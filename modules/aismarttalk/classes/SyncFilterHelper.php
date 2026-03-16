@@ -50,27 +50,30 @@ class SyncFilterHelper
         $rootBoundary = self::buildRootBoundarySQL($allShopIds);
 
         // Use categories associated with ANY shop, count active products across ALL shops
-        // Use category_lang from the passed shop, with fallback to any available shop
+        // Subquery for name with fallback (strict GROUP BY compatible)
+        $nameSubquery = '(SELECT cl_sub.name FROM ' . _DB_PREFIX_ . 'category_lang cl_sub
+                          WHERE cl_sub.id_category = c.id_category AND cl_sub.id_lang = ' . (int) $langId . '
+                          ORDER BY FIELD(cl_sub.id_shop, ' . (int) $shopId . ') DESC, cl_sub.id_shop ASC
+                          LIMIT 1)';
+
+        // Subquery for product count across all shops
+        $productCountSubquery = '(SELECT COUNT(DISTINCT cp_sub.id_product)
+                                  FROM ' . _DB_PREFIX_ . 'category_product cp_sub
+                                  INNER JOIN ' . _DB_PREFIX_ . 'product_shop ps_sub
+                                      ON cp_sub.id_product = ps_sub.id_product
+                                      AND ps_sub.id_shop IN (' . $shopIdList . ') AND ps_sub.active = 1
+                                  WHERE cp_sub.id_category = c.id_category)';
+
         $sql = 'SELECT c.id_category, c.id_parent, c.nleft, c.nright, c.level_depth,
-                       COALESCE(cl.name, cl_any.name) as name,
-                       COUNT(DISTINCT cp.id_product) as product_count
+                       ' . $nameSubquery . ' as name,
+                       ' . $productCountSubquery . ' as product_count
                 FROM ' . _DB_PREFIX_ . 'category c
-                LEFT JOIN ' . _DB_PREFIX_ . 'category_lang cl
-                    ON c.id_category = cl.id_category AND cl.id_lang = ' . (int) $langId . '
-                    AND cl.id_shop = ' . (int) $shopId . '
-                LEFT JOIN ' . _DB_PREFIX_ . 'category_lang cl_any
-                    ON c.id_category = cl_any.id_category AND cl_any.id_lang = ' . (int) $langId . '
-                    AND cl_any.id_shop IN (' . $shopIdList . ')
-                INNER JOIN ' . _DB_PREFIX_ . 'category_shop cs
-                    ON c.id_category = cs.id_category AND cs.id_shop IN (' . $shopIdList . ')
-                LEFT JOIN ' . _DB_PREFIX_ . 'category_product cp ON c.id_category = cp.id_category
-                LEFT JOIN ' . _DB_PREFIX_ . 'product_shop ps
-                    ON cp.id_product = ps.id_product AND ps.id_shop IN (' . $shopIdList . ') AND ps.active = 1
                 WHERE c.active = 1
                     AND c.id_category != 1
+                    AND EXISTS (SELECT 1 FROM ' . _DB_PREFIX_ . 'category_shop cs
+                                WHERE cs.id_category = c.id_category AND cs.id_shop IN (' . $shopIdList . '))
+                    AND ' . $nameSubquery . ' IS NOT NULL
                     ' . $rootBoundary . '
-                GROUP BY c.id_category
-                HAVING name IS NOT NULL
                 ORDER BY c.level_depth ASC, c.position ASC';
 
         $categories = \Db::getInstance()->executeS($sql);

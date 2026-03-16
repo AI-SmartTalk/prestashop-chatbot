@@ -173,14 +173,14 @@ class SynchProductsToAiSmartTalk
         ]);
 
         if (!$response->isSuccess()) {
-            \Configuration::updateValue('AI_SMART_TALK_ERROR', $response->error ?: 'HTTP ' . $response->httpCode);
+            MultistoreHelper::updateConfig('AI_SMART_TALK_ERROR', $response->error ?: 'HTTP ' . $response->httpCode);
             return false;
         }
 
-        \Configuration::deleteByName('AI_SMART_TALK_ERROR');
+        MultistoreHelper::deleteConfig('AI_SMART_TALK_ERROR');
 
         if ($response->get('status') === 'error') {
-            \Configuration::updateValue('AI_SMART_TALK_ERROR', $response->get('message'));
+            MultistoreHelper::updateConfig('AI_SMART_TALK_ERROR', $response->get('message'));
             return false;
         }
 
@@ -215,6 +215,14 @@ class SynchProductsToAiSmartTalk
         }
         $stockCondition = '(' . implode(' OR ', $stockExistsConditions) . ')';
 
+        // Use EXISTS instead of JOIN to avoid row multiplication (strict GROUP BY compatible)
+        $activeInAnyShop = 'EXISTS (
+            SELECT 1 FROM ' . _DB_PREFIX_ . 'product_shop ps_any
+            WHERE ps_any.id_product = p.id_product
+                AND ps_any.id_shop IN (' . $shopIdList . ')
+                AND ps_any.active = 1
+        )';
+
         $sql = 'SELECT p.id_product, pl.name, pl.description, pl.description_short,
                    p.reference, p.price, cl.link_rewrite, i.id_image,
                    p.active,
@@ -226,12 +234,6 @@ class SynchProductsToAiSmartTalk
                    sp.reduction as price_reduction,
                    sp.reduction_type
             FROM ' . _DB_PREFIX_ . 'product p
-            -- Product must be active in at least one shop
-            INNER JOIN ' . _DB_PREFIX_ . 'product_shop ps_any
-                ON p.id_product = ps_any.id_product
-                AND ps_any.id_shop IN (' . $shopIdList . ')
-                AND ps_any.active = 1
-            -- Product data from default shop (with fallback to any shop for lang)
             LEFT JOIN ' . _DB_PREFIX_ . 'product_lang pl
                 ON p.id_product = pl.id_product AND pl.id_lang = ' . $defaultLangId . '
                 AND pl.id_shop = ' . $defaultShopId . '
@@ -256,6 +258,7 @@ class SynchProductsToAiSmartTalk
             LEFT JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product
                 AND aps.id_shop = ' . $defaultShopId . '
             WHERE pl.name IS NOT NULL
+                AND ' . $activeInAnyShop . '
                 AND ' . $stockCondition;
 
         // If not forcing sync, only get products that are not yet synced
