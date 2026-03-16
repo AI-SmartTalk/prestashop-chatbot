@@ -1,0 +1,17 @@
+# PHPUnit dev dependencies (installed via composer install, not shipped)
+vendor/bin/
+vendor/doctrine/
+vendor/myclabs/
+vendor/nikic/
+vendor/phar-io/
+vendor/phpunit/
+vendor/sebastian/
+vendor/theseer/
+vendor/composer/InstalledVersions.php
+vendor/composer/autoload_files.php
+vendor/composer/installed.json
+vendor/composer/installed.php
+
+# Test artifacts
+.phpunit.result.cache
+tests/coverage/
