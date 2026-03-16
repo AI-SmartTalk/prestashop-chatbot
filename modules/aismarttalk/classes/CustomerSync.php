@@ -227,7 +227,7 @@ class CustomerSync
             return false;
         }
 
-        $consentFilter = \Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT') ?: self::CONSENT_ALL;
+        $consentFilter = MultistoreHelper::getConfig('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT') ?: self::CONSENT_ALL;
 
         switch ($consentFilter) {
             case self::CONSENT_NEWSLETTER:

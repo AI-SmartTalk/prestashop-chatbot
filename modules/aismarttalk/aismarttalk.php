@@ -27,6 +27,7 @@ use PrestaShop\AiSmartTalk\ApiClient;
 use PrestaShop\AiSmartTalk\ChatbotSettingsBuilder;
 use PrestaShop\AiSmartTalk\CleanProductDocuments;
 use PrestaShop\AiSmartTalk\CustomerSync;
+use PrestaShop\AiSmartTalk\MultistoreHelper;
 use PrestaShop\AiSmartTalk\OAuthHandler;
 use PrestaShop\AiSmartTalk\OAuthTokenHandler;
 use PrestaShop\AiSmartTalk\SyncFilterHelper;
@@ -311,6 +312,17 @@ class AiSmartTalk extends Module
 
     public function getContent()
     {
+        // Force global configuration scope in multistore mode.
+        // All AI SmartTalk settings are shared across all shops — the user should see
+        // and edit the same configuration regardless of which shop is selected in the BO.
+        $savedShopContext = null;
+        $savedShopContextId = null;
+        if (Shop::isFeatureActive() && Shop::getContext() !== Shop::CONTEXT_ALL) {
+            $savedShopContext = Shop::getContext();
+            $savedShopContextId = Shop::getContextShopID();
+            Shop::setContext(Shop::CONTEXT_ALL);
+        }
+
         // Ensure all hooks are registered (for existing installations that may miss new hooks)
         $this->ensureHooksRegistered();
 
@@ -325,6 +337,11 @@ class AiSmartTalk extends Module
         $output = $handler->processAll();
         // Display the unified configuration interface
         $output .= $this->displayConfigurationPage();
+
+        // Restore shop context
+        if ($savedShopContext !== null) {
+            Shop::setContext($savedShopContext, $savedShopContextId);
+        }
 
         return $output;
     }
@@ -366,6 +383,9 @@ class AiSmartTalk extends Module
         $syncFilterConfig = SyncFilterHelper::getFilterConfig();
         $syncFilterCategoryMode = empty($syncFilterConfig['categories']) ? 'all' : $syncFilterConfig['mode'];
 
+        // Multistore context
+        $isMultistoreActive = MultistoreHelper::isMultistoreActive();
+
         $this->context->smarty->assign([
             'modulePath' => $this->_path,
             'moduleVersion' => $this->version,
@@ -376,6 +396,10 @@ class AiSmartTalk extends Module
             'formAction' => $this->getCleanFormAction(),
             'backofficeUrl' => $backofficeUrl,
             'currentLang' => substr($this->context->language->iso_code, 0, 2),
+
+            // Multistore
+            'isMultistoreActive' => $isMultistoreActive,
+            'multistoreShopsChatbot' => $isMultistoreActive ? MultistoreHelper::getShopsChatbotStatus() : [],
 
             // Chatbot settings
             'chatbotEnabled' => (bool) Configuration::get('AI_SMART_TALK_ENABLED'),
@@ -814,6 +838,7 @@ class AiSmartTalk extends Module
      */
     private function renderChatbot()
     {
+        // Chatbot display is per-shop: read from current shop context, not global
         if (!Configuration::get('AI_SMART_TALK_ENABLED')) {
             return '';
         }
@@ -845,18 +870,15 @@ class AiSmartTalk extends Module
     public function hookActionProductUpdate($params)
     {
         try {
-            // Check if product sync is enabled
-            if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+            if (!(bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')) {
                 return;
             }
 
             $idProduct = (int) $params['id_product'];
-            $product = new Product($idProduct);
-            $currentQuantity = (int) StockAvailable::getQuantityAvailableByProduct($idProduct);
-            $shopId = (int) $this->context->shop->id;
 
-            // If product is inactive or out of stock, clean it from AI SmartTalk
-            if (!$product->active || $currentQuantity <= 0) {
+            // Check if product is active + in stock in at least one shop
+            if (!MultistoreHelper::isProductActiveInAnyShop($idProduct)) {
+                // Not active anywhere — clean from knowledge base if it was synced
                 if (AiSmartTalkProductSync::isSynced($idProduct)) {
                     $api = new CleanProductDocuments();
                     $api(['productIds' => [(string) $idProduct]]);
@@ -865,7 +887,7 @@ class AiSmartTalk extends Module
                 return;
             }
 
-            // Use dedicated sync table for debounce check (3 seconds)
+            // Debounce check (3 seconds)
             if (!AiSmartTalkProductSync::canSync($idProduct, 3)) {
                 return;
             }
@@ -873,7 +895,6 @@ class AiSmartTalk extends Module
             $api = new SynchProductsToAiSmartTalk($this->context);
             $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
 
-            // Update last sync time in dedicated table
             AiSmartTalkProductSync::updateLastSyncTime($idProduct);
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog('AI SmartTalk hookActionProductUpdate error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
@@ -884,7 +905,7 @@ class AiSmartTalk extends Module
     {
         try {
             // Check if product sync is enabled
-            if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+            if (!(bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')) {
                 return;
             }
 
@@ -899,22 +920,24 @@ class AiSmartTalk extends Module
     public function hookActionProductDelete($params)
     {
         try {
-            // Check if product sync is enabled
-            if (!(bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+            if (!(bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')) {
                 return;
             }
 
             $idProduct = (int) $params['id_product'];
-            $shopId = (int) $this->context->shop->id;
 
-            // Only delete from AI SmartTalk if product matched sync filters
-            // (otherwise it was never synced in the first place)
-            if (!SyncFilterHelper::shouldProductBeSynced($idProduct, $shopId)) {
+            // Only clean from AI SmartTalk if it was actually synced
+            if (!AiSmartTalkProductSync::isSynced($idProduct)) {
                 return;
             }
 
+            // Remove from knowledge base.
+            // Note: by the time this hook fires, product_shop rows may already be deleted,
+            // so we can't reliably check if the product is still active in other shops.
+            // It's safer to always clean — the next full sync will re-add it if still active elsewhere.
             $api = new CleanProductDocuments();
             $api(['productIds' => [(string) $idProduct]]);
+            AiSmartTalkProductSync::markAsNotSynced($idProduct);
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog('AI SmartTalk hookActionProductDelete error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
@@ -981,15 +1004,14 @@ class AiSmartTalk extends Module
 
                 $this->triggerOutOfStockWebhook($idProduct, $idProductAttribute, 1);
 
-                // Product sync: remove from AI SmartTalk if it matched filters
-                if ((bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
-                    $shopId = (int) $this->context->shop->id;
-                    // Only delete if product matched sync filters (was actually synced)
-                    if (SyncFilterHelper::shouldProductBeSynced($idProduct, $shopId)) {
-                        $api = new CleanProductDocuments();
-                        $api(['productIds' => [(string) $idProduct]]);
-                        AiSmartTalkProductSync::markAsNotSynced($idProduct);
-                    }
+                // Product sync: remove from AI SmartTalk if not active in any shop
+                if ((bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')
+                    && AiSmartTalkProductSync::isSynced($idProduct)
+                    && !MultistoreHelper::isProductActiveInAnyShop($idProduct)
+                ) {
+                    $api = new CleanProductDocuments();
+                    $api(['productIds' => [(string) $idProduct]]);
+                    AiSmartTalkProductSync::markAsNotSynced($idProduct);
                 }
             }
         } else {
@@ -1001,10 +1023,9 @@ class AiSmartTalk extends Module
 
             // Sync product if it hasn't been synced yet (new product or restock)
             // and it matches category filters
-            $shopId = (int) $this->context->shop->id;
             if ((bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')
                 && !AiSmartTalkProductSync::isSynced($idProduct)
-                && SyncFilterHelper::shouldProductBeSynced($idProduct, $shopId)
+                && SyncFilterHelper::shouldProductBeSynced($idProduct, MultistoreHelper::getDefaultShopId())
             ) {
                 $api = new SynchProductsToAiSmartTalk($this->context);
                 $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
@@ -1055,7 +1076,7 @@ class AiSmartTalk extends Module
             $customer = $params['newCustomer'];
 
             // Customer sync (with consent filter + tracking)
-            if (\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')
+            if (MultistoreHelper::getConfig('AI_SMART_TALK_CUSTOMER_SYNC')
                 && CustomerSync::customerMatchesConsentFilter($customer)
             ) {
                 $sync = new CustomerSync($this->context);
@@ -1075,7 +1096,7 @@ class AiSmartTalk extends Module
     public function hookActionCustomerAccountUpdate($params)
     {
         try {
-            if (!\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
+            if (!MultistoreHelper::getConfig('AI_SMART_TALK_CUSTOMER_SYNC')) {
                 return;
             }
 
@@ -1098,7 +1119,7 @@ class AiSmartTalk extends Module
     public function hookActionObjectCustomerUpdateAfter($params)
     {
         try {
-            if (!\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
+            if (!MultistoreHelper::getConfig('AI_SMART_TALK_CUSTOMER_SYNC')) {
                 return;
             }
 
@@ -1118,7 +1139,7 @@ class AiSmartTalk extends Module
     public function hookActionObjectCustomerDeleteAfter($params)
     {
         try {
-            if (!\Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC')) {
+            if (!MultistoreHelper::getConfig('AI_SMART_TALK_CUSTOMER_SYNC')) {
                 return;
             }
 

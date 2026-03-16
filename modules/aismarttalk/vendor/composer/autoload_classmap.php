@@ -17,6 +17,7 @@ return array(
     'PrestaShop\\AiSmartTalk\\ChatbotSettingsBuilder' => $baseDir . '/classes/ChatbotSettingsBuilder.php',
     'PrestaShop\\AiSmartTalk\\CleanProductDocuments' => $baseDir . '/classes/CleanProductDocuments.php',
     'PrestaShop\\AiSmartTalk\\CustomerSync' => $baseDir . '/classes/CustomerSync.php',
+    'PrestaShop\\AiSmartTalk\\MultistoreHelper' => $baseDir . '/classes/MultistoreHelper.php',
     'PrestaShop\\AiSmartTalk\\OAuthHandler' => $baseDir . '/classes/OAuthHandler.php',
     'PrestaShop\\AiSmartTalk\\OAuthTokenHandler' => $baseDir . '/classes/OAuthTokenHandler.php',
     'PrestaShop\\AiSmartTalk\\PayloadEncryptor' => $baseDir . '/classes/PayloadEncryptor.php',

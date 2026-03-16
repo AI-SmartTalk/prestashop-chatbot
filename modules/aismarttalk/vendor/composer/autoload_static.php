@@ -32,6 +32,7 @@ class ComposerStaticInit1a64e4a2bee93f2d2c517a3b98c5161e
         'PrestaShop\\AiSmartTalk\\ChatbotSettingsBuilder' => __DIR__ . '/../..' . '/classes/ChatbotSettingsBuilder.php',
         'PrestaShop\\AiSmartTalk\\CleanProductDocuments' => __DIR__ . '/../..' . '/classes/CleanProductDocuments.php',
         'PrestaShop\\AiSmartTalk\\CustomerSync' => __DIR__ . '/../..' . '/classes/CustomerSync.php',
+        'PrestaShop\\AiSmartTalk\\MultistoreHelper' => __DIR__ . '/../..' . '/classes/MultistoreHelper.php',
         'PrestaShop\\AiSmartTalk\\OAuthHandler' => __DIR__ . '/../..' . '/classes/OAuthHandler.php',
         'PrestaShop\\AiSmartTalk\\OAuthTokenHandler' => __DIR__ . '/../..' . '/classes/OAuthTokenHandler.php',
         'PrestaShop\\AiSmartTalk\\PayloadEncryptor' => __DIR__ . '/../..' . '/classes/PayloadEncryptor.php',

@@ -228,8 +228,24 @@ class AdminFormHandler
 
     private function handleToggleChatbot(): string
     {
-        $chatbotEnabled = (bool) \Tools::getValue('AI_SMART_TALK_ENABLED');
-        \Configuration::updateValue('AI_SMART_TALK_ENABLED', $chatbotEnabled);
+        if (MultistoreHelper::isMultistoreActive()) {
+            // In multistore, save per-shop chatbot display from checkboxes
+            $enabledShopIds = \Tools::getValue('chatbot_shops', []);
+            if (is_string($enabledShopIds)) {
+                $enabledShopIds = [$enabledShopIds];
+            }
+            $enabledShopIds = array_map('intval', $enabledShopIds);
+            MultistoreHelper::saveShopsChatbotStatus($enabledShopIds);
+        } else {
+            $chatbotEnabled = (bool) \Tools::getValue('AI_SMART_TALK_ENABLED');
+            \Configuration::updateValue('AI_SMART_TALK_ENABLED', $chatbotEnabled);
+        }
+
+        // Also save iframe position if submitted in the same form
+        $position = \Tools::getValue('AI_SMART_TALK_IFRAME_POSITION');
+        if ($position && in_array($position, ['footer', 'before_footer'])) {
+            \Configuration::updateValue('AI_SMART_TALK_IFRAME_POSITION', $position);
+        }
 
         return $this->module->displayConfirmation(
             $this->trans('Settings updated.', [], 'Modules.Aismarttalk.Admin')
@@ -352,6 +368,13 @@ class AdminFormHandler
         \Configuration::updateValue('AI_SMART_TALK_BUTTON_TEXT', pSQL($buttonText));
         \Configuration::updateValue('AI_SMART_TALK_BUTTON_TYPE', $buttonType);
         \Configuration::updateValue('AI_SMART_TALK_BUTTON_POSITION', $buttonPosition);
+
+        // Display position (iframe hook)
+        $iframePosition = \Tools::getValue('AI_SMART_TALK_IFRAME_POSITION', '');
+        if (in_array($iframePosition, ['footer', 'before_footer'])) {
+            \Configuration::updateValue('AI_SMART_TALK_IFRAME_POSITION', $iframePosition);
+        }
+
         \Configuration::updateValue('AI_SMART_TALK_CHAT_SIZE', $chatSize);
         \Configuration::updateValue('AI_SMART_TALK_COLOR_MODE', $colorMode);
         \Configuration::updateValue('AI_SMART_TALK_BORDER_RADIUS', $borderRadius);

@@ -187,15 +187,36 @@ class SynchProductsToAiSmartTalk
         return $response->body;
     }
 
+    /**
+     * Get products to synchronize across ALL shops (union, deduplicated).
+     * Product data (name, price, image, URL) comes from the default shop context.
+     * A product is included if it is active + in stock in at least one shop.
+     */
     private function getProductsToSynchronize()
     {
         $defaultLangId = (int) \Configuration::get('PS_LANG_DEFAULT');
-        $defaultShopId = (int) $this->getContext()->shop->id;
+        $defaultShopId = MultistoreHelper::getDefaultShopId();
         $defaultCurrencyId = (int) \Configuration::get('PS_CURRENCY_DEFAULT');
+        $allShopIds = MultistoreHelper::getAllShopIds();
+        $shopIdList = implode(',', array_map('intval', $allShopIds));
+
+        // Build a stock-availability subquery: product is in stock in at least one shop
+        $stockExistsConditions = [];
+        foreach ($allShopIds as $sid) {
+            $shopGroupId = (int) \Shop::getGroupFromShop($sid);
+            $stockExistsConditions[] = 'EXISTS (
+                SELECT 1 FROM ' . _DB_PREFIX_ . 'stock_available sa_check
+                WHERE sa_check.id_product = p.id_product
+                    AND sa_check.id_product_attribute = 0
+                    AND (sa_check.id_shop = ' . (int) $sid . '
+                         OR (sa_check.id_shop = 0 AND sa_check.id_shop_group = ' . $shopGroupId . '))
+                    AND sa_check.quantity > 0
+            )';
+        }
+        $stockCondition = '(' . implode(' OR ', $stockExistsConditions) . ')';
 
         $sql = 'SELECT p.id_product, pl.name, pl.description, pl.description_short,
                    p.reference, p.price, cl.link_rewrite, i.id_image,
-                   sa.quantity as stock_quantity,
                    p.active,
                    p.available_date,
                    c.iso_code as currency_code,
@@ -205,33 +226,50 @@ class SynchProductsToAiSmartTalk
                    sp.reduction as price_reduction,
                    sp.reduction_type
             FROM ' . _DB_PREFIX_ . 'product p
-            JOIN ' . _DB_PREFIX_ . 'product_lang pl ON p.id_product = pl.id_product AND pl.id_shop = ' . $defaultShopId . '
-            JOIN ' . _DB_PREFIX_ . 'category_lang cl ON p.id_category_default = cl.id_category AND cl.id_shop = ' . $defaultShopId . '
-            LEFT JOIN ' . _DB_PREFIX_ . 'image_shop ims ON p.id_product = ims.id_product AND ims.cover = 1 AND ims.id_shop = ' . $defaultShopId . '
+            -- Product must be active in at least one shop
+            INNER JOIN ' . _DB_PREFIX_ . 'product_shop ps_any
+                ON p.id_product = ps_any.id_product
+                AND ps_any.id_shop IN (' . $shopIdList . ')
+                AND ps_any.active = 1
+            -- Product data from default shop (with fallback to any shop for lang)
+            LEFT JOIN ' . _DB_PREFIX_ . 'product_lang pl
+                ON p.id_product = pl.id_product AND pl.id_lang = ' . $defaultLangId . '
+                AND pl.id_shop = ' . $defaultShopId . '
+            LEFT JOIN ' . _DB_PREFIX_ . 'category_lang cl
+                ON p.id_category_default = cl.id_category AND cl.id_lang = ' . $defaultLangId . '
+                AND cl.id_shop = ' . $defaultShopId . '
+            LEFT JOIN ' . _DB_PREFIX_ . 'image_shop ims
+                ON p.id_product = ims.id_product AND ims.cover = 1
+                AND ims.id_shop = ' . $defaultShopId . '
             LEFT JOIN ' . _DB_PREFIX_ . 'image i ON i.id_image = ims.id_image
-            ' . SyncFilterHelper::buildStockAvailableJoin($defaultShopId) . '
             LEFT JOIN ' . _DB_PREFIX_ . 'currency c ON c.id_currency = ' . $defaultCurrencyId . '
-            LEFT JOIN ' . _DB_PREFIX_ . 'specific_price sp ON p.id_product = sp.id_product
-                AND (sp.from = "0000-00-00 00:00:00" OR sp.from <= NOW())
-                AND (sp.to = "0000-00-00 00:00:00" OR sp.to >= NOW())
-                AND sp.id_shop = ' . $defaultShopId . '
+            LEFT JOIN ' . _DB_PREFIX_ . 'specific_price sp ON sp.id_specific_price = (
+                SELECT sp2.id_specific_price
+                FROM ' . _DB_PREFIX_ . 'specific_price sp2
+                WHERE sp2.id_product = p.id_product
+                    AND (sp2.from = "0000-00-00 00:00:00" OR sp2.from <= NOW())
+                    AND (sp2.to = "0000-00-00 00:00:00" OR sp2.to >= NOW())
+                    AND (sp2.id_shop = ' . $defaultShopId . ' OR sp2.id_shop = 0)
+                ORDER BY sp2.id_shop DESC, sp2.id_specific_price DESC
+                LIMIT 1
+            )
             LEFT JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product
                 AND aps.id_shop = ' . $defaultShopId . '
-            WHERE pl.id_lang = ' . $defaultLangId . ' AND cl.id_lang = ' . $defaultLangId . ' AND p.active = 1
-                AND COALESCE(sa.quantity, 0) > 0';
+            WHERE pl.name IS NOT NULL
+                AND ' . $stockCondition;
 
         // If not forcing sync, only get products that are not yet synced
         if ($this->forceSync === false) {
             $sql .= ' AND (aps.synced IS NULL OR aps.synced = 0)';
         }
 
-        // Filter by specific product IDs if provided (with proper validation)
+        // Filter by specific product IDs if provided
         if (!empty($this->productIds)) {
             $safeIds = array_map('intval', $this->productIds);
             $sql .= ' AND p.id_product IN (' . implode(',', $safeIds) . ')';
         }
 
-        // Apply category filters from SyncFilterHelper
+        // Apply category filters (global config)
         $categoryFilter = SyncFilterHelper::buildCategoryFilterSQL($defaultShopId);
         if (!empty($categoryFilter)) {
             $sql .= $categoryFilter;
@@ -241,36 +279,44 @@ class SynchProductsToAiSmartTalk
 
         $products = \Db::getInstance()->executeS($sql);
 
-        return $products;
+        return $products ?: [];
     }
 
     /**
-     * Nettoie les produits hors stock ou inactifs d'AI SmartTalk lors d'une re-synchronisation
+     * Nettoie les produits hors stock ou inactifs d'AI SmartTalk lors d'une re-synchronisation.
+     * Un produit n'est nettoyé que s'il est inactif/hors stock dans TOUS les shops.
      */
     private function cleanOutOfStockProducts()
     {
-        $defaultShopId = (int) $this->getContext()->shop->id;
+        $defaultShopId = MultistoreHelper::getDefaultShopId();
 
-        // Récupérer tous les produits synchronisés mais maintenant hors stock ou inactifs
-        $sql = 'SELECT p.id_product
-                FROM ' . _DB_PREFIX_ . 'product p
-                INNER JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product
-                    AND aps.id_shop = ' . $defaultShopId . '
-                ' . SyncFilterHelper::buildStockAvailableJoin($defaultShopId) . '
-                WHERE aps.synced = 1
-                    AND (COALESCE(sa.quantity, 0) <= 0 OR p.active = 0)';
+        // Get all products currently synced
+        $sql = 'SELECT DISTINCT aps.id_product
+                FROM ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps
+                WHERE aps.synced = 1';
+        $syncedProducts = \Db::getInstance()->executeS($sql);
 
-        $outOfStockProducts = \Db::getInstance()->executeS($sql);
+        if (empty($syncedProducts)) {
+            return;
+        }
 
-        if (!empty($outOfStockProducts)) {
-            $productIds = array_column($outOfStockProducts, 'id_product');
+        $toClean = [];
+        foreach ($syncedProducts as $row) {
+            $idProduct = (int) $row['id_product'];
+            // Product should be cleaned if not active+in stock in any shop
+            if (!MultistoreHelper::isProductActiveInAnyShop($idProduct)) {
+                $toClean[] = $idProduct;
+            }
+        }
 
-            // Utiliser CleanProductDocuments pour supprimer ces produits d'AI SmartTalk
-            $cleanProductDocuments = new \PrestaShop\AiSmartTalk\CleanProductDocuments();
-            $cleanProductDocuments(['productIds' => array_map('strval', $productIds)]);
+        if (!empty($toClean)) {
+            $cleanProductDocuments = new CleanProductDocuments();
+            $cleanProductDocuments(['productIds' => array_map('strval', $toClean)]);
 
-            // Marquer ces produits comme non synchronisés dans la table dédiée
-            AiSmartTalkProductSync::markProductsAsNotSynced($productIds, $defaultShopId);
+            // Mark as not synced in all shops
+            foreach (MultistoreHelper::getAllShopIds() as $shopId) {
+                AiSmartTalkProductSync::markProductsAsNotSynced($toClean, $shopId);
+            }
         }
     }
 }
