@@ -1,0 +1,23 @@
+services:
+  # ──────────────────────────────────────────────
+  # MySQL for integration tests (no PrestaShop needed)
+  # ──────────────────────────────────────────────
+  test_db:
+    container_name: aismarttalk_test_db
+    image: mysql:5.7
+    platform: linux/amd64
+    ports:
+      - "3399:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=test
+      - MYSQL_DATABASE=ps_test
+      - MYSQL_USER=test
+      - MYSQL_PASSWORD=test
+    tmpfs:
+      - /var/lib/mysql
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge

@@ -1,33 +1,54 @@
-.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install
+.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all
 
 # ──────────────────────────────────────────────
-# Tests
+# Unit Tests (no DB needed)
 # ──────────────────────────────────────────────
 MODULE_DIR = modules/aismarttalk
 PHPUNIT    = vendor/bin/phpunit
 PHPUNIT_CFG = phpunit.xml
+PHPUNIT_INT_CFG = phpunit.integration.xml
 
 # Install test dependencies (PHPUnit)
 test-install:
 	cd $(MODULE_DIR) && composer install
 
-# Run all tests
+# Run unit tests
 test:
 	@cd $(MODULE_DIR) && composer install --quiet 2>/dev/null; $(PHPUNIT) --configuration $(PHPUNIT_CFG)
 
-# Run tests with verbose output
+# Run unit tests with verbose output
 test-verbose:
 	@cd $(MODULE_DIR) && composer install --quiet 2>/dev/null; $(PHPUNIT) --configuration $(PHPUNIT_CFG) --verbose
 
 # Run a specific test file or filter
 # Usage: make test-filter FILTER=MultistoreHelper
-#        make test-filter FILTER=testGetConfigReadsGlobalValue
 test-filter:
 	@cd $(MODULE_DIR) && $(PHPUNIT) --configuration $(PHPUNIT_CFG) --filter="$(FILTER)"
 
 # Run tests with code coverage (requires Xdebug or PCOV)
 test-coverage:
 	@cd $(MODULE_DIR) && XDEBUG_MODE=coverage $(PHPUNIT) --configuration $(PHPUNIT_CFG) --coverage-text --coverage-html=tests/coverage
+
+# ──────────────────────────────────────────────
+# Integration Tests (real MySQL DB via Docker)
+# ──────────────────────────────────────────────
+# Start test database
+test-db-up:
+	docker compose -f docker-compose.test.yml up -d
+	@echo "Waiting for MySQL to be ready..."
+	@until docker exec aismarttalk_test_db mysqladmin ping -h localhost -u test -ptest --silent 2>/dev/null; do sleep 1; done
+	@echo "Test DB ready on port 3399"
+
+# Stop test database
+test-db-down:
+	docker compose -f docker-compose.test.yml down
+
+# Run integration tests (starts DB if needed)
+test-integration: test-db-up
+	@cd $(MODULE_DIR) && composer install --quiet 2>/dev/null; $(PHPUNIT) --configuration $(PHPUNIT_INT_CFG)
+
+# Run ALL tests (unit + integration)
+test-all: test test-integration
 
 # Define the services
 SERVICES = prestashop prestashop_db

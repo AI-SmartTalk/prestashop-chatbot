@@ -1,0 +1,342 @@
+<?php
+/**
+ * Integration test bootstrap.
+ *
+ * Connects to a real MySQL database (Docker), loads the schema,
+ * and provides a thin PrestaShop compatibility layer so module classes
+ * can execute their actual SQL queries against real data.
+ */
+
+// ──────────────────────────────────────────────
+// 1. DB connection
+// ──────────────────────────────────────────────
+$dbHost = getenv('TEST_DB_HOST') ?: '127.0.0.1';
+$dbPort = getenv('TEST_DB_PORT') ?: '3399';
+$dbName = getenv('TEST_DB_NAME') ?: 'ps_test';
+$dbUser = getenv('TEST_DB_USER') ?: 'test';
+$dbPass = getenv('TEST_DB_PASS') ?: 'test';
+
+$dsn = "mysql:host=$dbHost;port=$dbPort;dbname=$dbName;charset=utf8mb4";
+
+// Retry loop: DB container may still be starting
+$maxRetries = 30;
+$pdo = null;
+for ($i = 0; $i < $maxRetries; $i++) {
+    try {
+        $pdo = new PDO($dsn, $dbUser, $dbPass, [
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ]);
+        // Match PrestaShop's MySQL config (no strict mode)
+        $pdo->exec("SET sql_mode = ''");
+        break;
+    } catch (PDOException $e) {
+        if ($i === $maxRetries - 1) {
+            throw new RuntimeException(
+                "Cannot connect to test DB at $dbHost:$dbPort after $maxRetries attempts.\n"
+                . "Start it with: docker compose -f docker-compose.test.yml up -d\n"
+                . "Error: " . $e->getMessage()
+            );
+        }
+        sleep(1);
+    }
+}
+
+// ──────────────────────────────────────────────
+// 2. Load schema + seed data
+// ──────────────────────────────────────────────
+$schemaDir = __DIR__;
+
+// Drop all tables first (clean slate)
+$pdo->exec("SET FOREIGN_KEY_CHECKS = 0");
+$tables = $pdo->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
+foreach ($tables as $table) {
+    $pdo->exec("DROP TABLE IF EXISTS `$table`");
+}
+$pdo->exec("SET FOREIGN_KEY_CHECKS = 1");
+
+// Load schema
+$schema = file_get_contents($schemaDir . '/schema.sql');
+$pdo->exec($schema);
+
+// Load seed data
+$seed = file_get_contents($schemaDir . '/seed.sql');
+$pdo->exec($seed);
+
+// Store PDO globally for tests
+$GLOBALS['test_pdo'] = $pdo;
+
+// ──────────────────────────────────────────────
+// 3. PrestaShop compatibility layer (real DB)
+// ──────────────────────────────────────────────
+if (!defined('_PS_VERSION_')) {
+    define('_PS_VERSION_', '8.1.0');
+}
+if (!defined('_DB_PREFIX_')) {
+    define('_DB_PREFIX_', 'ps_');
+}
+if (!defined('_MYSQL_ENGINE_')) {
+    define('_MYSQL_ENGINE_', 'InnoDB');
+}
+
+/**
+ * Real Db adapter backed by PDO.
+ * Only implements the methods used by our module classes.
+ */
+class Db
+{
+    private static $instance;
+    private $pdo;
+
+    public function __construct()
+    {
+        $this->pdo = $GLOBALS['test_pdo'];
+    }
+
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+
+    public static function reset(): void
+    {
+        self::$instance = null;
+    }
+
+    public function executeS($sql)
+    {
+        try {
+            $stmt = $this->pdo->query($sql);
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            throw new RuntimeException("SQL Error in executeS:\n$sql\n\n" . $e->getMessage());
+        }
+    }
+
+    public function getValue($sql)
+    {
+        try {
+            $stmt = $this->pdo->query($sql);
+            $result = $stmt->fetchColumn();
+            return $result !== false ? $result : false;
+        } catch (PDOException $e) {
+            throw new RuntimeException("SQL Error in getValue:\n$sql\n\n" . $e->getMessage());
+        }
+    }
+
+    public function execute($sql)
+    {
+        try {
+            return $this->pdo->exec($sql) !== false;
+        } catch (PDOException $e) {
+            throw new RuntimeException("SQL Error in execute:\n$sql\n\n" . $e->getMessage());
+        }
+    }
+
+    public function getPdo(): PDO
+    {
+        return $this->pdo;
+    }
+}
+
+/**
+ * Configuration backed by real ps_configuration table.
+ */
+class Configuration
+{
+    public static function get($key, $idLang = null, $idShopGroup = null, $idShop = null)
+    {
+        $pdo = $GLOBALS['test_pdo'];
+
+        // Explicit global read
+        if (($idShopGroup === 0 && $idShop === 0) || $idShop === null) {
+            $stmt = $pdo->prepare(
+                'SELECT value FROM ps_configuration WHERE name = ? AND id_shop IS NULL AND id_shop_group IS NULL LIMIT 1'
+            );
+            $stmt->execute([$key]);
+            $result = $stmt->fetchColumn();
+            return $result !== false ? $result : false;
+        }
+
+        // Per-shop read
+        if ($idShop > 0) {
+            $stmt = $pdo->prepare(
+                'SELECT value FROM ps_configuration WHERE name = ? AND id_shop = ? LIMIT 1'
+            );
+            $stmt->execute([$key, $idShop]);
+            $result = $stmt->fetchColumn();
+            if ($result !== false) {
+                return $result;
+            }
+            // Fallback to global
+            return self::get($key);
+        }
+
+        return false;
+    }
+
+    public static function updateValue($key, $value, $html = false, $idShopGroup = null, $idShop = null)
+    {
+        $pdo = $GLOBALS['test_pdo'];
+
+        if ($idShopGroup === 0 && $idShop === 0) {
+            // Global write
+            $stmt = $pdo->prepare(
+                'INSERT INTO ps_configuration (name, value, id_shop, id_shop_group)
+                 VALUES (?, ?, NULL, NULL)
+                 ON DUPLICATE KEY UPDATE value = VALUES(value)'
+            );
+            return $stmt->execute([$key, $value]);
+        }
+
+        if ($idShop !== null && $idShop > 0) {
+            $stmt = $pdo->prepare(
+                'INSERT INTO ps_configuration (name, value, id_shop, id_shop_group)
+                 VALUES (?, ?, ?, NULL)
+                 ON DUPLICATE KEY UPDATE value = VALUES(value)'
+            );
+            return $stmt->execute([$key, $value, $idShop]);
+        }
+
+        // Default: global
+        return self::updateValue($key, $value, $html, 0, 0);
+    }
+
+    public static function deleteByName($key)
+    {
+        $pdo = $GLOBALS['test_pdo'];
+        $stmt = $pdo->prepare('DELETE FROM ps_configuration WHERE name = ?');
+        return $stmt->execute([$key]);
+    }
+}
+
+/**
+ * Shop backed by real ps_shop table.
+ */
+class Shop
+{
+    const CONTEXT_ALL = 1;
+    const CONTEXT_GROUP = 2;
+    const CONTEXT_SHOP = 4;
+
+    private static $context = self::CONTEXT_SHOP;
+    public $id_category;
+
+    public function __construct($id = null)
+    {
+        if ($id !== null) {
+            $pdo = $GLOBALS['test_pdo'];
+            $stmt = $pdo->prepare('SELECT id_category FROM ps_shop WHERE id_shop = ?');
+            $stmt->execute([$id]);
+            $this->id_category = (int) ($stmt->fetchColumn() ?: 2);
+        }
+    }
+
+    public static function isFeatureActive(): bool
+    {
+        $pdo = $GLOBALS['test_pdo'];
+        $count = (int) $pdo->query('SELECT COUNT(*) FROM ps_shop WHERE active = 1')->fetchColumn();
+        return $count > 1;
+    }
+
+    public static function getShops($active = true): array
+    {
+        $pdo = $GLOBALS['test_pdo'];
+        $sql = 'SELECT * FROM ps_shop' . ($active ? ' WHERE active = 1' : '');
+        return $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    public static function getGroupFromShop($idShop): int
+    {
+        $pdo = $GLOBALS['test_pdo'];
+        $stmt = $pdo->prepare('SELECT id_shop_group FROM ps_shop WHERE id_shop = ?');
+        $stmt->execute([$idShop]);
+        return (int) ($stmt->fetchColumn() ?: 1);
+    }
+
+    public static function getContext(): int
+    {
+        return self::$context;
+    }
+
+    public static function setContext(int $context, $shopId = null): void
+    {
+        self::$context = $context;
+    }
+
+    public static function getContextShopID(): int
+    {
+        return 1;
+    }
+}
+
+class Context
+{
+    private static $instance;
+    public $shop;
+    public $language;
+
+    public function __construct()
+    {
+        $this->shop = new \stdClass();
+        $this->shop->id = 1;
+        $this->shop->name = 'Boutique FR';
+        $this->language = new \stdClass();
+        $this->language->id = 1;
+        $this->language->iso_code = 'fr';
+    }
+
+    public static function getContext(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = new self();
+        }
+        return self::$instance;
+    }
+}
+
+class DbQuery
+{
+    private $parts = [];
+    public function select($s) { $this->parts['select'] = $s; return $this; }
+    public function from($t, $a = null) { $this->parts['from'] = $t; return $this; }
+    public function where($s) { $this->parts['where'][] = $s; return $this; }
+    public function leftJoin($t, $a, $o) { return $this; }
+    public function __toString()
+    {
+        $sql = 'SELECT ' . ($this->parts['select'] ?? '*');
+        $sql .= ' FROM ' . _DB_PREFIX_ . ($this->parts['from'] ?? '');
+        if (!empty($this->parts['where'])) {
+            $sql .= ' WHERE ' . implode(' AND ', $this->parts['where']);
+        }
+        return $sql;
+    }
+}
+
+class ObjectModel
+{
+    const TYPE_INT = 1;
+    const TYPE_BOOL = 2;
+    const TYPE_STRING = 3;
+    const TYPE_DATE = 5;
+    public $id;
+    public function save() { return true; }
+    public function delete() { return true; }
+}
+
+class PrestaShopLogger
+{
+    public static function addLog($msg, $sev = 1, $code = null, $obj = null, $id = null, $dup = false) {}
+}
+
+if (!function_exists('pSQL')) {
+    function pSQL($string) { return addslashes($string); }
+}
+
+// ──────────────────────────────────────────────
+// 4. Load module autoloader
+// ──────────────────────────────────────────────
+require_once dirname(__DIR__, 2) . '/vendor/autoload.php';
