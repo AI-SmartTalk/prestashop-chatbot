@@ -297,7 +297,7 @@ class AiSmartTalkProductSync extends \ObjectModel
 
         $results = \Db::getInstance()->executeS($sql);
 
-        return array_column($results, 'id_product');
+        return is_array($results) ? array_column($results, 'id_product') : [];
     }
 
     /**
