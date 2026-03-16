@@ -1,4 +1,33 @@
-.PHONY: up down logs logs-error bash
+.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install
+
+# ──────────────────────────────────────────────
+# Tests
+# ──────────────────────────────────────────────
+MODULE_DIR = modules/aismarttalk
+PHPUNIT    = vendor/bin/phpunit
+PHPUNIT_CFG = phpunit.xml
+
+# Install test dependencies (PHPUnit)
+test-install:
+	cd $(MODULE_DIR) && composer install
+
+# Run all tests
+test:
+	@cd $(MODULE_DIR) && composer install --quiet 2>/dev/null; $(PHPUNIT) --configuration $(PHPUNIT_CFG)
+
+# Run tests with verbose output
+test-verbose:
+	@cd $(MODULE_DIR) && composer install --quiet 2>/dev/null; $(PHPUNIT) --configuration $(PHPUNIT_CFG) --verbose
+
+# Run a specific test file or filter
+# Usage: make test-filter FILTER=MultistoreHelper
+#        make test-filter FILTER=testGetConfigReadsGlobalValue
+test-filter:
+	@cd $(MODULE_DIR) && $(PHPUNIT) --configuration $(PHPUNIT_CFG) --filter="$(FILTER)"
+
+# Run tests with code coverage (requires Xdebug or PCOV)
+test-coverage:
+	@cd $(MODULE_DIR) && XDEBUG_MODE=coverage $(PHPUNIT) --configuration $(PHPUNIT_CFG) --coverage-text --coverage-html=tests/coverage
 
 # Define the services
 SERVICES = prestashop prestashop_db
