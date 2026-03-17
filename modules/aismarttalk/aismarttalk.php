@@ -111,6 +111,9 @@ class AiSmartTalk extends Module
 
         $this->registerAiSmartTalkHooks();
 
+        // Ensure module is visible to all customer groups in front-office
+        $this->ensureModuleGroupAccess();
+
         return true;
     }
 
@@ -170,6 +173,26 @@ class AiSmartTalk extends Module
     public function ensureHooksRegistered(): void
     {
         $this->registerAiSmartTalkHooks();
+    }
+
+    /**
+     * Ensure the module is accessible to all customer groups in the front-office.
+     * Without ps_module_group entries, PrestaShop's hook system silently skips the module.
+     */
+    public function ensureModuleGroupAccess(): void
+    {
+        $shops = \Shop::getShops(true, null, true);
+        $groups = \Group::getGroups(\Context::getContext()->language->id);
+
+        foreach ($shops as $shopId) {
+            foreach ($groups as $group) {
+                \Db::getInstance()->insert('module_group', [
+                    'id_module' => (int) $this->id,
+                    'id_shop' => (int) $shopId,
+                    'id_group' => (int) $group['id_group'],
+                ], false, true, \Db::ON_DUPLICATE_KEY);
+            }
+        }
     }
 
     public function uninstall()
@@ -325,6 +348,9 @@ class AiSmartTalk extends Module
 
         // Ensure all hooks are registered (for existing installations that may miss new hooks)
         $this->ensureHooksRegistered();
+
+        // Ensure module is visible to all customer groups in front-office
+        $this->ensureModuleGroupAccess();
 
         // Ensure sync tracking tables exist (for existing installations)
         AiSmartTalkProductSync::createTable();

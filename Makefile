@@ -82,9 +82,9 @@ e2e:
 e2e-headed:
 	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test --headed
 
-# Run E2E in Playwright UI mode (interactive)
+# Run E2E in Playwright UI mode (interactive, all projects)
 e2e-ui:
-	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test --ui
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test --ui --project=chromium
 
 # Run OAuth setup only (connect module to AI SmartTalk)
 e2e-setup:
@@ -106,7 +106,8 @@ e2e-reset:
 			'CHAT_MODEL_TOKEN', \
 			'AI_SMART_TALK_ENABLED' \
 		);"
-	@echo "✓ Module OAuth config reset"
+	docker exec prestashop bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/smarty/cache/* /var/www/html/cache/smarty/compile/* /var/www/html/cache/cachefs/* 2>/dev/null"
+	@echo "✓ Module OAuth config reset + caches cleared"
 
 # Run E2E on PS 1.7 (http://localhost:8091)
 e2e-ps17:
