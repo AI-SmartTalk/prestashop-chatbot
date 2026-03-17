@@ -1,4 +1,4 @@
-.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 e2e e2e-install e2e-ps17 e2e-headed e2e-ui e2e-setup e2e-reset
+.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 e2e e2e-install e2e-ps17 e2e-headed e2e-ui e2e-setup e2e-reset e2e-all
 
 # ──────────────────────────────────────────────
 # Unit Tests (no DB needed)
@@ -112,6 +112,20 @@ e2e-reset:
 # Run E2E on PS 1.7 (http://localhost:8091)
 e2e-ps17:
 	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$$(docker exec prestashop17 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") ADMIN_PASS=Admin_Presta17! npx playwright test
+
+# Run E2E on ALL environments (PS 9 + PS 1.7)
+e2e-all:
+	@echo "═══════════════════════════════════════"
+	@echo "  E2E Tests — PrestaShop 9"
+	@echo "═══════════════════════════════════════"
+	$(MAKE) e2e
+	@echo ""
+	@echo "═══════════════════════════════════════"
+	@echo "  E2E Tests — PrestaShop 1.7"
+	@echo "═══════════════════════════════════════"
+	$(MAKE) e2e-ps17
+	@echo ""
+	@echo "✅ All E2E tests passed on PS 9 + PS 1.7"
 
 # ──────────────────────────────────────────────
 # Run ALL tests (unit + integration)

@@ -43,17 +43,44 @@ export async function loginToAdmin(page: Page, adminPath: string): Promise<void>
 
 /**
  * Navigate to the AI SmartTalk module configuration page.
+ * Handles both PS 1.7 (legacy admin with token) and PS 9 (Symfony routing).
  */
 export async function goToModuleConfig(page: Page, adminPath: string): Promise<void> {
-  await page.goto(`/${adminPath}/index.php?controller=AdminModules&configure=aismarttalk`, {
-    waitUntil: 'domcontentloaded',
-  });
-
-  // Handle possible token redirect
-  if (page.url().includes('controller=AdminLogin')) {
-    await loginToAdmin(page, adminPath);
+  // PS 1.7 may redirect with a token param, causing "navigation interrupted".
+  // Use waitUntil: 'load' and catch redirect interruptions.
+  try {
     await page.goto(`/${adminPath}/index.php?controller=AdminModules&configure=aismarttalk`, {
-      waitUntil: 'domcontentloaded',
+      waitUntil: 'load',
     });
+  } catch (e: any) {
+    // PS 1.7 auto-redirects to add ?token=xxx — wait for the final page
+    if (e.message?.includes('interrupted by another navigation')) {
+      await page.waitForLoadState('load');
+    } else {
+      throw e;
+    }
+  }
+
+  // Handle possible login redirect
+  if (page.url().includes('controller=AdminLogin') || page.url().includes('/login')) {
+    await loginToAdmin(page, adminPath);
+    try {
+      await page.goto(`/${adminPath}/index.php?controller=AdminModules&configure=aismarttalk`, {
+        waitUntil: 'load',
+      });
+    } catch (e: any) {
+      if (e.message?.includes('interrupted by another navigation')) {
+        await page.waitForLoadState('load');
+      } else {
+        throw e;
+      }
+    }
+  }
+
+  // PS 1.7: "CLÉ DE SÉCURITÉ INVALIDE" — bypass the security token warning
+  const bypassBtn = page.getByText('Je comprends les risques', { exact: false });
+  if (await bypassBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await bypassBtn.click();
+    await page.waitForLoadState('networkidle');
   }
 }

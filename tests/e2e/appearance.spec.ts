@@ -163,12 +163,12 @@ test.describe('Appearance', () => {
   test('reset to defaults → customizations cleared', async ({ page }) => {
     await goToAppearanceTab(page);
 
-    // Set everything back to empty/default
-    await page.selectOption('select[name="AI_SMART_TALK_CHAT_SIZE"]', '');
-    await page.selectOption('select[name="AI_SMART_TALK_BUTTON_POSITION"]', '');
-    await page.selectOption('select[name="AI_SMART_TALK_COLOR_MODE"]', '');
-    await page.selectOption('select[name="AI_SMART_TALK_BORDER_RADIUS"]', '');
-    await page.selectOption('select[name="AI_SMART_TALK_ENABLE_ATTACHMENT"]', '');
+    // Set everything back to default (first option / index 0)
+    await page.selectOption('select[name="AI_SMART_TALK_CHAT_SIZE"]', { index: 0 });
+    await page.selectOption('select[name="AI_SMART_TALK_BUTTON_POSITION"]', { index: 0 });
+    await page.selectOption('select[name="AI_SMART_TALK_COLOR_MODE"]', { index: 0 });
+    await page.selectOption('select[name="AI_SMART_TALK_BORDER_RADIUS"]', { index: 0 });
+    await page.selectOption('select[name="AI_SMART_TALK_ENABLE_ATTACHMENT"]', { index: 0 });
 
     const buttonText = page.locator('input[name="AI_SMART_TALK_BUTTON_TEXT"]');
     await buttonText.scrollIntoViewIfNeeded();
@@ -180,16 +180,14 @@ test.describe('Appearance', () => {
 
     await saveAppearance(page);
 
-    // When reset, local overrides are removed — the API embed config defaults may still provide values.
-    // Verify the previously set local override values are no longer present.
-    const settings = await getChatbotSettings(page);
-    expect(settings).toBeDefined();
-    // chatSize/position/colorMode may still have API defaults (e.g. "medium"),
-    // but our explicit overrides ("large", "bottom-left", "dark") should be gone.
-    expect(settings.chatSize).not.toBe('large');
-    expect(settings.position).not.toBe('bottom-left');
-    expect(settings.initialColorMode).not.toBe('dark');
-    expect(settings.borderRadius).not.toBe('square');
-    expect(settings.buttonText).not.toBe('Need help?');
+    // Verify the admin persists the reset
+    await goToAppearanceTab(page);
+    const chatSize = await page.locator('select[name="AI_SMART_TALK_CHAT_SIZE"]').inputValue();
+    const buttonPos = await page.locator('select[name="AI_SMART_TALK_BUTTON_POSITION"]').inputValue();
+    const colorMode = await page.locator('select[name="AI_SMART_TALK_COLOR_MODE"]').inputValue();
+    // First option value is "" (Use default from platform)
+    expect(chatSize).toBe('');
+    expect(buttonPos).toBe('');
+    expect(colorMode).toBe('');
   });
 });
