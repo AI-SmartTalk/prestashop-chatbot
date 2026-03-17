@@ -39,8 +39,17 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { browserName: 'chromium' },
-      testIgnore: 'setup-oauth.spec.ts',
+      testIgnore: ['setup-oauth.spec.ts', 'disconnect-reconnect.spec.ts'],
       dependencies: ['setup'],
+    },
+    {
+      name: 'disconnect-reconnect',
+      testMatch: 'disconnect-reconnect.spec.ts',
+      use: { browserName: 'chromium' },
+      retries: 0,
+      // Runs last — after all other tests. Tests are sequential (depend on order).
+      dependencies: ['chromium'],
+      fullyParallel: false,
     },
   ],
 });
