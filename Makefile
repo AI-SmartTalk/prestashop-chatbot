@@ -1,4 +1,4 @@
-.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 e2e e2e-install e2e-ps17
+.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 e2e e2e-install e2e-ps17 e2e-headed e2e-ui e2e-setup e2e-reset
 
 # ──────────────────────────────────────────────
 # Unit Tests (no DB needed)
@@ -77,6 +77,36 @@ e2e-install:
 # Run E2E on PS 9 (http://localhost)
 e2e:
 	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test
+
+# Run E2E headed (visible browser)
+e2e-headed:
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test --headed
+
+# Run E2E in Playwright UI mode (interactive)
+e2e-ui:
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test --ui
+
+# Run OAuth setup only (connect module to AI SmartTalk)
+e2e-setup:
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test --headed --project=setup
+
+# Reset module OAuth connection (disconnect)
+e2e-reset:
+	docker exec prestashop_db mysql -u prestashop -pprestashop prestashop -e " \
+		DELETE FROM ps_configuration WHERE name IN ( \
+			'AI_SMART_TALK_OAUTH_CONNECTED', \
+			'AI_SMART_TALK_ACCESS_TOKEN', \
+			'AI_SMART_TALK_CHAT_MODEL_ID', \
+			'AI_SMART_TALK_OAUTH_SCOPE', \
+			'AI_SMART_TALK_SITE_IDENTIFIER', \
+			'AI_SMART_TALK_OAUTH_PENDING', \
+			'AI_SMART_TALK_OAUTH_SUCCESS', \
+			'AI_SMART_TALK_OAUTH_ERROR', \
+			'CHAT_MODEL_ID', \
+			'CHAT_MODEL_TOKEN', \
+			'AI_SMART_TALK_ENABLED' \
+		);"
+	@echo "✓ Module OAuth config reset"
 
 # Run E2E on PS 1.7 (http://localhost:8091)
 e2e-ps17:

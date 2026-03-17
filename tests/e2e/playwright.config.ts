@@ -10,6 +10,9 @@ import { defineConfig } from '@playwright/test';
  * Run:
  *   make e2e         → run all E2E tests on PS 9
  *   make e2e-ps17    → run all E2E tests on PS 1.7
+ *   make e2e-setup   → run OAuth setup only
+ *   make e2e-headed  → run with visible browser
+ *   make e2e-ui      → run in Playwright UI mode
  */
 
 const PS_URL = process.env.PS_URL || 'http://localhost';
@@ -29,8 +32,15 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'setup',
+      testMatch: 'setup-oauth.spec.ts',
+      retries: 0,
+    },
+    {
       name: 'chromium',
       use: { browserName: 'chromium' },
+      testIgnore: 'setup-oauth.spec.ts',
+      dependencies: ['setup'],
     },
   ],
 });

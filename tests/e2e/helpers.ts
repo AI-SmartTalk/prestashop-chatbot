@@ -35,7 +35,7 @@ export async function loginToAdmin(page: Page, adminPath: string): Promise<void>
   if (await emailInput.isVisible({ timeout: 5000 }).catch(() => false)) {
     await emailInput.fill(ADMIN_EMAIL);
     await page.locator('input[name="passwd"], #passwd').fill(ADMIN_PASS);
-    await page.locator('button[type="submit"], #submit_login').click();
+    await page.locator('#submit_login').click();
     await page.waitForLoadState('networkidle');
   }
   // Else already logged in

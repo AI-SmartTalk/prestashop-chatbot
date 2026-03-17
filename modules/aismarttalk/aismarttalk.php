@@ -326,7 +326,8 @@ class AiSmartTalk extends Module
         // Ensure all hooks are registered (for existing installations that may miss new hooks)
         $this->ensureHooksRegistered();
 
-        // Ensure customer sync tracking table exists (for existing installations)
+        // Ensure sync tracking tables exist (for existing installations)
+        AiSmartTalkProductSync::createTable();
         AiSmartTalkCustomerSync::createTable();
 
         // Ensure default URLs are always available
