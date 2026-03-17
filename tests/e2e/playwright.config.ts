@@ -39,7 +39,7 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { browserName: 'chromium' },
-      testIgnore: ['setup-oauth.spec.ts', 'disconnect-reconnect.spec.ts', 'multistore.spec.ts'],
+      testIgnore: ['setup-oauth.spec.ts', 'disconnect-reconnect.spec.ts'],
       dependencies: ['setup'],
     },
     {
@@ -50,12 +50,6 @@ export default defineConfig({
       // Runs last — after all other tests. Tests are sequential (depend on order).
       dependencies: ['chromium'],
       fullyParallel: false,
-    },
-    {
-      name: 'chromium-multistore',
-      testMatch: 'multistore.spec.ts',
-      use: { browserName: 'chromium' },
-      dependencies: ['setup'],
     },
   ],
 });

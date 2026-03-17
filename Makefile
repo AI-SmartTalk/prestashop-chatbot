@@ -1,4 +1,4 @@
-.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 e2e e2e-install e2e-ps17 e2e-headed e2e-ui e2e-setup e2e-reset e2e-all e2e-multistore e2e-multistore-enable e2e-multistore-disable
+.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 e2e e2e-install e2e-ps17 e2e-headed e2e-ui e2e-setup e2e-reset e2e-all e2e-multistore e2e-multistore-ps17 e2e-multistore-enable e2e-multistore-disable e2e-multistore-enable-ps17 e2e-multistore-disable-ps17
 
 # ──────────────────────────────────────────────
 # Unit Tests (no DB needed)
@@ -125,13 +125,34 @@ e2e-multistore-disable:
 	docker exec prestashop bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/cachefs/* 2>/dev/null"
 	@echo "✓ Multistore disabled (single shop)"
 
-# Run E2E multistore tests on PS9 (enable multistore → run tests → disable multistore)
+# Run ALL E2E tests on PS9 with multistore enabled
 e2e-multistore: e2e-multistore-enable
-	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test multistore.spec.ts --project=setup --project=chromium-multistore; \
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test; \
 	EXIT_CODE=$$?; \
 	docker exec -i prestashop_db mysql -u prestashop -pprestashop prestashop < fixtures/disable-multistore.sql 2>/dev/null; \
 	docker exec prestashop bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/cachefs/* 2>/dev/null"; \
 	echo "✓ Multistore disabled (single shop)"; \
+	exit $$EXIT_CODE
+
+# Enable multistore on PS 1.7
+e2e-multistore-enable-ps17:
+	docker exec -i prestashop17_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/enable-multistore.sql
+	docker exec prestashop17 bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/cachefs/* 2>/dev/null"
+	@echo "✓ Multistore enabled on PS 1.7 (2 shops)"
+
+# Disable multistore on PS 1.7
+e2e-multistore-disable-ps17:
+	docker exec -i prestashop17_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/disable-multistore.sql
+	docker exec prestashop17 bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/cachefs/* 2>/dev/null"
+	@echo "✓ Multistore disabled on PS 1.7 (single shop)"
+
+# Run ALL E2E tests on PS 1.7 with multistore enabled
+e2e-multistore-ps17: e2e-multistore-enable-ps17
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$$(docker exec prestashop17 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") ADMIN_PASS=Admin_Presta17! npx playwright test; \
+	EXIT_CODE=$$?; \
+	docker exec -i prestashop17_db mysql -u prestashop -pprestashop prestashop < fixtures/disable-multistore.sql 2>/dev/null; \
+	docker exec prestashop17 bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/cachefs/* 2>/dev/null"; \
+	echo "✓ Multistore disabled on PS 1.7 (single shop)"; \
 	exit $$EXIT_CODE
 
 # Run E2E on ALL environments (PS 9 + PS 1.7)
@@ -151,7 +172,12 @@ e2e-all:
 	@echo "═══════════════════════════════════════"
 	$(MAKE) e2e-multistore
 	@echo ""
-	@echo "✅ All E2E tests passed on PS 9 (single) + PS 1.7 + PS 9 (multistore)"
+	@echo "═══════════════════════════════════════"
+	@echo "  E2E Tests — PS 1.7 Multistore"
+	@echo "═══════════════════════════════════════"
+	$(MAKE) e2e-multistore-ps17
+	@echo ""
+	@echo "✅ All E2E tests passed: PS 9 + PS 1.7 (single-shop & multistore)"
 
 # ──────────────────────────────────────────────
 # Run ALL tests (unit + integration)
