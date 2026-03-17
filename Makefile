@@ -1,4 +1,4 @@
-.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 e2e e2e-install e2e-ps17 e2e-headed e2e-ui e2e-setup e2e-reset e2e-all e2e-multistore e2e-multistore-ps17 e2e-multistore-enable e2e-multistore-disable e2e-multistore-enable-ps17 e2e-multistore-disable-ps17
+.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 e2e e2e-install e2e-ps17 e2e-headed e2e-ui e2e-setup e2e-reset e2e-reset-ps17 e2e-all e2e-multistore e2e-multistore-ps17 e2e-multistore-enable e2e-multistore-disable e2e-multistore-enable-ps17 e2e-multistore-disable-ps17
 
 # ──────────────────────────────────────────────
 # Unit Tests (no DB needed)
@@ -70,92 +70,93 @@ smoke-test-ps17:
 # ──────────────────────────────────────────────
 # Requires: a running PS container + Node.js installed
 
+# Common variables
+PS9_ADMIN_PATH = $$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")
+PS17_ADMIN_PATH = $$(docker exec prestashop17 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")
+OAUTH_KEYS = 'AI_SMART_TALK_OAUTH_CONNECTED','AI_SMART_TALK_ACCESS_TOKEN','AI_SMART_TALK_CHAT_MODEL_ID','AI_SMART_TALK_OAUTH_SCOPE','AI_SMART_TALK_SITE_IDENTIFIER','AI_SMART_TALK_OAUTH_PENDING','AI_SMART_TALK_OAUTH_SUCCESS','AI_SMART_TALK_OAUTH_ERROR','CHAT_MODEL_ID','CHAT_MODEL_TOKEN','AI_SMART_TALK_ENABLED'
+
+# Cache-clearing macros
+define clear-ps9-cache
+	@docker exec prestashop bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/smarty/cache/* /var/www/html/cache/smarty/compile/* /var/www/html/cache/cachefs/* 2>/dev/null" || true
+endef
+
+define clear-ps17-cache
+	@docker exec prestashop17 bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/smarty/cache/* /var/www/html/cache/smarty/compile/* /var/www/html/cache/cachefs/* 2>/dev/null" || true
+endef
+
 # Install Playwright
 e2e-install:
 	cd tests/e2e && npm install && npx playwright install chromium
 
-# Run E2E on PS 9 (http://localhost)
-e2e:
-	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test
+# Reset OAuth state (PS9)
+e2e-reset:
+	@docker exec prestashop_db mysql -u prestashop -pprestashop prestashop -e "DELETE FROM ps_configuration WHERE name IN ($(OAUTH_KEYS));" 2>/dev/null || true
+	$(call clear-ps9-cache)
+	@echo "✓ PS9 OAuth reset"
+
+# Reset OAuth state (PS 1.7)
+e2e-reset-ps17:
+	@docker exec prestashop17_db mysql -u prestashop -pprestashop prestashop -e "DELETE FROM ps_configuration WHERE name IN ($(OAUTH_KEYS));" 2>/dev/null || true
+	$(call clear-ps17-cache)
+	@echo "✓ PS 1.7 OAuth reset"
+
+# Run E2E on PS 9 — auto-resets before running
+e2e: e2e-reset
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test
+
+# Run E2E on PS 1.7 — auto-resets before running
+e2e-ps17: e2e-reset-ps17
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_PASS=Admin_Presta17! npx playwright test
 
 # Run E2E headed (visible browser)
-e2e-headed:
-	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test --headed
+e2e-headed: e2e-reset
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test --headed
 
-# Run E2E in Playwright UI mode (interactive, all projects)
-e2e-ui:
-	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test --ui --project=chromium
+# Run E2E in Playwright UI mode
+e2e-ui: e2e-reset
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test --ui --project=chromium
 
-# Run OAuth setup only (connect module to AI SmartTalk)
-e2e-setup:
-	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test --headed --project=setup
+# Run OAuth setup only (headed)
+e2e-setup: e2e-reset
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test --headed --project=setup
 
-# Reset module OAuth connection (disconnect)
-e2e-reset:
-	docker exec prestashop_db mysql -u prestashop -pprestashop prestashop -e " \
-		DELETE FROM ps_configuration WHERE name IN ( \
-			'AI_SMART_TALK_OAUTH_CONNECTED', \
-			'AI_SMART_TALK_ACCESS_TOKEN', \
-			'AI_SMART_TALK_CHAT_MODEL_ID', \
-			'AI_SMART_TALK_OAUTH_SCOPE', \
-			'AI_SMART_TALK_SITE_IDENTIFIER', \
-			'AI_SMART_TALK_OAUTH_PENDING', \
-			'AI_SMART_TALK_OAUTH_SUCCESS', \
-			'AI_SMART_TALK_OAUTH_ERROR', \
-			'CHAT_MODEL_ID', \
-			'CHAT_MODEL_TOKEN', \
-			'AI_SMART_TALK_ENABLED' \
-		);"
-	docker exec prestashop bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/smarty/cache/* /var/www/html/cache/smarty/compile/* /var/www/html/cache/cachefs/* 2>/dev/null"
-	@echo "✓ Module OAuth config reset + caches cleared"
-
-# Run E2E on PS 1.7 (http://localhost:8091)
-e2e-ps17:
-	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$$(docker exec prestashop17 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") ADMIN_PASS=Admin_Presta17! npx playwright test
-
-# Enable multistore on PS9 (add shop 2)
+# Enable/disable multistore on PS9
 e2e-multistore-enable:
-	docker exec -i prestashop_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/enable-multistore.sql
-	docker exec prestashop bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/cachefs/* 2>/dev/null"
+	@docker exec -i prestashop_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/enable-multistore.sql
+	$(call clear-ps9-cache)
 	@echo "✓ Multistore enabled (2 shops)"
 
-# Disable multistore on PS9 (back to single shop)
 e2e-multistore-disable:
-	docker exec -i prestashop_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/disable-multistore.sql
-	docker exec prestashop bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/cachefs/* 2>/dev/null"
+	@docker exec -i prestashop_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/disable-multistore.sql
+	$(call clear-ps9-cache)
 	@echo "✓ Multistore disabled (single shop)"
 
-# Run ALL E2E tests on PS9 with multistore enabled
-e2e-multistore: e2e-multistore-enable
-	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") npx playwright test; \
-	EXIT_CODE=$$?; \
-	docker exec -i prestashop_db mysql -u prestashop -pprestashop prestashop < fixtures/disable-multistore.sql 2>/dev/null; \
-	docker exec prestashop bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/cachefs/* 2>/dev/null"; \
-	echo "✓ Multistore disabled (single shop)"; \
-	exit $$EXIT_CODE
-
-# Enable multistore on PS 1.7
+# Enable/disable multistore on PS 1.7
 e2e-multistore-enable-ps17:
-	docker exec -i prestashop17_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/enable-multistore.sql
-	docker exec prestashop17 bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/cachefs/* 2>/dev/null"
+	@docker exec -i prestashop17_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/enable-multistore.sql
+	$(call clear-ps17-cache)
 	@echo "✓ Multistore enabled on PS 1.7 (2 shops)"
 
-# Disable multistore on PS 1.7
 e2e-multistore-disable-ps17:
-	docker exec -i prestashop17_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/disable-multistore.sql
-	docker exec prestashop17 bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/cachefs/* 2>/dev/null"
+	@docker exec -i prestashop17_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/disable-multistore.sql
+	$(call clear-ps17-cache)
 	@echo "✓ Multistore disabled on PS 1.7 (single shop)"
 
-# Run ALL E2E tests on PS 1.7 with multistore enabled
-e2e-multistore-ps17: e2e-multistore-enable-ps17
-	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$$(docker exec prestashop17 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename") ADMIN_PASS=Admin_Presta17! npx playwright test; \
+# Run E2E on PS9 with multistore (enables, resets OAuth, runs, disables)
+e2e-multistore: e2e-multistore-enable e2e-reset
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test; \
 	EXIT_CODE=$$?; \
-	docker exec -i prestashop17_db mysql -u prestashop -pprestashop prestashop < fixtures/disable-multistore.sql 2>/dev/null; \
-	docker exec prestashop17 bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/cachefs/* 2>/dev/null"; \
-	echo "✓ Multistore disabled on PS 1.7 (single shop)"; \
+	$(MAKE) -s e2e-multistore-disable; \
 	exit $$EXIT_CODE
 
-# Run E2E on ALL environments (PS 9 + PS 1.7)
+# Run E2E on PS 1.7 with multistore
+e2e-multistore-ps17: e2e-multistore-enable-ps17 e2e-reset-ps17
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_PASS=Admin_Presta17! npx playwright test; \
+	EXIT_CODE=$$?; \
+	$(MAKE) -s e2e-multistore-disable-ps17; \
+	exit $$EXIT_CODE
+
+# Run ALL E2E tests (PS 9 + PS 1.7, single-shop & multistore)
 e2e-all:
 	@echo "═══════════════════════════════════════"
 	@echo "  E2E Tests — PrestaShop 9"
