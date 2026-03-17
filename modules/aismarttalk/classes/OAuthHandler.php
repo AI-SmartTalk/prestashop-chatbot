@@ -53,9 +53,9 @@ class OAuthHandler
      */
     public static function getFrontendApiUrl(): string
     {
-        $frontUrl = \Configuration::get('AI_SMART_TALK_FRONT_URL');
+        $frontUrl = MultistoreHelper::getConfig('AI_SMART_TALK_FRONT_URL');
         if (empty($frontUrl)) {
-            $frontUrl = \Configuration::get('AI_SMART_TALK_URL');
+            $frontUrl = MultistoreHelper::getConfig('AI_SMART_TALK_URL');
         }
         if (empty($frontUrl)) {
             $frontUrl = 'https://aismarttalk.tech';
@@ -71,7 +71,7 @@ class OAuthHandler
      */
     public static function getBackendApiUrl(): string
     {
-        $url = \Configuration::get('AI_SMART_TALK_URL');
+        $url = MultistoreHelper::getConfig('AI_SMART_TALK_URL');
         if (empty($url)) {
             $url = 'https://aismarttalk.tech';
         }
@@ -124,13 +124,14 @@ class OAuthHandler
     {
         // Use Configuration table for cross-context storage
         // Store as JSON with expiry time (10 minutes)
+        // Use global scope so the front controller callback can read it regardless of shop context
         $data = json_encode([
             'state' => $state,
             'code_verifier' => $codeVerifier,
             'return_url' => $returnUrl,
             'expires' => time() + 600, // 10 minutes
         ]);
-        \Configuration::updateValue('AI_SMART_TALK_OAUTH_PENDING', $data);
+        MultistoreHelper::updateConfig('AI_SMART_TALK_OAUTH_PENDING', $data);
     }
 
     /**
@@ -140,7 +141,7 @@ class OAuthHandler
      */
     public static function getStoredOAuthState(): ?array
     {
-        $data = \Configuration::get('AI_SMART_TALK_OAUTH_PENDING');
+        $data = MultistoreHelper::getConfig('AI_SMART_TALK_OAUTH_PENDING');
 
         if (empty($data)) {
             return null;
@@ -171,7 +172,7 @@ class OAuthHandler
      */
     public static function clearOAuthState(): void
     {
-        \Configuration::deleteByName('AI_SMART_TALK_OAUTH_PENDING');
+        MultistoreHelper::deleteConfig('AI_SMART_TALK_OAUTH_PENDING');
     }
 
     /**
@@ -408,20 +409,20 @@ class OAuthHandler
             ];
         }
 
-        // Store the credentials in PrestaShop configuration
-        \Configuration::updateValue('AI_SMART_TALK_ACCESS_TOKEN', $tokenData['access_token']);
-        \Configuration::updateValue('AI_SMART_TALK_CHAT_MODEL_ID', $tokenData['chat_model_id']);
-        \Configuration::updateValue('AI_SMART_TALK_OAUTH_SCOPE', $tokenData['scope'] ?? self::OAUTH_SCOPES);
-        \Configuration::updateValue('AI_SMART_TALK_OAUTH_CONNECTED', true);
+        // Store the credentials in PrestaShop configuration (GLOBAL scope for multistore)
+        MultistoreHelper::updateConfig('AI_SMART_TALK_ACCESS_TOKEN', $tokenData['access_token']);
+        MultistoreHelper::updateConfig('AI_SMART_TALK_CHAT_MODEL_ID', $tokenData['chat_model_id']);
+        MultistoreHelper::updateConfig('AI_SMART_TALK_OAUTH_SCOPE', $tokenData['scope'] ?? self::OAUTH_SCOPES);
+        MultistoreHelper::updateConfig('AI_SMART_TALK_OAUTH_CONNECTED', '1');
 
         // Store site identifier for multi-site support
         if (isset($tokenData['site_identifier'])) {
-            \Configuration::updateValue('AI_SMART_TALK_SITE_IDENTIFIER', $tokenData['site_identifier']);
+            MultistoreHelper::updateConfig('AI_SMART_TALK_SITE_IDENTIFIER', $tokenData['site_identifier']);
         }
 
         // For backward compatibility, also update the old config keys
-        \Configuration::updateValue('CHAT_MODEL_ID', $tokenData['chat_model_id']);
-        \Configuration::updateValue('CHAT_MODEL_TOKEN', $tokenData['access_token']);
+        MultistoreHelper::updateConfig('CHAT_MODEL_ID', $tokenData['chat_model_id']);
+        MultistoreHelper::updateConfig('CHAT_MODEL_TOKEN', $tokenData['access_token']);
 
         \PrestaShopLogger::addLog(
             'AI SmartTalk: OAuth connection successful. Chat Model ID: ' . $tokenData['chat_model_id'],
@@ -447,7 +448,7 @@ class OAuthHandler
      */
     public static function getSiteIdentifier(): ?string
     {
-        $stored = \Configuration::get('AI_SMART_TALK_SITE_IDENTIFIER');
+        $stored = MultistoreHelper::getConfig('AI_SMART_TALK_SITE_IDENTIFIER');
         if (!empty($stored)) {
             return $stored;
         }
@@ -470,7 +471,7 @@ class OAuthHandler
      */
     public static function disconnect(): bool
     {
-        $accessToken = \Configuration::get('AI_SMART_TALK_ACCESS_TOKEN');
+        $accessToken = MultistoreHelper::getConfig('AI_SMART_TALK_ACCESS_TOKEN');
 
         if (!empty($accessToken)) {
             // Revoke token on the server
@@ -492,14 +493,14 @@ class OAuthHandler
             curl_close($ch);
         }
 
-        // Clear local credentials
-        \Configuration::deleteByName('AI_SMART_TALK_ACCESS_TOKEN');
-        \Configuration::deleteByName('AI_SMART_TALK_CHAT_MODEL_ID');
-        \Configuration::deleteByName('AI_SMART_TALK_OAUTH_SCOPE');
-        \Configuration::deleteByName('AI_SMART_TALK_OAUTH_CONNECTED');
-        \Configuration::deleteByName('AI_SMART_TALK_SITE_IDENTIFIER');
-        \Configuration::deleteByName('CHAT_MODEL_ID');
-        \Configuration::deleteByName('CHAT_MODEL_TOKEN');
+        // Clear local credentials (deleteByName removes across all scopes)
+        MultistoreHelper::deleteConfig('AI_SMART_TALK_ACCESS_TOKEN');
+        MultistoreHelper::deleteConfig('AI_SMART_TALK_CHAT_MODEL_ID');
+        MultistoreHelper::deleteConfig('AI_SMART_TALK_OAUTH_SCOPE');
+        MultistoreHelper::deleteConfig('AI_SMART_TALK_OAUTH_CONNECTED');
+        MultistoreHelper::deleteConfig('AI_SMART_TALK_SITE_IDENTIFIER');
+        MultistoreHelper::deleteConfig('CHAT_MODEL_ID');
+        MultistoreHelper::deleteConfig('CHAT_MODEL_TOKEN');
 
         \PrestaShopLogger::addLog(
             'AI SmartTalk: OAuth disconnected',
@@ -520,9 +521,9 @@ class OAuthHandler
      */
     public static function isConnected(): bool
     {
-        return (bool) \Configuration::get('AI_SMART_TALK_OAUTH_CONNECTED')
-            && !empty(\Configuration::get('AI_SMART_TALK_ACCESS_TOKEN'))
-            && !empty(\Configuration::get('AI_SMART_TALK_CHAT_MODEL_ID'));
+        return (bool) MultistoreHelper::getConfig('AI_SMART_TALK_OAUTH_CONNECTED')
+            && !empty(MultistoreHelper::getConfig('AI_SMART_TALK_ACCESS_TOKEN'))
+            && !empty(MultistoreHelper::getConfig('AI_SMART_TALK_CHAT_MODEL_ID'));
     }
 
     /**
@@ -532,7 +533,7 @@ class OAuthHandler
      */
     public static function getAccessToken(): ?string
     {
-        $token = \Configuration::get('AI_SMART_TALK_ACCESS_TOKEN');
+        $token = MultistoreHelper::getConfig('AI_SMART_TALK_ACCESS_TOKEN');
 
         return !empty($token) ? $token : null;
     }
@@ -544,7 +545,7 @@ class OAuthHandler
      */
     public static function getChatModelId(): ?string
     {
-        $id = \Configuration::get('AI_SMART_TALK_CHAT_MODEL_ID');
+        $id = MultistoreHelper::getConfig('AI_SMART_TALK_CHAT_MODEL_ID');
 
         return !empty($id) ? $id : null;
     }

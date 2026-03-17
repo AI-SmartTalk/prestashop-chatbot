@@ -86,17 +86,17 @@ class AdminFormHandler
     {
         $output = '';
 
-        $oauthSuccess = \Configuration::get('AI_SMART_TALK_OAUTH_SUCCESS');
-        $oauthError = \Configuration::get('AI_SMART_TALK_OAUTH_ERROR');
+        $oauthSuccess = MultistoreHelper::getConfig('AI_SMART_TALK_OAUTH_SUCCESS');
+        $oauthError = MultistoreHelper::getConfig('AI_SMART_TALK_OAUTH_ERROR');
 
         if (!empty($oauthSuccess)) {
             $output .= $this->module->displayConfirmation($oauthSuccess);
-            \Configuration::deleteByName('AI_SMART_TALK_OAUTH_SUCCESS');
+            MultistoreHelper::deleteConfig('AI_SMART_TALK_OAUTH_SUCCESS');
         }
 
         if (!empty($oauthError)) {
             $output .= $this->module->displayError($oauthError);
-            \Configuration::deleteByName('AI_SMART_TALK_OAUTH_ERROR');
+            MultistoreHelper::deleteConfig('AI_SMART_TALK_OAUTH_ERROR');
         }
 
         return $output;

@@ -68,8 +68,8 @@ class ApiClient
     {
         return new self(
             OAuthHandler::getBackendApiUrl(),
-            OAuthHandler::getAccessToken() ?: (\Configuration::get('CHAT_MODEL_TOKEN') ?: null),
-            OAuthHandler::getChatModelId() ?: (\Configuration::get('CHAT_MODEL_ID') ?: null),
+            OAuthHandler::getAccessToken() ?: (MultistoreHelper::getConfig('CHAT_MODEL_TOKEN') ?: null),
+            OAuthHandler::getChatModelId() ?: (MultistoreHelper::getConfig('CHAT_MODEL_ID') ?: null),
             OAuthHandler::getSiteIdentifier()
         );
     }
