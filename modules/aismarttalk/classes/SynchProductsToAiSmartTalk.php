@@ -81,6 +81,8 @@ class SynchProductsToAiSmartTalk
         }
 
         $link = $this->getContext()->link;
+        $defaultLangId = (int) \Configuration::get('PS_LANG_DEFAULT');
+        $defaultShopId = MultistoreHelper::getDefaultShopId();
 
         // Get default currency information
         $defaultCurrencyId = (int) \Configuration::get('PS_CURRENCY_DEFAULT');
@@ -90,13 +92,16 @@ class SynchProductsToAiSmartTalk
         $documentDatas = [];
         $synchronizedProductIds = [];
         foreach ($products as $product) {
-            $psProduct = new \Product($product['id_product']);
-            $productUrl = $link->getProductLink($psProduct);
+            $bestShopId = (int) ($product['best_shop_id'] ?: $defaultShopId);
+            $psProduct = new \Product($product['id_product'], false, $defaultLangId, $bestShopId);
+            $productUrl = $link->getProductLink($psProduct, null, null, null, $defaultLangId, $bestShopId);
 
             $imageUrl = null;
             if (!empty($product['id_image'])) {
-                $defaultLangId = \Configuration::get('PS_LANG_DEFAULT');
-                $imageUrl = $this->getContext()->link->getImageLink($psProduct->link_rewrite[$defaultLangId], $product['id_image']);
+                $linkRewrite = is_array($psProduct->link_rewrite)
+                    ? ($psProduct->link_rewrite[$defaultLangId] ?? reset($psProduct->link_rewrite))
+                    : ($psProduct->link_rewrite ?: '');
+                $imageUrl = $this->getContext()->link->getImageLink($linkRewrite, $product['id_image']);
             }
 
             // Calculate final price considering specific prices (promotions)
@@ -189,7 +194,7 @@ class SynchProductsToAiSmartTalk
 
     /**
      * Get products to synchronize across ALL shops (union, deduplicated).
-     * Product data (name, price, image, URL) comes from the default shop context.
+     * Product data (name, price, image, URL) prefers the default shop, with fallback to any shop.
      * A product is included if it is active + in stock in at least one shop.
      */
     private function getProductsToSynchronize()
@@ -223,10 +228,28 @@ class SynchProductsToAiSmartTalk
                 AND ps_any.active = 1
         )';
 
+        // For product_lang, category_lang, image_shop: prefer default shop, fallback to any shop with data
+        $plShopSubquery = '(SELECT pl2.id_shop FROM ' . _DB_PREFIX_ . 'product_lang pl2
+            WHERE pl2.id_product = p.id_product AND pl2.id_lang = ' . $defaultLangId . '
+            AND pl2.name IS NOT NULL AND pl2.name != ""
+            ORDER BY (pl2.id_shop = ' . $defaultShopId . ') DESC, pl2.id_shop ASC
+            LIMIT 1)';
+
+        $clShopSubquery = '(SELECT cl2.id_shop FROM ' . _DB_PREFIX_ . 'category_lang cl2
+            WHERE cl2.id_category = p.id_category_default AND cl2.id_lang = ' . $defaultLangId . '
+            ORDER BY (cl2.id_shop = ' . $defaultShopId . ') DESC, cl2.id_shop ASC
+            LIMIT 1)';
+
+        $imsShopSubquery = '(SELECT ims2.id_shop FROM ' . _DB_PREFIX_ . 'image_shop ims2
+            WHERE ims2.id_product = p.id_product AND ims2.cover = 1
+            ORDER BY (ims2.id_shop = ' . $defaultShopId . ') DESC, ims2.id_shop ASC
+            LIMIT 1)';
+
         $sql = 'SELECT p.id_product, pl.name, pl.description, pl.description_short,
                    p.reference, p.price, cl.link_rewrite, i.id_image,
                    p.active,
                    p.available_date,
+                   pl.id_shop as best_shop_id,
                    c.iso_code as currency_code,
                    sp.price as specific_price,
                    sp.from as price_from,
@@ -236,13 +259,13 @@ class SynchProductsToAiSmartTalk
             FROM ' . _DB_PREFIX_ . 'product p
             LEFT JOIN ' . _DB_PREFIX_ . 'product_lang pl
                 ON p.id_product = pl.id_product AND pl.id_lang = ' . $defaultLangId . '
-                AND pl.id_shop = ' . $defaultShopId . '
+                AND pl.id_shop = ' . $plShopSubquery . '
             LEFT JOIN ' . _DB_PREFIX_ . 'category_lang cl
                 ON p.id_category_default = cl.id_category AND cl.id_lang = ' . $defaultLangId . '
-                AND cl.id_shop = ' . $defaultShopId . '
+                AND cl.id_shop = ' . $clShopSubquery . '
             LEFT JOIN ' . _DB_PREFIX_ . 'image_shop ims
                 ON p.id_product = ims.id_product AND ims.cover = 1
-                AND ims.id_shop = ' . $defaultShopId . '
+                AND ims.id_shop = ' . $imsShopSubquery . '
             LEFT JOIN ' . _DB_PREFIX_ . 'image i ON i.id_image = ims.id_image
             LEFT JOIN ' . _DB_PREFIX_ . 'currency c ON c.id_currency = ' . $defaultCurrencyId . '
             LEFT JOIN ' . _DB_PREFIX_ . 'specific_price sp ON sp.id_specific_price = (
@@ -251,8 +274,8 @@ class SynchProductsToAiSmartTalk
                 WHERE sp2.id_product = p.id_product
                     AND (sp2.from = "0000-00-00 00:00:00" OR sp2.from <= NOW())
                     AND (sp2.to = "0000-00-00 00:00:00" OR sp2.to >= NOW())
-                    AND (sp2.id_shop = ' . $defaultShopId . ' OR sp2.id_shop = 0)
-                ORDER BY sp2.id_shop DESC, sp2.id_specific_price DESC
+                    AND (sp2.id_shop IN (' . $shopIdList . ') OR sp2.id_shop = 0)
+                ORDER BY (sp2.id_shop = ' . $defaultShopId . ') DESC, sp2.id_shop DESC, sp2.id_specific_price DESC
                 LIMIT 1
             )
             LEFT JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product

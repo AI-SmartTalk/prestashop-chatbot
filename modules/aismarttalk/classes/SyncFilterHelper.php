@@ -436,14 +436,12 @@ class SyncFilterHelper
                         WHERE c_parent.id_category IN (' . $categoryList . ')
                         AND c.nleft >= c_parent.nleft
                         AND c.nright <= c_parent.nright
-                    )
-                    LIMIT 1';
+                    )';
         } else {
             // Direct category match only
             $sql = 'SELECT 1 FROM ' . _DB_PREFIX_ . 'category_product cp
                     WHERE cp.id_product = ' . (int) $productId . '
-                    AND cp.id_category IN (' . $categoryList . ')
-                    LIMIT 1';
+                    AND cp.id_category IN (' . $categoryList . ')';
         }
 
         $isInCategories = (bool) \Db::getInstance()->getValue($sql);

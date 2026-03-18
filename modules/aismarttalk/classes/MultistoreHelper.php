@@ -122,8 +122,7 @@ class MultistoreHelper
                 WHERE ps.id_product = ' . (int) $idProduct . '
                     AND ps.id_shop = ' . (int) $idShop . '
                     AND ps.active = 1
-                    AND COALESCE(sa.quantity, 0) > 0
-                LIMIT 1';
+                    AND COALESCE(sa.quantity, 0) > 0';
 
         return (bool) \Db::getInstance()->getValue($sql);
     }
