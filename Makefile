@@ -1,4 +1,189 @@
-.PHONY: up down logs logs-error bash
+.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 e2e e2e-install e2e-ps17 e2e-headed e2e-ui e2e-setup e2e-reset e2e-reset-ps17 e2e-all e2e-multistore e2e-multistore-ps17 e2e-multistore-enable e2e-multistore-disable e2e-multistore-enable-ps17 e2e-multistore-disable-ps17
+
+# ──────────────────────────────────────────────
+# Unit Tests (no DB needed)
+# ──────────────────────────────────────────────
+MODULE_DIR = modules/aismarttalk
+PHPUNIT    = vendor/bin/phpunit
+PHPUNIT_CFG = phpunit.xml
+PHPUNIT_INT_CFG = phpunit.integration.xml
+
+# Install test dependencies (PHPUnit)
+test-install:
+	cd $(MODULE_DIR) && composer install
+
+# Run unit tests
+test:
+	@cd $(MODULE_DIR) && composer install --quiet 2>/dev/null; $(PHPUNIT) --configuration $(PHPUNIT_CFG)
+
+# Run unit tests with verbose output
+test-verbose:
+	@cd $(MODULE_DIR) && composer install --quiet 2>/dev/null; $(PHPUNIT) --configuration $(PHPUNIT_CFG) --verbose
+
+# Run a specific test file or filter
+# Usage: make test-filter FILTER=MultistoreHelper
+test-filter:
+	@cd $(MODULE_DIR) && $(PHPUNIT) --configuration $(PHPUNIT_CFG) --filter="$(FILTER)"
+
+# Run tests with code coverage (requires Xdebug or PCOV)
+test-coverage:
+	@cd $(MODULE_DIR) && XDEBUG_MODE=coverage $(PHPUNIT) --configuration $(PHPUNIT_CFG) --coverage-text --coverage-html=tests/coverage
+
+# ──────────────────────────────────────────────
+# Integration Tests (real MySQL DB via Docker)
+# ──────────────────────────────────────────────
+# Start test database
+test-db-up:
+	docker compose -f docker-compose.test.yml up -d
+	@echo "Waiting for MySQL to be ready..."
+	@until docker exec aismarttalk_test_db mysqladmin ping -h localhost -u test -ptest --silent 2>/dev/null; do sleep 1; done
+	@echo "Test DB ready on port 3399"
+
+# Stop test database
+test-db-down:
+	docker compose -f docker-compose.test.yml down
+
+# Run integration tests (starts DB if needed)
+test-integration: test-db-up
+	@cd $(MODULE_DIR) && composer install --quiet 2>/dev/null; $(PHPUNIT) --configuration $(PHPUNIT_INT_CFG)
+
+# Run integration tests with SQL query logging
+# Level 1: show queries | Level 2: show queries + results
+test-integration-verbose: test-db-up
+	@cd $(MODULE_DIR) && TEST_SQL_LOG=2 $(PHPUNIT) --configuration $(PHPUNIT_INT_CFG) --verbose
+
+# ──────────────────────────────────────────────
+# Smoke Tests (run inside a real PS container)
+# ──────────────────────────────────────────────
+# Requires a running PS container (make up, make ps17, etc.)
+
+# Smoke test on PS 9 (default container)
+smoke-test:
+	docker exec prestashop php modules/aismarttalk/tests/Smoke/run_smoke_tests.php
+
+# Smoke test on PS 1.7
+smoke-test-ps17:
+	docker exec prestashop17 php modules/aismarttalk/tests/Smoke/run_smoke_tests.php
+
+# ──────────────────────────────────────────────
+# E2E Tests (Playwright — browser-based)
+# ──────────────────────────────────────────────
+# Requires: a running PS container + Node.js installed
+
+# Common variables
+PS9_ADMIN_PATH = $$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")
+PS17_ADMIN_PATH = $$(docker exec prestashop17 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")
+OAUTH_KEYS = 'AI_SMART_TALK_OAUTH_CONNECTED','AI_SMART_TALK_ACCESS_TOKEN','AI_SMART_TALK_CHAT_MODEL_ID','AI_SMART_TALK_OAUTH_SCOPE','AI_SMART_TALK_SITE_IDENTIFIER','AI_SMART_TALK_OAUTH_PENDING','AI_SMART_TALK_OAUTH_SUCCESS','AI_SMART_TALK_OAUTH_ERROR','CHAT_MODEL_ID','CHAT_MODEL_TOKEN','AI_SMART_TALK_ENABLED'
+
+# Cache-clearing macros
+define clear-ps9-cache
+	@docker exec prestashop bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/smarty/cache/* /var/www/html/cache/smarty/compile/* /var/www/html/cache/cachefs/* 2>/dev/null" || true
+endef
+
+define clear-ps17-cache
+	@docker exec prestashop17 bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/smarty/cache/* /var/www/html/cache/smarty/compile/* /var/www/html/cache/cachefs/* 2>/dev/null" || true
+endef
+
+# Install Playwright
+e2e-install:
+	cd tests/e2e && npm install && npx playwright install chromium
+
+# Reset OAuth state (PS9)
+e2e-reset:
+	@docker exec prestashop_db mysql -u prestashop -pprestashop prestashop -e "DELETE FROM ps_configuration WHERE name IN ($(OAUTH_KEYS));" 2>/dev/null || true
+	$(call clear-ps9-cache)
+	@echo "✓ PS9 OAuth reset"
+
+# Reset OAuth state (PS 1.7)
+e2e-reset-ps17:
+	@docker exec prestashop17_db mysql -u prestashop -pprestashop prestashop -e "DELETE FROM ps_configuration WHERE name IN ($(OAUTH_KEYS));" 2>/dev/null || true
+	$(call clear-ps17-cache)
+	@echo "✓ PS 1.7 OAuth reset"
+
+# Run E2E on PS 9 — auto-resets before running
+e2e: e2e-reset
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test
+
+# Run E2E on PS 1.7 — auto-resets before running
+e2e-ps17: e2e-reset-ps17
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_PASS=Admin_Presta17! npx playwright test
+
+# Run E2E headed (visible browser)
+e2e-headed: e2e-reset
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test --headed
+
+# Run E2E in Playwright UI mode
+e2e-ui: e2e-reset
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test --ui --project=chromium
+
+# Run OAuth setup only (headed)
+e2e-setup: e2e-reset
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test --headed --project=setup
+
+# Enable/disable multistore on PS9
+e2e-multistore-enable:
+	@docker exec -i prestashop_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/enable-multistore.sql
+	$(call clear-ps9-cache)
+	@echo "✓ Multistore enabled (2 shops)"
+
+e2e-multistore-disable:
+	@docker exec -i prestashop_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/disable-multistore.sql
+	$(call clear-ps9-cache)
+	@echo "✓ Multistore disabled (single shop)"
+
+# Enable/disable multistore on PS 1.7
+e2e-multistore-enable-ps17:
+	@docker exec -i prestashop17_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/enable-multistore.sql
+	$(call clear-ps17-cache)
+	@echo "✓ Multistore enabled on PS 1.7 (2 shops)"
+
+e2e-multistore-disable-ps17:
+	@docker exec -i prestashop17_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/disable-multistore.sql
+	$(call clear-ps17-cache)
+	@echo "✓ Multistore disabled on PS 1.7 (single shop)"
+
+# Run E2E on PS9 with multistore (enables, resets OAuth, runs, disables)
+e2e-multistore: e2e-multistore-enable e2e-reset
+	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test; \
+	EXIT_CODE=$$?; \
+	$(MAKE) -s e2e-multistore-disable; \
+	exit $$EXIT_CODE
+
+# Run E2E on PS 1.7 with multistore
+e2e-multistore-ps17: e2e-multistore-enable-ps17 e2e-reset-ps17
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_PASS=Admin_Presta17! npx playwright test; \
+	EXIT_CODE=$$?; \
+	$(MAKE) -s e2e-multistore-disable-ps17; \
+	exit $$EXIT_CODE
+
+# Run ALL E2E tests (PS 9 + PS 1.7, single-shop & multistore)
+e2e-all:
+	@echo "═══════════════════════════════════════"
+	@echo "  E2E Tests — PrestaShop 9"
+	@echo "═══════════════════════════════════════"
+	$(MAKE) e2e
+	@echo ""
+	@echo "═══════════════════════════════════════"
+	@echo "  E2E Tests — PrestaShop 1.7"
+	@echo "═══════════════════════════════════════"
+	$(MAKE) e2e-ps17
+	@echo ""
+	@echo "═══════════════════════════════════════"
+	@echo "  E2E Tests — PS 9 Multistore"
+	@echo "═══════════════════════════════════════"
+	$(MAKE) e2e-multistore
+	@echo ""
+	@echo "═══════════════════════════════════════"
+	@echo "  E2E Tests — PS 1.7 Multistore"
+	@echo "═══════════════════════════════════════"
+	$(MAKE) e2e-multistore-ps17
+	@echo ""
+	@echo "✅ All E2E tests passed: PS 9 + PS 1.7 (single-shop & multistore)"
+
+# ──────────────────────────────────────────────
+# Run ALL tests (unit + integration)
+# ──────────────────────────────────────────────
+test-all: test test-integration
 
 # Define the services
 SERVICES = prestashop prestashop_db
@@ -43,6 +228,21 @@ build:
 # Display admin folder name for quick URL access
 admin:
 	@docker compose exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename"
+
+# ──────────────────────────────────────────────
+# Build Production Archive
+# ──────────────────────────────────────────────
+build-prod:
+	@echo "📦 Building production zip for aismarttalk module..."
+	@rm -f aismarttalk.zip
+	@cd modules && zip -q -r ../aismarttalk.zip aismarttalk \
+		-x "aismarttalk/tests/*" \
+		-x "aismarttalk/phpunit*" \
+		-x "aismarttalk/.phpunit*" \
+		-x "aismarttalk/.git/*" \
+		-x "aismarttalk/.gitignore" \
+		-x "*/.DS_Store"
+	@echo "✅ Build complete: aismarttalk.zip generated in the root directory."
 
 # ──────────────────────────────────────────────
 # PrestaShop Multi-Site + AI SmartTalk Backend

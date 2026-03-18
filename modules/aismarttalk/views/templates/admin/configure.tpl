@@ -1583,6 +1583,35 @@ a.ast-btn-success:hover {
     from { width: 100%; }
     to { width: 0%; }
 }
+
+/* Multistore */
+.ast-multistore-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-radius: 10px;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    color: #1e40af;
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+.ast-multistore-info i { font-size: 16px; flex-shrink: 0; }
+.ast-ms-shop-toggles { margin-top: 12px; }
+.ast-ms-shop-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f1f5f9;
+}
+.ast-ms-shop-row:last-child { border-bottom: none; }
+.ast-ms-shop-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: #334155;
+}
 </style>
 
 <div class="ast-toast-container" id="ast-toast-container"></div>
@@ -1610,6 +1639,15 @@ a.ast-btn-success:hover {
     }
 
     document.addEventListener('DOMContentLoaded', function() {
+        // Hide PrestaShop's default multistore "Settings / Activate module for this shop" panel
+        var panels = document.querySelectorAll('#content .panel, #content .card');
+        for (var i = 0; i < panels.length; i++) {
+            if (panels[i].querySelector('input[name="activateModule"]') || panels[i].querySelector('input[name="multishopOverrideOption[AI_SMART_TALK_ENABLED]"]')) {
+                panels[i].style.display = 'none';
+                break;
+            }
+        }
+
         // Keywords from PrestaShop core "untrusted module" warnings (all languages)
         var psNoisePatterns = [
             'prestashop addons', 'n\'a pas pu être vérifié', 'not been verified',
@@ -1719,29 +1757,39 @@ a.ast-btn-success:hover {
                         </div>
                         <div class="ast-card-body">
                             <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
+                            {if $isMultistoreActive && !empty($multistoreShopsChatbot)}
+                                {* Multistore: per-shop chatbot toggle *}
+                                <p style="margin: 0 0 14px; font-size: 13px; color: #64748b;">{l s='Choose which shops display the chatbot:' mod='aismarttalk'}</p>
+                                <div class="ast-ms-shop-toggles">
+                                    {foreach from=$multistoreShopsChatbot item=shop}
+                                        <div class="ast-ms-shop-row">
+                                            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin: 0;">
+                                                <input type="checkbox" name="chatbot_shops[]" value="{$shop.id_shop|intval}" {if $shop.enabled}checked{/if} style="width: 18px; height: 18px; accent-color: #667eea;">
+                                                <span class="ast-ms-shop-name">{$shop.name|escape:'html':'UTF-8'}</span>
+                                            </label>
+                                        </div>
+                                    {/foreach}
+                                </div>
+                            {else}
+                                {* Single shop: simple toggle *}
                                 <div class="ast-toggle-card">
                                     <div class="ast-toggle-info">
                                         <h4>{l s='Enable Chatbot' mod='aismarttalk'}</h4>
                                         <p>{l s='Display the AI assistant on your store' mod='aismarttalk'}</p>
                                     </div>
                                     <label class="ast-switch">
-                                        <input type="checkbox" name="AI_SMART_TALK_ENABLED" value="1" {if $chatbotEnabled}checked{/if} onchange="this.form.submit()">
+                                        <input type="checkbox" name="AI_SMART_TALK_ENABLED" value="1" {if $chatbotEnabled}checked{/if}>
                                         <span class="ast-switch-slider"></span>
                                     </label>
-                                    <input type="hidden" name="submitToggleChatbot" value="1">
+                                </div>
+                            {/if}
+
+                                <div style="margin-top: 16px;">
+                                    <button type="submit" name="submitToggleChatbot" value="1" class="ast-btn ast-btn-primary ast-btn-sm">
+                                        <i class="icon icon-save"></i> {l s='Save' mod='aismarttalk'}
+                                    </button>
                                 </div>
                             </form>
-
-                            <div class="ast-form-group" style="margin-top: 20px;">
-                                <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
-                                    <label class="ast-label">{l s='Display Position' mod='aismarttalk'}</label>
-                                    <select name="AI_SMART_TALK_IFRAME_POSITION" class="ast-select" onchange="this.form.submit()">
-                                        <option value="footer" {if $iframePosition == 'footer'}selected{/if}>{l s='Footer (recommended)' mod='aismarttalk'}</option>
-                                        <option value="before_footer" {if $iframePosition == 'before_footer'}selected{/if}>{l s='Before Footer' mod='aismarttalk'}</option>
-                                    </select>
-                                    <input type="hidden" name="submitIframePosition" value="1">
-                                </form>
-                            </div>
                         </div>
                     </div>
 
@@ -1997,11 +2045,18 @@ a.ast-btn-success:hover {
                                     </select>
                                 </div>
                                 <div class="ast-form-group">
-                                    <label class="ast-label">{l s='Position' mod='aismarttalk'}</label>
+                                    <label class="ast-label">{l s='Button Position' mod='aismarttalk'}</label>
                                     <select name="AI_SMART_TALK_BUTTON_POSITION" class="ast-select">
                                         <option value="" {if $buttonPosition == ''}selected{/if}>{l s='Default (bottom-right)' mod='aismarttalk'}</option>
                                         <option value="bottom-right" {if $buttonPosition == 'bottom-right'}selected{/if}>{l s='Bottom Right' mod='aismarttalk'}</option>
                                         <option value="bottom-left" {if $buttonPosition == 'bottom-left'}selected{/if}>{l s='Bottom Left' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
+                                <div class="ast-form-group">
+                                    <label class="ast-label">{l s='Display Position' mod='aismarttalk'}</label>
+                                    <select name="AI_SMART_TALK_IFRAME_POSITION" class="ast-select">
+                                        <option value="footer" {if $iframePosition == 'footer'}selected{/if}>{l s='Footer (recommended)' mod='aismarttalk'}</option>
+                                        <option value="before_footer" {if $iframePosition == 'before_footer'}selected{/if}>{l s='Before Footer' mod='aismarttalk'}</option>
                                     </select>
                                 </div>
                                 <div class="ast-form-group">
@@ -2162,6 +2217,13 @@ a.ast-btn-success:hover {
 
             {* ===== TAB 3: SYNC ===== *}
             <div class="ast-panel" id="panel-sync" role="tabpanel">
+
+                {if $isMultistoreActive}
+                <div class="ast-multistore-info">
+                    <i class="icon icon-info-circle"></i>
+                    <span>{l s='Multistore: products from all your shops are combined. A product active in any shop will be synchronized.' mod='aismarttalk'}</span>
+                </div>
+                {/if}
 
                 {* === Row 1: Activation toggles === *}
                 <div class="ast-grid ast-grid-2 ast-sync-toggles">

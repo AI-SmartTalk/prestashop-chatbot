@@ -22,6 +22,7 @@ if (!defined('_PS_VERSION_')) {
 
 require_once _PS_MODULE_DIR_ . 'aismarttalk/vendor/autoload.php';
 
+use PrestaShop\AiSmartTalk\MultistoreHelper;
 use PrestaShop\AiSmartTalk\OAuthHandler;
 
 class AismarttalkOauthcallbackModuleFrontController extends ModuleFrontController
@@ -63,7 +64,7 @@ class AismarttalkOauthcallbackModuleFrontController extends ModuleFrontControlle
             OAuthHandler::clearOAuthState();
 
             // Store error message in configuration to display in admin
-            Configuration::updateValue('AI_SMART_TALK_OAUTH_ERROR', $message);
+            MultistoreHelper::updateConfig('AI_SMART_TALK_OAUTH_ERROR', $message);
 
             Tools::redirect($redirectUrl);
             exit;
@@ -78,7 +79,7 @@ class AismarttalkOauthcallbackModuleFrontController extends ModuleFrontControlle
             }
             OAuthHandler::clearOAuthState();
 
-            Configuration::updateValue('AI_SMART_TALK_OAUTH_ERROR', 'Missing authorization code or state parameter.');
+            MultistoreHelper::updateConfig('AI_SMART_TALK_OAUTH_ERROR', 'Missing authorization code or state parameter.');
             Tools::redirect($redirectUrl);
             exit;
         }
@@ -93,10 +94,10 @@ class AismarttalkOauthcallbackModuleFrontController extends ModuleFrontControlle
 
         if ($result['success']) {
             // Clear any previous errors
-            Configuration::deleteByName('AI_SMART_TALK_OAUTH_ERROR');
-            Configuration::updateValue('AI_SMART_TALK_OAUTH_SUCCESS', $result['message']);
+            MultistoreHelper::deleteConfig('AI_SMART_TALK_OAUTH_ERROR');
+            MultistoreHelper::updateConfig('AI_SMART_TALK_OAUTH_SUCCESS', $result['message']);
         } else {
-            Configuration::updateValue('AI_SMART_TALK_OAUTH_ERROR', $result['message']);
+            MultistoreHelper::updateConfig('AI_SMART_TALK_OAUTH_ERROR', $result['message']);
         }
 
         // Redirect back to the stored admin URL

@@ -84,7 +84,7 @@ class WebhookHandler
      */
     public static function getEnabledTriggers(): array
     {
-        $triggers = \Configuration::get('AI_SMART_TALK_WEBHOOKS_TRIGGERS');
+        $triggers = MultistoreHelper::getConfig('AI_SMART_TALK_WEBHOOKS_TRIGGERS');
         if (empty($triggers)) {
             return [];
         }
@@ -115,7 +115,7 @@ class WebhookHandler
         ];
 
         $filtered = array_intersect($triggers, $validTriggers);
-        return \Configuration::updateValue('AI_SMART_TALK_WEBHOOKS_TRIGGERS', json_encode(array_values($filtered)));
+        return MultistoreHelper::updateConfig('AI_SMART_TALK_WEBHOOKS_TRIGGERS', json_encode(array_values($filtered)));
     }
 
     /**
@@ -578,7 +578,7 @@ class WebhookHandler
             return true; // Guest / anonymous — no PII to protect
         }
 
-        $consentFilter = \Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT') ?: 'all';
+        $consentFilter = MultistoreHelper::getConfig('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT') ?: 'all';
         if ($consentFilter === 'all') {
             return true;
         }

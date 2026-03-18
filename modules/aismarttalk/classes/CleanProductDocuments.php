@@ -35,19 +35,29 @@ class CleanProductDocuments
         $this->cleanProducts();
     }
 
+    /**
+     * Fetch all active product IDs across all shops (deduplicated).
+     */
     private function fetchAllProductIds()
     {
-        $sql = 'SELECT id_product FROM ' . _DB_PREFIX_ . 'product WHERE active = 1';
+        $allShopIds = MultistoreHelper::getAllShopIds();
+        $shopIdList = implode(',', array_map('intval', $allShopIds));
+
+        $sql = 'SELECT DISTINCT ps.id_product
+                FROM ' . _DB_PREFIX_ . 'product_shop ps
+                WHERE ps.active = 1
+                    AND ps.id_shop IN (' . $shopIdList . ')';
         $products = \Db::getInstance()->executeS($sql);
 
         return array_map(function ($product) {
             return (string) $product['id_product'];
-        }, $products);
+        }, $products ?: []);
     }
 
     private function cleanProducts()
     {
-        $productIds = $this->productIds ? $this->productIds : $this->fetchAllProductIds();
+        $hasSpecificIds = is_array($this->productIds) && !empty($this->productIds);
+        $productIds = $hasSpecificIds ? $this->productIds : $this->fetchAllProductIds();
 
         $client = ApiClient::fromConfig();
 
@@ -55,17 +65,17 @@ class CleanProductDocuments
             'productIds' => $productIds,
             'chatModelId' => $client->getChatModelId(),
             'chatModelToken' => $client->getAccessToken(),
-            'deleteFromIds' => [] !== $this->productIds ? true : false,
+            'deleteFromIds' => $hasSpecificIds,
             'source' => 'PRESTASHOP',
             'siteIdentifier' => $client->getSiteIdentifier(),
         ]);
 
         if (!$response->isSuccess()) {
-            \Configuration::updateValue('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->error ?: 'HTTP ' . $response->httpCode);
+            MultistoreHelper::updateConfig('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->error ?: 'HTTP ' . $response->httpCode);
         } elseif ($response->get('status') === 'error') {
-            \Configuration::updateValue('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->get('message'));
+            MultistoreHelper::updateConfig('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->get('message'));
         } else {
-            \Configuration::deleteByName('CLEAN_PRODUCT_DOCUMENTS_ERROR');
+            MultistoreHelper::deleteConfig('CLEAN_PRODUCT_DOCUMENTS_ERROR');
         }
     }
 }
