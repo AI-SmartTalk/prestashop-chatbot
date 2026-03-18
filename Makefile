@@ -230,6 +230,21 @@ admin:
 	@docker compose exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename"
 
 # ──────────────────────────────────────────────
+# Build Production Archive
+# ──────────────────────────────────────────────
+build-prod:
+	@echo "📦 Building production zip for aismarttalk module..."
+	@rm -f aismarttalk.zip
+	@cd modules && zip -q -r ../aismarttalk.zip aismarttalk \
+		-x "aismarttalk/tests/*" \
+		-x "aismarttalk/phpunit*" \
+		-x "aismarttalk/.phpunit*" \
+		-x "aismarttalk/.git/*" \
+		-x "aismarttalk/.gitignore" \
+		-x "*/.DS_Store"
+	@echo "✅ Build complete: aismarttalk.zip generated in the root directory."
+
+# ──────────────────────────────────────────────
 # PrestaShop Multi-Site + AI SmartTalk Backend
 # ──────────────────────────────────────────────
 MULTISITE_COMPOSE=docker compose -f docker-compose.multisite.yml
