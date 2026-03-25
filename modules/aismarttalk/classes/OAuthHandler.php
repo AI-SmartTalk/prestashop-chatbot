@@ -118,9 +118,10 @@ class OAuthHandler
      *
      * @param string $state
      * @param string $codeVerifier
-     * @param string $returnUrl URL to redirect back to after OAuth
+     * @param string $returnUrl    URL to redirect back to after OAuth
+     * @param string $redirectUri  OAuth redirect_uri to reuse during token exchange (avoids multi-shop context mismatch)
      */
-    public static function storeOAuthState(string $state, string $codeVerifier, string $returnUrl = ''): void
+    public static function storeOAuthState(string $state, string $codeVerifier, string $returnUrl = '', string $redirectUri = ''): void
     {
         // Use Configuration table for cross-context storage
         // Store as JSON with expiry time (10 minutes)
@@ -129,6 +130,7 @@ class OAuthHandler
             'state' => $state,
             'code_verifier' => $codeVerifier,
             'return_url' => $returnUrl,
+            'redirect_uri' => $redirectUri,
             'expires' => time() + 600, // 10 minutes
         ]);
         MultistoreHelper::updateConfig('AI_SMART_TALK_OAUTH_PENDING', $data);
@@ -164,6 +166,7 @@ class OAuthHandler
             'state' => $parsed['state'],
             'code_verifier' => $parsed['code_verifier'],
             'return_url' => $parsed['return_url'] ?? '',
+            'redirect_uri' => $parsed['redirect_uri'] ?? '',
         ];
     }
 
@@ -248,16 +251,18 @@ class OAuthHandler
         $codeVerifier = self::generateCodeVerifier();
         $codeChallenge = self::generateCodeChallenge($codeVerifier);
         $state = self::generateState();
+        $callbackUrl = self::getCallbackUrl($context);
 
-        // Store for callback validation (including return URL)
-        self::storeOAuthState($state, $codeVerifier, $returnUrl);
+        // Store for callback validation (including return URL and redirect_uri
+        // so the front controller reuses the exact same URI during token exchange)
+        self::storeOAuthState($state, $codeVerifier, $returnUrl, $callbackUrl);
 
         // Build authorization URL using frontend URL (for browser redirect)
         $frontendUrl = self::getFrontendApiUrl();
 
         $params = [
             'client_id' => self::CLIENT_ID,
-            'redirect_uri' => self::getCallbackUrl($context),
+            'redirect_uri' => $callbackUrl,
             'response_type' => 'code',
             'scope' => self::OAUTH_SCOPES,
             'state' => $state,
@@ -271,16 +276,17 @@ class OAuthHandler
     /**
      * Exchange authorization code for access token
      *
-     * @param \Context $context      PrestaShop context (injected dependency)
-     * @param string   $code         The authorization code
-     * @param string   $codeVerifier The PKCE code verifier
+     * @param \Context $context           PrestaShop context (injected dependency)
+     * @param string   $code              The authorization code
+     * @param string   $codeVerifier      The PKCE code verifier
+     * @param string   $storedRedirectUri Redirect URI stored during authorization (avoids multi-shop context mismatch)
      *
      * @return array|null Token data or null on failure
      */
-    public static function exchangeCodeForToken(\Context $context, string $code, string $codeVerifier): ?array
+    public static function exchangeCodeForToken(\Context $context, string $code, string $codeVerifier, string $storedRedirectUri = ''): ?array
     {
         $apiUrl = self::getBackendApiUrl();
-        $callbackUrl = self::getCallbackUrl($context);
+        $callbackUrl = !empty($storedRedirectUri) ? $storedRedirectUri : self::getCallbackUrl($context);
         $tokenEndpoint = $apiUrl . '/api/oauth/aist/token';
 
         $payload = [
@@ -396,7 +402,7 @@ class OAuthHandler
         $returnUrl = $storedState['return_url'] ?? '';
 
         // Exchange code for token
-        $tokenData = self::exchangeCodeForToken($context, $code, $storedState['code_verifier']);
+        $tokenData = self::exchangeCodeForToken($context, $code, $storedState['code_verifier'], $storedState['redirect_uri'] ?? '');
 
         // Clear OAuth state regardless of result
         self::clearOAuthState();
