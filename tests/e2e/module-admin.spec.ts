@@ -8,7 +8,7 @@ import { loginToAdmin, goToModuleConfig } from './helpers';
  * tabs work, forms submit, and no PHP errors are displayed.
  */
 
-const adminPath = process.env.PS_ADMIN_PATH || 'admin';
+const adminPath = process.env.PS_ADMIN_PATH || 'admin-qa';
 
 test.describe('Module Admin Page', () => {
 

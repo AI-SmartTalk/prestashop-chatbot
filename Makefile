@@ -192,6 +192,10 @@ SERVICES = prestashop prestashop_db
 up:
 	docker compose up -d
 
+# Init test environment: remove install dir, set admin path to /admin-qa, reset credentials
+init-test:
+	bash scripts/init-test-env.sh
+
 # Stop the containers
 down:
 	docker compose down
