@@ -64,6 +64,10 @@ jobs:
           # Stop, rebuild, and start fresh
           echo "Stopping containers..."
           docker compose -f docker-compose.prod.yml down --remove-orphans
+
+          # Clear cache before restart so PS rebuilds it cleanly
+          sudo rm -rf data/prestashop/var/cache/* 2>/dev/null || true
+
           echo "Starting containers..."
           docker compose -f docker-compose.prod.yml up -d --build
 
@@ -104,9 +108,6 @@ jobs:
               echo 'SKIP: PrestaShop tables not found (fresh install). Domain will be set after installation.'
             fi
           " || echo "WARNING: Could not configure domain/SSL"
-
-          # Clear cache
-          docker compose -f docker-compose.prod.yml exec -T prestashop rm -rf /var/www/html/var/cache/* || true
 
           # Ensure backup cron is installed
           CRON_CMD="0 2 * * * /home/debian/prestashop-chatbot/scripts/backup-mysql.sh >> /home/debian/prestashop-chatbot/backups/backup.log 2>&1"
