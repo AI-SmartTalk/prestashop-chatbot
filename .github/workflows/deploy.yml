@@ -36,6 +36,9 @@ jobs:
           source .env
           set +a
 
+          # Fix ownership before git operations (previous deploy sets www-data)
+          sudo chown -R $(whoami):$(whoami) .
+
           # Pull latest code (reset working tree to match remote)
           git fetch origin main
           git reset --hard origin/main
