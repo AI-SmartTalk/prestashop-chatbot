@@ -7,7 +7,7 @@ import { loginToAdmin, goToModuleConfig } from './helpers';
  * Tests toggle activation, manual sync trigger, and settings persistence.
  */
 
-const adminPath = process.env.PS_ADMIN_PATH || 'admin';
+const adminPath = process.env.PS_ADMIN_PATH || 'admin-qa';
 
 /** Navigate to the Sync tab. */
 async function goToSyncTab(page: import('@playwright/test').Page) {

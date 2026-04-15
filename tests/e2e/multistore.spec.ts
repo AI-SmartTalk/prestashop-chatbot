@@ -10,7 +10,7 @@ import { loginToAdmin, goToModuleConfig } from './helpers';
  * Prerequisites: multistore must be enabled via make e2e-multistore-enable
  */
 
-const adminPath = process.env.PS_ADMIN_PATH || 'admin';
+const adminPath = process.env.PS_ADMIN_PATH || 'admin-qa';
 
 test.describe('Multistore', () => {
 

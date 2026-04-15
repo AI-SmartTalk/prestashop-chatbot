@@ -1,3 +1,4 @@
+# Deny everything by default
 # Apache 2.2
 <IfModule !mod_authz_core.c>
     Order deny,allow
@@ -8,3 +9,14 @@
 <IfModule mod_authz_core.c>
     Require all denied
 </IfModule>
+
+# Allow access to module logo
+<FilesMatch "^logo\.(png|gif)$">
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Allow from all
+    </IfModule>
+    <IfModule mod_authz_core.c>
+        Require all granted
+    </IfModule>
+</FilesMatch>

@@ -8,7 +8,7 @@ import { loginToAdmin, goToModuleConfig } from './helpers';
  * in the front-office chatbot embed (chatbotSettings JSON).
  */
 
-const adminPath = process.env.PS_ADMIN_PATH || 'admin';
+const adminPath = process.env.PS_ADMIN_PATH || 'admin-qa';
 
 /** Navigate to the Appearance tab. */
 async function goToAppearanceTab(page: import('@playwright/test').Page) {

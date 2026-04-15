@@ -10,7 +10,7 @@ import { loginToAdmin, goToModuleConfig } from './helpers';
  * To reset and re-run: make e2e-reset && make e2e-setup
  */
 
-const adminPath = process.env.PS_ADMIN_PATH || 'admin';
+const adminPath = process.env.PS_ADMIN_PATH || 'admin-qa';
 const AIST_EMAIL = process.env.AIST_EMAIL || 'contact+test@aismarttalk.tech';
 const AIST_PASS = process.env.AIST_PASS || 'MotDePasse420#';
 const AIST_AGENT_NAME = process.env.AIST_AGENT_NAME || 'Prestashop test';

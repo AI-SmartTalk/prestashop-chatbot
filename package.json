@@ -1,0 +1,12 @@
+{
+  "name": "prestashop-chatbot-tests",
+  "private": true,
+  "scripts": {
+    "test": "npx playwright test --config tests/e2e/playwright.config.ts",
+    "test:ui": "npx playwright test --config tests/e2e/playwright.config.ts --ui",
+    "test:headed": "npx playwright test --config tests/e2e/playwright.config.ts --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0"
+  }
+}

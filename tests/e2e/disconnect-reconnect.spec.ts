@@ -8,7 +8,7 @@ import { loginToAdmin, goToModuleConfig } from './helpers';
  * the OAuth connection. It reconnects at the end to restore state.
  */
 
-const adminPath = process.env.PS_ADMIN_PATH || 'admin';
+const adminPath = process.env.PS_ADMIN_PATH || 'admin-qa';
 const AIST_EMAIL = process.env.AIST_EMAIL || 'contact+test@aismarttalk.tech';
 const AIST_PASS = process.env.AIST_PASS || 'MotDePasse420#';
 const AIST_AGENT_NAME = process.env.AIST_AGENT_NAME || 'Prestashop test';

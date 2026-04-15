@@ -9,7 +9,7 @@ import { loginToAdmin, goToModuleConfig } from './helpers';
  *   2. Disable chatbot in admin → verify embed script disappears from storefront
  */
 
-const adminPath = process.env.PS_ADMIN_PATH || 'admin';
+const adminPath = process.env.PS_ADMIN_PATH || 'admin-qa';
 
 /** Enable or disable the chatbot via the admin toggle and save. */
 async function setChatbotEnabled(page: import('@playwright/test').Page, enabled: boolean) {
