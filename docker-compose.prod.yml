@@ -28,13 +28,15 @@ services:
     # préserver les permissions. Sans ça, l'installation crashe au boot
     # (cp: preserving permissions: Operation not permitted -> restart loop).
     # Le durcissement repose sur :
-    #   - module custom bind-monté en :ro (vecteur webshell bloqué)
     #   - mots de passe DB forts (.env)
     #   - iptables DOCKER-USER bloque l'UDP sortant
     #   - pas de phpMyAdmin exposé
     #   - no-new-privileges + pids_limit + mem_limit
+    #   - module custom rsync depuis le repo à chaque deploy (toute modif
+    #     hostile sur le bind mount est écrasée au prochain push). Pas de :ro
+    #     car l'installer PrestaShop refuse de continuer sinon.
     volumes:
-      - ./modules/aismarttalk:/var/www/html/modules/aismarttalk:ro
+      - ./modules/aismarttalk:/var/www/html/modules/aismarttalk
       - ./config/docker:/tmp/docker-config:ro
       - ./data/prestashop:/var/www/html
     restart: always
