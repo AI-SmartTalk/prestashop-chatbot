@@ -1,5 +1,10 @@
 name: Deploy AISmarttalk Prestashop Module
 
+# Le VPS ne contient plus de deploy key : le code est rsync depuis le runner.
+# Le `.env` (secrets DB) est généré une seule fois sur le VPS et n'est jamais écrasé.
+# Les répertoires `data/` et `backups/` contiennent l'état de PrestaShop sur le VPS
+# (DB MySQL, fichiers uploadés, sauvegardes) — ils ne doivent JAMAIS être écrasés par rsync.
+
 on:
   push:
     branches:
@@ -9,6 +14,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Set up SSH
         uses: webfactory/ssh-agent@v0.7.0
         with:
@@ -19,15 +27,38 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Prepare target dir and reclaim ownership
+        run: |
+          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'EOF'
+            set -e
+            mkdir -p /home/debian/prestashop-chatbot
+            # Les déploiements précédents ont chown modules/ en 33:33 : on reprend la main
+            # pour que rsync puisse écrire. data/ et backups/ sont exclus du rsync.
+            sudo chown -R $(whoami):$(whoami) /home/debian/prestashop-chatbot 2>/dev/null || true
+          EOF
+
+      - name: Rsync code to VPS
+        run: |
+          rsync -avz --delete \
+            --exclude='.git/' \
+            --exclude='.github/' \
+            --exclude='.env' \
+            --exclude='data/' \
+            --exclude='backups/' \
+            --exclude='node_modules/' \
+            --exclude='aismarttalk/' \
+            --exclude='aismarttalk.zip' \
+            ./ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/home/debian/prestashop-chatbot/
+
       - name: Deploy to VPS
         run: |
           ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} 'cat > /tmp/deploy-prestashop.sh && bash /tmp/deploy-prestashop.sh; EXIT_CODE=$?; rm -f /tmp/deploy-prestashop.sh; exit $EXIT_CODE' << 'EOF'
           set -e
           cd /home/debian/prestashop-chatbot
 
-          # Verify .env exists
+          # Verify .env exists (généré une seule fois à la main sur le VPS)
           if [ ! -f .env ]; then
-            echo "ERROR: .env file not found. Create it from .env.example before deploying."
+            echo "ERROR: .env file not found. Voir demo-vps/README.md étape 3."
             exit 1
           fi
 
@@ -36,14 +67,7 @@ jobs:
           source .env
           set +a
 
-          # Fix ownership before git operations (previous deploy sets www-data)
-          sudo chown -R $(whoami):$(whoami) .
-
-          # Pull latest code (reset working tree to match remote)
-          git fetch origin main
-          git reset --hard origin/main
-
-          # Ensure directories exist
+          # Ensure runtime directories exist (non rsyncés)
           mkdir -p data/mysql data/prestashop backups/mysql
 
           # Ensure scripts are executable
@@ -53,9 +77,9 @@ jobs:
           docker network create ai-toolkit-network 2>/dev/null || true
 
           # Fix data permissions before starting containers (www-data=33, mysql=999)
-          chown -R 999:999 data/mysql 2>/dev/null || true
-          chown -R 33:33 data/prestashop 2>/dev/null || true
-          chown -R 33:33 modules/ 2>/dev/null || true
+          sudo chown -R 999:999 data/mysql 2>/dev/null || true
+          sudo chown -R 33:33 data/prestashop 2>/dev/null || true
+          sudo chown -R 33:33 modules/ 2>/dev/null || true
 
           # Pre-deploy backup
           echo "Running pre-deploy backup..."
