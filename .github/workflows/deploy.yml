@@ -68,7 +68,20 @@ jobs:
           set +a
 
           # Ensure runtime directories exist (non rsyncés)
-          mkdir -p data/mysql data/prestashop backups/mysql
+          mkdir -p data/mysql data/prestashop data/prestashop/config backups/mysql
+
+          # Ensure HTTPS-behind-proxy shim exists: PS ne voit pas HTTPS derrière
+          # Caddy (qui forwarde en HTTP en interne), ce qui provoque une boucle
+          # de redirection. Ce fichier est auto-chargé par PS à chaque requête.
+          if [ ! -f data/prestashop/config/defines_custom.inc.php ]; then
+            sudo tee data/prestashop/config/defines_custom.inc.php > /dev/null <<'PHPEOF'
+          <?php
+          if (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') {
+              $_SERVER['HTTPS'] = 'on';
+              $_SERVER['SERVER_PORT'] = 443;
+          }
+          PHPEOF
+          fi
 
           # Ensure scripts are executable
           chmod +x scripts/*.sh
