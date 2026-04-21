@@ -23,14 +23,13 @@ services:
     env_file: .env
     environment:
       - DB_SERVER=prestashop_db
-    read_only: true
-    tmpfs:
-      - /tmp
-      - /run/lock
-      - /var/run/apache2
-      - /var/lock/apache2
-      - /var/log/apache2
-      - /var/cache/apache2
+    # Pas de read_only ici : l'image prestashop écrit à plusieurs endroits au
+    # runtime (init scripts, config Apache dynamique, installation PS) et
+    # restart-loop en exit 127 si on la bride. Le durcissement repose sur :
+    #   - module custom bind-monté en :ro (vecteur webshell bloqué)
+    #   - mots de passe DB forts (.env)
+    #   - iptables DOCKER-USER bloque l'UDP sortant
+    #   - pas de phpMyAdmin exposé
     volumes:
       - ./modules/aismarttalk:/var/www/html/modules/aismarttalk:ro
       - ./config/docker:/tmp/docker-config:ro
