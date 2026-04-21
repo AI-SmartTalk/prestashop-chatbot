@@ -1,21 +1,45 @@
+# Docker Compose prod pour prestashop.demo.aismarttalk.tech
+#
+# Prérequis côté VPS (voir aist-scripts/demo-vps/README.md) :
+#   - Réseau Docker externe "edge" créé (partagé avec Caddy)
+#   - Fichier .env à côté de ce compose contenant notamment :
+#       MYSQL_ROOT_PASSWORD=<openssl rand -base64 32>
+#       MYSQL_DATABASE=prestashop
+#       MYSQL_USER=prestashop
+#       MYSQL_PASSWORD=<openssl rand -base64 32>
+#       DB_USER=prestashop
+#       DB_PASSWD=<même valeur que MYSQL_PASSWORD>
+#       DB_NAME=prestashop
+#       PS_DOMAIN=prestashop.demo.aismarttalk.tech
+#
+# Aucun port n'est publié : Caddy route via le réseau "edge" (alias "ps-demo").
+
 services:
   prestashop:
     build:
       context: .
       dockerfile: Dockerfile.prod
     platform: linux/amd64
-    ports:
-      - "8082:80"
     env_file: .env
     environment:
       - DB_SERVER=prestashop_db
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /run/lock
+      - /var/run/apache2
+      - /var/lock/apache2
+      - /var/log/apache2
+      - /var/cache/apache2
     volumes:
-      - ./modules/aismarttalk:/var/www/html/modules/aismarttalk
-      - ./config/docker:/tmp/docker-config
+      - ./modules/aismarttalk:/var/www/html/modules/aismarttalk:ro
+      - ./config/docker:/tmp/docker-config:ro
       - ./data/prestashop:/var/www/html
     restart: always
     networks:
-      - ai-toolkit-network
+      internal: {}
+      edge:
+        aliases: [ps-demo]
     depends_on:
       prestashop_db:
         condition: service_healthy
@@ -25,14 +49,19 @@ services:
       timeout: 5s
       retries: 10
       start_period: 90s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID, NET_BIND_SERVICE, DAC_OVERRIDE]
+    pids_limit: 300
+    mem_limit: 768m
 
   prestashop_db:
     image: mysql:5.7
     platform: linux/amd64
     env_file: .env
     restart: always
-    networks:
-      - ai-toolkit-network
+    networks: [internal]
     volumes:
       - ./data/mysql:/var/lib/mysql
     healthcheck:
@@ -41,23 +70,15 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
-
-  prestashop_phpmyadmin:
-    image: phpmyadmin/phpmyadmin
-    platform: linux/amd64
-    ports:
-      - "127.0.0.1:8083:80"
-    environment:
-      - PMA_HOST=prestashop_db
-      - PMA_USER=${MYSQL_USER}
-      - PMA_PASSWORD=${MYSQL_PASSWORD}
-    restart: always
-    networks:
-      - ai-toolkit-network
-    depends_on:
-      prestashop_db:
-        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    cap_drop: [ALL]
+    cap_add: [CHOWN, SETGID, SETUID, DAC_OVERRIDE]
 
 networks:
-  ai-toolkit-network:
+  internal:
+    driver: bridge
+    internal: true
+  edge:
     external: true
+    name: edge
