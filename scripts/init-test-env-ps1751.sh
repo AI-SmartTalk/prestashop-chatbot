@@ -56,6 +56,13 @@ if (!\$m->id) {
 }
 "'
 
+# Final cache clear + ownership fix — composer + module install ran as root
+# and may have left non-www-data files in var/cache, which 500s every BO request
+docker exec "$CONTAINER" sh -c '
+    rm -rf /var/www/html/var/cache/* /var/www/html/cache/smarty/cache/* /var/www/html/cache/smarty/compile/* 2>/dev/null
+    chown -R www-data:www-data /var/www/html/var /var/www/html/cache 2>/dev/null
+'
+
 ADMIN_PATH=$(docker exec "$CONTAINER" sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")
 
 echo ""
