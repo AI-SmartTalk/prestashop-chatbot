@@ -1,0 +1,110 @@
+name: Publish module zip to CDN
+
+# Builds aismarttalk.zip via `make build-prod` (composer install --no-dev) and
+# uploads it to the chatbot-front public dir on the production VPS, where it is
+# served via https://cdn.aismarttalk.tech/download/prestashop
+# (see chatbot-front/src/server/routes/assets.routes.js).
+#
+# Required GitHub secrets on this repo:
+#   CDN_DEPLOY_SSH_KEY  — private SSH key authorized as root on the CDN host
+#   CDN_DEPLOY_HOST     — IP/host of the CDN VPS (e.g. 194.164.197.141)
+#   CDN_DEPLOY_USER     — SSH user (e.g. root)
+#   CDN_DEPLOY_PATH     — absolute target dir (e.g. /root/chatbot-front/public/prestashop)
+#
+# Verified URL after deploy: https://cdn.aismarttalk.tech/download/prestashop
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'modules/aismarttalk/**'
+      - 'Makefile'
+      - '.github/workflows/release-cdn.yml'
+  workflow_dispatch:
+
+jobs:
+  publish:
+    name: Build & upload aismarttalk.zip
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '7.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Read module version
+        id: version
+        run: |
+          VERSION=$(php -r "echo trim(file_get_contents('modules/aismarttalk/config.xml'));" \
+            | sed -nE 's/.*<version><!\[CDATA\[([^]]+)\]\]><\/version>.*/\1/p' \
+            | head -1)
+          if [ -z "$VERSION" ]; then
+            echo "::error::could not extract module version from config.xml"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Module version: $VERSION"
+
+      - name: Build production zip
+        run: make build-prod
+
+      - name: Sanity check (no phpunit, version matches)
+        run: |
+          set -e
+          if unzip -l aismarttalk.zip | grep -q phpunit; then
+            echo "::error::aismarttalk.zip ships phpunit — build-prod regression"
+            exit 1
+          fi
+          ZIP_VERSION=$(unzip -p aismarttalk.zip aismarttalk/config.xml \
+            | sed -nE 's/.*<version><!\[CDATA\[([^]]+)\]\]><\/version>.*/\1/p' \
+            | head -1)
+          if [ "$ZIP_VERSION" != "${{ steps.version.outputs.version }}" ]; then
+            echo "::error::version mismatch — config.xml=${{ steps.version.outputs.version }} zip=$ZIP_VERSION"
+            exit 1
+          fi
+          ls -la aismarttalk.zip
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.CDN_DEPLOY_SSH_KEY }}
+
+      - name: Add CDN host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.CDN_DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+
+      - name: Upload zip atomically (tmp → rename)
+        run: |
+          set -e
+          REMOTE="${{ secrets.CDN_DEPLOY_USER }}@${{ secrets.CDN_DEPLOY_HOST }}"
+          TARGET_DIR="${{ secrets.CDN_DEPLOY_PATH }}"
+          ssh "$REMOTE" "mkdir -p '$TARGET_DIR'"
+          # Upload to a tmp name first then mv → readers never see a partial file
+          scp aismarttalk.zip "$REMOTE:$TARGET_DIR/aismarttalk.zip.new"
+          ssh "$REMOTE" "mv -f '$TARGET_DIR/aismarttalk.zip.new' '$TARGET_DIR/aismarttalk.zip'"
+
+      - name: Verify CDN serves the new zip
+        run: |
+          set -e
+          # Cache may take a moment to refresh — try a few times
+          for i in 1 2 3 4 5; do
+            REMOTE_LEN=$(curl -sIL https://cdn.aismarttalk.tech/download/prestashop \
+              | awk -F': ' 'tolower($1)=="content-length"{print $2}' | tr -d '\r' | tail -1)
+            LOCAL_LEN=$(stat -c%s aismarttalk.zip 2>/dev/null || stat -f%z aismarttalk.zip)
+            echo "attempt $i: remote=$REMOTE_LEN local=$LOCAL_LEN"
+            if [ "$REMOTE_LEN" = "$LOCAL_LEN" ]; then
+              echo "✅ CDN serves v${{ steps.version.outputs.version }} ($LOCAL_LEN bytes)"
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::CDN content-length never matched local zip after 5 attempts"
+          exit 1

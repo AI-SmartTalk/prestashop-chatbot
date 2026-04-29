@@ -2,7 +2,7 @@
 <module>
     <name>aismarttalk</name>
     <displayName><![CDATA[AI SmartTalk]]></displayName>
-    <version><![CDATA[3.6.0]]></version>
+    <version><![CDATA[3.6.1]]></version>
     <description><![CDATA[Int&eacute;grez le chatbot AI SmartTalk pour am&eacute;liorer le support client et l&#039;engagement.]]></description>
     <author><![CDATA[AI SmartTalk]]></author>
     <tab><![CDATA[front_office_features]]></tab>

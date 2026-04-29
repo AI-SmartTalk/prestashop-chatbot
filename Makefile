@@ -1,4 +1,4 @@
-.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 e2e e2e-install e2e-ps17 e2e-headed e2e-ui e2e-setup e2e-reset e2e-reset-ps17 e2e-all e2e-multistore e2e-multistore-ps17 e2e-multistore-enable e2e-multistore-disable e2e-multistore-enable-ps17 e2e-multistore-disable-ps17
+.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 smoke-test-ps1751 e2e e2e-install e2e-ps17 e2e-ps1751 e2e-headed e2e-ui e2e-setup e2e-reset e2e-reset-ps17 e2e-reset-ps1751 e2e-all e2e-multistore e2e-multistore-ps17 e2e-multistore-ps1751 e2e-multistore-enable e2e-multistore-disable e2e-multistore-enable-ps17 e2e-multistore-disable-ps17 e2e-multistore-enable-ps1751 e2e-multistore-disable-ps1751 ps1751 ps1751-stop ps1751-clean ps1751-logs ps1751-bash ps1751-admin init-test init-test-ps1751
 
 # ──────────────────────────────────────────────
 # Unit Tests (no DB needed)
@@ -65,6 +65,10 @@ smoke-test:
 smoke-test-ps17:
 	docker exec prestashop17 php modules/aismarttalk/tests/Smoke/run_smoke_tests.php
 
+# Smoke test on PS 1.7.5.1
+smoke-test-ps1751:
+	docker exec prestashop1751 php modules/aismarttalk/tests/Smoke/run_smoke_tests.php
+
 # ──────────────────────────────────────────────
 # E2E Tests (Playwright — browser-based)
 # ──────────────────────────────────────────────
@@ -73,6 +77,7 @@ smoke-test-ps17:
 # Common variables
 PS9_ADMIN_PATH = $$(docker exec prestashop sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")
 PS17_ADMIN_PATH = $$(docker exec prestashop17 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")
+PS1751_ADMIN_PATH = $$(docker exec prestashop1751 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")
 OAUTH_KEYS = 'AI_SMART_TALK_OAUTH_CONNECTED','AI_SMART_TALK_ACCESS_TOKEN','AI_SMART_TALK_CHAT_MODEL_ID','AI_SMART_TALK_OAUTH_SCOPE','AI_SMART_TALK_SITE_IDENTIFIER','AI_SMART_TALK_OAUTH_PENDING','AI_SMART_TALK_OAUTH_SUCCESS','AI_SMART_TALK_OAUTH_ERROR','CHAT_MODEL_ID','CHAT_MODEL_TOKEN','AI_SMART_TALK_ENABLED'
 
 # Cache-clearing macros
@@ -82,6 +87,10 @@ endef
 
 define clear-ps17-cache
 	@docker exec prestashop17 bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/smarty/cache/* /var/www/html/cache/smarty/compile/* /var/www/html/cache/cachefs/* 2>/dev/null" || true
+endef
+
+define clear-ps1751-cache
+	@docker exec prestashop1751 bash -c "rm -rf /var/www/html/var/cache/prod/* /var/www/html/var/cache/dev/* /var/www/html/cache/smarty/cache/* /var/www/html/cache/smarty/compile/* /var/www/html/cache/cachefs/* 2>/dev/null" || true
 endef
 
 # Install Playwright
@@ -100,13 +109,23 @@ e2e-reset-ps17:
 	$(call clear-ps17-cache)
 	@echo "✓ PS 1.7 OAuth reset"
 
+# Reset OAuth state (PS 1.7.5.1)
+e2e-reset-ps1751:
+	@docker exec prestashop1751_db mysql -u prestashop -pprestashop prestashop -e "DELETE FROM ps_configuration WHERE name IN ($(OAUTH_KEYS));" 2>/dev/null || true
+	$(call clear-ps1751-cache)
+	@echo "✓ PS 1.7.5.1 OAuth reset"
+
 # Run E2E on PS 9 — auto-resets before running
 e2e: e2e-reset
 	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test
 
 # Run E2E on PS 1.7 — auto-resets before running
 e2e-ps17: e2e-reset-ps17
-	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_PASS=Admin_Presta17! npx playwright test
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta17! npx playwright test
+
+# Run E2E on PS 1.7.5.1 — auto-resets before running
+e2e-ps1751: e2e-reset-ps1751
+	cd tests/e2e && PS_URL=http://localhost:8093 PS_ADMIN_PATH=$(PS1751_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta1751! npx playwright test
 
 # Run E2E headed (visible browser)
 e2e-headed: e2e-reset
@@ -142,18 +161,36 @@ e2e-multistore-disable-ps17:
 	$(call clear-ps17-cache)
 	@echo "✓ Multistore disabled on PS 1.7 (single shop)"
 
+# Enable/disable multistore on PS 1.7.5.1 (no `color` column on ps_shop)
+e2e-multistore-enable-ps1751:
+	@docker exec -i prestashop1751_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/enable-multistore-ps1751.sql
+	$(call clear-ps1751-cache)
+	@echo "✓ Multistore enabled on PS 1.7.5.1 (2 shops)"
+
+e2e-multistore-disable-ps1751:
+	@docker exec -i prestashop1751_db mysql -u prestashop -pprestashop prestashop < tests/e2e/fixtures/disable-multistore.sql
+	$(call clear-ps1751-cache)
+	@echo "✓ Multistore disabled on PS 1.7.5.1 (single shop)"
+
 # Run E2E on PS9 with multistore (enables, resets OAuth, runs, disables)
 e2e-multistore: e2e-multistore-enable e2e-reset
 	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test; \
 	EXIT_CODE=$$?; \
-	$(MAKE) -s e2e-multistore-disable; \
+	$(MAKE) -C $(CURDIR) -s e2e-multistore-disable; \
 	exit $$EXIT_CODE
 
 # Run E2E on PS 1.7 with multistore
 e2e-multistore-ps17: e2e-multistore-enable-ps17 e2e-reset-ps17
-	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_PASS=Admin_Presta17! npx playwright test; \
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta17! npx playwright test; \
 	EXIT_CODE=$$?; \
-	$(MAKE) -s e2e-multistore-disable-ps17; \
+	$(MAKE) -C $(CURDIR) -s e2e-multistore-disable-ps17; \
+	exit $$EXIT_CODE
+
+# Run E2E on PS 1.7.5.1 with multistore
+e2e-multistore-ps1751: e2e-multistore-enable-ps1751 e2e-reset-ps1751
+	cd tests/e2e && PS_URL=http://localhost:8093 PS_ADMIN_PATH=$(PS1751_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta1751! npx playwright test; \
+	EXIT_CODE=$$?; \
+	$(MAKE) -C $(CURDIR) -s e2e-multistore-disable-ps1751; \
 	exit $$EXIT_CODE
 
 # Run ALL E2E tests (PS 9 + PS 1.7, single-shop & multistore)
@@ -178,7 +215,17 @@ e2e-all:
 	@echo "═══════════════════════════════════════"
 	$(MAKE) e2e-multistore-ps17
 	@echo ""
-	@echo "✅ All E2E tests passed: PS 9 + PS 1.7 (single-shop & multistore)"
+	@echo "═══════════════════════════════════════"
+	@echo "  E2E Tests — PrestaShop 1.7.5.1"
+	@echo "═══════════════════════════════════════"
+	$(MAKE) e2e-ps1751
+	@echo ""
+	@echo "═══════════════════════════════════════"
+	@echo "  E2E Tests — PS 1.7.5.1 Multistore"
+	@echo "═══════════════════════════════════════"
+	$(MAKE) e2e-multistore-ps1751
+	@echo ""
+	@echo "✅ All E2E tests passed: PS 9 + PS 1.7 + PS 1.7.5.1 (single-shop & multistore)"
 
 # ──────────────────────────────────────────────
 # Run ALL tests (unit + integration)
@@ -195,6 +242,10 @@ up:
 # Init test environment: remove install dir, set admin path to /admin-qa, reset credentials
 init-test:
 	bash scripts/init-test-env.sh
+
+# Init PS 1.7.5.1 test environment: fix perms, install composer deps, install the module
+init-test-ps1751:
+	bash scripts/init-test-env-ps1751.sh
 
 # Stop the containers
 down:
@@ -236,16 +287,22 @@ admin:
 # ──────────────────────────────────────────────
 # Build Production Archive
 # ──────────────────────────────────────────────
+# Builds in a temp dir with `composer install --no-dev` so PHPUnit (require-dev,
+# uses PHP 7.3+ syntax) is never shipped — required for PS 1.7.5.1 / PHP 7.2.
 build-prod:
 	@echo "📦 Building production zip for aismarttalk module..."
 	@rm -f aismarttalk.zip
-	@cd modules && zip -q -r ../aismarttalk.zip aismarttalk \
-		-x "aismarttalk/tests/*" \
-		-x "aismarttalk/phpunit*" \
-		-x "aismarttalk/.phpunit*" \
-		-x "aismarttalk/.git/*" \
-		-x "aismarttalk/.gitignore" \
-		-x "*/.DS_Store"
+	@TMP=$$(mktemp -d) && \
+		cp -R modules/aismarttalk "$$TMP/" && \
+		rm -rf "$$TMP/aismarttalk/vendor" "$$TMP/aismarttalk/tests" && \
+		(cd "$$TMP/aismarttalk" && composer install --no-dev --quiet --no-progress --no-interaction) && \
+		(cd "$$TMP" && zip -q -r "$(CURDIR)/aismarttalk.zip" aismarttalk \
+			-x "aismarttalk/phpunit*" \
+			-x "aismarttalk/.phpunit*" \
+			-x "aismarttalk/.git/*" \
+			-x "aismarttalk/.gitignore" \
+			-x "*/.DS_Store") && \
+		rm -rf "$$TMP"
 	@echo "✅ Build complete: aismarttalk.zip generated in the root directory."
 
 # ──────────────────────────────────────────────
@@ -309,3 +366,33 @@ ps17-bash:
 
 ps17-admin:
 	@echo "PrestaShop 1.7:" && echo "  http://localhost:8091/$$(docker exec prestashop17 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")"
+
+# ──────────────────────────────────────────────
+# PrestaShop 1.7.5.1 (PHP 7.2 — legacy support)
+# ──────────────────────────────────────────────
+PS1751_COMPOSE=docker compose -f docker-compose.ps1751.yml
+
+ps1751:
+	docker network create ai-toolkit-network || true
+	$(PS1751_COMPOSE) up -d
+	@echo ""
+	@echo "=== PrestaShop 1.7.5.1 Ready ==="
+	@echo "PrestaShop 1.7.5.1: http://localhost:8093"
+	@echo "PhpMyAdmin:         http://localhost:8094"
+	@echo ""
+	@echo "Admin credentials: demo@prestashop.com / Admin_Presta1751!"
+
+ps1751-stop:
+	$(PS1751_COMPOSE) down
+
+ps1751-clean:
+	$(PS1751_COMPOSE) down -v
+
+ps1751-logs:
+	$(PS1751_COMPOSE) logs -f
+
+ps1751-bash:
+	docker exec -it prestashop1751 bash
+
+ps1751-admin:
+	@echo "PrestaShop 1.7.5.1:" && echo "  http://localhost:8093/$$(docker exec prestashop1751 sh -c "ls -d /var/www/html/admin* | grep -v admin-api | head -1 | xargs basename")"

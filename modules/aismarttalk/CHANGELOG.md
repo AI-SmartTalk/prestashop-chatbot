@@ -2,6 +2,17 @@
 
 All notable changes to the AI SmartTalk PrestaShop module will be documented in this file.
 
+## [3.6.1] - 2026-04-29
+
+### Fixed
+- **PrestaShop 1.7.5.1 / PHP 7.2 compatibility**: production zip no longer ships PHPUnit (require-dev dependency) whose `Functions.php` autoload uses PHP 7.3+ trailing-comma syntax — caused `PHP Parse error: syntax error, unexpected ')'` on every BO/FO request when installed on PHP 7.2.
+
+### Build
+- `make build-prod` now builds in a tempdir and runs `composer install --no-dev` before zipping, so dev dependencies can never leak into the distributable archive.
+
+### Tests
+- New end-to-end test environment for PS 1.7.5.1 (`make ps1751`, `make e2e-ps1751`, `make e2e-multistore-ps1751`) — module is now validated against PS 9, PS 1.7.8 and PS 1.7.5.1.
+
 ## [3.0.0] - 2026-01-16
 
 ### Added
