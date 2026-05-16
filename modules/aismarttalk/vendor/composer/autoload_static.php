@@ -12,12 +12,12 @@ class ComposerStaticInit3bdbd939a184a583fcb24dad87c35c72
     );
 
     public static $prefixLengthsPsr4 = array (
-        'P' =>
+        'P' => 
         array (
             'Prestashop\\AiSmartTalk\\' => 23,
             'PhpParser\\' => 10,
         ),
-        'D' =>
+        'D' => 
         array (
             'Doctrine\\Instantiator\\' => 22,
             'DeepCopy\\' => 9,
@@ -25,19 +25,19 @@ class ComposerStaticInit3bdbd939a184a583fcb24dad87c35c72
     );
 
     public static $prefixDirsPsr4 = array (
-        'Prestashop\\AiSmartTalk\\' =>
+        'Prestashop\\AiSmartTalk\\' => 
         array (
             0 => __DIR__ . '/../..' . '/src',
         ),
-        'PhpParser\\' =>
+        'PhpParser\\' => 
         array (
             0 => __DIR__ . '/..' . '/nikic/php-parser/lib/PhpParser',
         ),
-        'Doctrine\\Instantiator\\' =>
+        'Doctrine\\Instantiator\\' => 
         array (
             0 => __DIR__ . '/..' . '/doctrine/instantiator/src/Doctrine/Instantiator',
         ),
-        'DeepCopy\\' =>
+        'DeepCopy\\' => 
         array (
             0 => __DIR__ . '/..' . '/myclabs/deep-copy/src/DeepCopy',
         ),
@@ -475,11 +475,13 @@ class ComposerStaticInit3bdbd939a184a583fcb24dad87c35c72
         'PrestaShop\\AiSmartTalk\\ApiResponse' => __DIR__ . '/../..' . '/classes/ApiResponse.php',
         'PrestaShop\\AiSmartTalk\\ChatbotSettingsBuilder' => __DIR__ . '/../..' . '/classes/ChatbotSettingsBuilder.php',
         'PrestaShop\\AiSmartTalk\\CleanProductDocuments' => __DIR__ . '/../..' . '/classes/CleanProductDocuments.php',
+        'PrestaShop\\AiSmartTalk\\CombinationHelper' => __DIR__ . '/../..' . '/classes/CombinationHelper.php',
         'PrestaShop\\AiSmartTalk\\CustomerSync' => __DIR__ . '/../..' . '/classes/CustomerSync.php',
         'PrestaShop\\AiSmartTalk\\MultistoreHelper' => __DIR__ . '/../..' . '/classes/MultistoreHelper.php',
         'PrestaShop\\AiSmartTalk\\OAuthHandler' => __DIR__ . '/../..' . '/classes/OAuthHandler.php',
         'PrestaShop\\AiSmartTalk\\OAuthTokenHandler' => __DIR__ . '/../..' . '/classes/OAuthTokenHandler.php',
         'PrestaShop\\AiSmartTalk\\PayloadEncryptor' => __DIR__ . '/../..' . '/classes/PayloadEncryptor.php',
+        'PrestaShop\\AiSmartTalk\\PriceFormatter' => __DIR__ . '/../..' . '/classes/PriceFormatter.php',
         'PrestaShop\\AiSmartTalk\\SyncFilterHelper' => __DIR__ . '/../..' . '/classes/SyncFilterHelper.php',
         'PrestaShop\\AiSmartTalk\\SynchProductsToAiSmartTalk' => __DIR__ . '/../..' . '/classes/SynchProductsToAiSmartTalk.php',
         'PrestaShop\\AiSmartTalk\\WebhookHandler' => __DIR__ . '/../..' . '/classes/WebhookHandler.php',

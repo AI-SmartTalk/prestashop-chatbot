@@ -88,6 +88,9 @@ class SynchProductsToAiSmartTalk
         $defaultCurrencyId = (int) \Configuration::get('PS_CURRENCY_DEFAULT');
         $defaultCurrency = new \Currency($defaultCurrencyId);
         $currencySign = $defaultCurrency->sign ?: '€';
+        // Decimal precision for this currency (3 for LYD/BHD, 2 for EUR/USD, 0 for JPY, ...).
+        // Without this, json_encode strips trailing zeros and prices like "12.000 LYD" become "12 LYD".
+        $priceDecimals = PriceFormatter::decimalsFromCurrency($defaultCurrency);
 
         $documentDatas = [];
         $synchronizedProductIds = [];
@@ -96,11 +99,12 @@ class SynchProductsToAiSmartTalk
             $psProduct = new \Product($product['id_product'], false, $defaultLangId, $bestShopId);
             $productUrl = $link->getProductLink($psProduct, null, null, null, $defaultLangId, $bestShopId);
 
+            $linkRewrite = is_array($psProduct->link_rewrite)
+                ? ($psProduct->link_rewrite[$defaultLangId] ?? reset($psProduct->link_rewrite))
+                : ($psProduct->link_rewrite ?: '');
+
             $imageUrl = null;
             if (!empty($product['id_image'])) {
-                $linkRewrite = is_array($psProduct->link_rewrite)
-                    ? ($psProduct->link_rewrite[$defaultLangId] ?? reset($psProduct->link_rewrite))
-                    : ($psProduct->link_rewrite ?: '');
                 $imageUrl = $this->getContext()->link->getImageLink($linkRewrite, $product['id_image']);
             }
 
@@ -112,13 +116,25 @@ class SynchProductsToAiSmartTalk
             $priceFrom = !empty($product['price_from']) && $product['price_from'] !== '0000-00-00 00:00:00' ? $product['price_from'] : null;
             $priceTo = !empty($product['price_to']) && $product['price_to'] !== '0000-00-00 00:00:00' ? $product['price_to'] : null;
 
+            // Variants are only fetched for products that have combinations.
+            // Empty array for simple products keeps the payload shape stable for the backend.
+            $variants = CombinationHelper::getVariants(
+                (int) $product['id_product'],
+                $defaultLangId,
+                $bestShopId,
+                $priceDecimals,
+                $link,
+                $linkRewrite
+            );
+
             $documentDatas[] = [
                 'id' => $product['id_product'],
                 'title' => $product['name'],
                 'description' => strip_tags($product['description']),
                 'description_short' => strip_tags($product['description_short']),
                 'reference' => $product['reference'],
-                'price' => $finalPrice,
+                'price' => PriceFormatter::format($finalPrice, $priceDecimals),
+                'price_decimals' => $priceDecimals,
                 'currency' => $product['currency_code'] ?? 'EUR',
                 'currency_sign' => $currencySign,
                 'has_special_price' => $hasSpecialPrice,
@@ -126,6 +142,7 @@ class SynchProductsToAiSmartTalk
                 'price_to' => $priceTo,
                 'url' => $productUrl,
                 'image_url' => $imageUrl,
+                'variants' => $variants,
             ];
 
             if (count($documentDatas) === 10) {
@@ -205,14 +222,16 @@ class SynchProductsToAiSmartTalk
         $allShopIds = MultistoreHelper::getAllShopIds();
         $shopIdList = implode(',', array_map('intval', $allShopIds));
 
-        // Build a stock-availability subquery: product is in stock in at least one shop
+        // Build a stock-availability subquery: product is in stock in at least one shop,
+        // either at the parent level (id_product_attribute = 0) OR via any of its combinations.
+        // Excluding combination rows here would mark stores that sell only via declinations
+        // (e.g. ALL products are variants of a parent) as fully out-of-stock.
         $stockExistsConditions = [];
         foreach ($allShopIds as $sid) {
             $shopGroupId = (int) \Shop::getGroupFromShop($sid);
             $stockExistsConditions[] = 'EXISTS (
                 SELECT 1 FROM ' . _DB_PREFIX_ . 'stock_available sa_check
                 WHERE sa_check.id_product = p.id_product
-                    AND sa_check.id_product_attribute = 0
                     AND (sa_check.id_shop = ' . (int) $sid . '
                          OR (sa_check.id_shop = 0 AND sa_check.id_shop_group = ' . $shopGroupId . '))
                     AND sa_check.quantity > 0

@@ -112,17 +112,21 @@ class MultistoreHelper
     {
         $shopGroupId = (int) \Shop::getGroupFromShop($idShop);
 
+        // A product is "in stock" when ANY stock_available row (parent OR any combination)
+        // has quantity > 0 for the shop (or its group, for shared-stock PS 1.7). Restricting
+        // to id_product_attribute = 0 would wrongly mark combination-only products as inactive.
         $sql = 'SELECT 1
                 FROM ' . _DB_PREFIX_ . 'product_shop ps
-                LEFT JOIN ' . _DB_PREFIX_ . 'stock_available sa
-                    ON ps.id_product = sa.id_product
-                    AND sa.id_product_attribute = 0
-                    AND (sa.id_shop = ' . (int) $idShop . '
-                         OR (sa.id_shop = 0 AND sa.id_shop_group = ' . $shopGroupId . '))
                 WHERE ps.id_product = ' . (int) $idProduct . '
                     AND ps.id_shop = ' . (int) $idShop . '
                     AND ps.active = 1
-                    AND COALESCE(sa.quantity, 0) > 0';
+                    AND EXISTS (
+                        SELECT 1 FROM ' . _DB_PREFIX_ . 'stock_available sa
+                        WHERE sa.id_product = ps.id_product
+                            AND (sa.id_shop = ' . (int) $idShop . '
+                                 OR (sa.id_shop = 0 AND sa.id_shop_group = ' . $shopGroupId . '))
+                            AND sa.quantity > 0
+                    )';
 
         return (bool) \Db::getInstance()->getValue($sql);
     }

@@ -205,7 +205,34 @@ class ProductSyncQueryTest extends TestCase
         // No filter configured → all eligible products
         $ids = $this->getProductIds(true);
 
-        $this->assertCount(6, $ids, 'All 6 eligible products should sync when no filter');
+        // P1, P2, P3, P5, P7, P8 (parent stock) + P9 (combination-only stock) = 7
+        $this->assertCount(7, $ids, 'All 7 eligible products should sync when no filter');
+    }
+
+    // =========================================================================
+    // Combinations (declinations) — products in stock ONLY via combinations
+    // =========================================================================
+
+    public function testCombinationOnlyStockMakesProductEligible(): void
+    {
+        // P9 has parent stock = 0 in shop 1 but combination 101 has 5 units.
+        // Before the combinations support, P9 would be skipped because the
+        // eligibility check required id_product_attribute = 0 with quantity > 0.
+        $ids = $this->getProductIds(true);
+
+        $this->assertContains(
+            9,
+            $ids,
+            'P9 (parent OOS, combination in stock) MUST be eligible — Libyan client pattern'
+        );
+    }
+
+    public function testCombinationOnlyStockWorksWithExplicitIds(): void
+    {
+        // Same product, but requested explicitly by id — must still pass eligibility.
+        $ids = $this->getProductIds(true, ['9']);
+
+        $this->assertContains(9, $ids, 'P9 must be returned when requested by id');
     }
 
     // =========================================================================

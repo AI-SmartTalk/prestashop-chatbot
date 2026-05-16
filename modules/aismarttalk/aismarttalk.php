@@ -129,6 +129,11 @@ class AiSmartTalk extends Module
             'actionProductCreate',
             'actionProductDelete',
             'actionUpdateQuantity',
+            // Combination (declination) lifecycle — keep the synced parent payload in sync
+            // when only a variant is changed (new size, price impact tweak, ...).
+            'actionProductAttributeCreate',
+            'actionProductAttributeUpdate',
+            'actionProductAttributeDelete',
             'actionAuthentication',
             'actionCustomerLogout',
             'actionCustomerAccountAdd',
@@ -214,6 +219,9 @@ class AiSmartTalk extends Module
             'actionProductDelete',
             'actionUpdateQuantity',
             'actionProductQuantityUpdate',
+            'actionProductAttributeCreate',
+            'actionProductAttributeUpdate',
+            'actionProductAttributeDelete',
             'actionAuthentication',
             'actionCustomerLogout',
             'actionCustomerAccountAdd',
@@ -968,6 +976,94 @@ class AiSmartTalk extends Module
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog('AI SmartTalk hookActionProductDelete error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
+    }
+
+    /**
+     * Hook: actionProductAttributeCreate — a new combination was added to a product.
+     * We re-sync the parent so its `variants[]` payload includes the new declination.
+     */
+    public function hookActionProductAttributeCreate($params)
+    {
+        try {
+            $this->handleCombinationChange($params);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionProductAttributeCreate error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
+    }
+
+    /**
+     * Hook: actionProductAttributeUpdate — an existing combination was edited
+     * (price impact, reference, attributes). Re-sync the parent to keep variant data fresh.
+     */
+    public function hookActionProductAttributeUpdate($params)
+    {
+        try {
+            $this->handleCombinationChange($params);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionProductAttributeUpdate error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
+    }
+
+    /**
+     * Hook: actionProductAttributeDelete — a combination was removed.
+     * The parent must be re-synced so the deleted variant is dropped from `variants[]`.
+     */
+    public function hookActionProductAttributeDelete($params)
+    {
+        try {
+            $this->handleCombinationChange($params);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionProductAttributeDelete error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
+    }
+
+    /**
+     * Resolve the parent product of a changed combination and trigger a parent re-sync.
+     *
+     * Hook params may contain `id_product` directly, or only `id_product_attribute`.
+     * On delete the attribute row may already be gone, so we lookup the parent first
+     * and fall back to whatever the hook gave us.
+     */
+    protected function handleCombinationChange(array $params): void
+    {
+        if (!(bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')) {
+            return;
+        }
+
+        $idProduct = isset($params['id_product']) ? (int) $params['id_product'] : 0;
+
+        if ($idProduct <= 0 && !empty($params['id_product_attribute'])) {
+            $idProductAttribute = (int) $params['id_product_attribute'];
+            $idProduct = (int) \Db::getInstance()->getValue(
+                'SELECT id_product FROM ' . _DB_PREFIX_ . 'product_attribute
+                 WHERE id_product_attribute = ' . $idProductAttribute
+            );
+        }
+
+        if ($idProduct <= 0) {
+            return;
+        }
+
+        // If the parent is no longer active+in-stock anywhere (last combination removed,
+        // for example), purge it from the knowledge base instead of re-syncing empty data.
+        if (!MultistoreHelper::isProductActiveInAnyShop($idProduct)) {
+            if (AiSmartTalkProductSync::isSynced($idProduct)) {
+                $api = new CleanProductDocuments();
+                $api(['productIds' => [(string) $idProduct]]);
+                AiSmartTalkProductSync::markAsNotSynced($idProduct);
+            }
+            return;
+        }
+
+        // Debounce: combination edits often fire in bursts (BO save edits multiple rows).
+        if (!AiSmartTalkProductSync::canSync($idProduct, 3)) {
+            return;
+        }
+
+        $api = new SynchProductsToAiSmartTalk($this->context);
+        $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
+
+        AiSmartTalkProductSync::updateLastSyncTime($idProduct);
     }
 
     /**
