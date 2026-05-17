@@ -108,9 +108,21 @@ class SynchProductsToAiSmartTalk
                 $imageUrl = $this->getContext()->link->getImageLink($linkRewrite, $product['id_image']);
             }
 
-            // Calculate final price considering specific prices (promotions)
-            $finalPrice = $psProduct->getPrice();
-            $hasSpecialPrice = !empty($product['specific_price']) || !empty($product['price_reduction']);
+            // Resolve final + original price in one shot. PriceCalculator owns
+            // the double-call to getPriceStatic and the discount math so the
+            // logic stays identical between parent products and combinations.
+            $priceInfo = PriceCalculator::calculate(
+                (int) $product['id_product'],
+                0,
+                $priceDecimals
+            );
+
+            // Keep the legacy has_special_price flag — driven by SQL detection
+            // of an active ps_specific_price row. Combined with priceInfo it
+            // also catches group/catalog reductions that don't sit in specific_price.
+            $hasSpecialPrice = !empty($product['specific_price'])
+                || !empty($product['price_reduction'])
+                || $priceInfo->hasDiscount;
 
             // Format dates
             $priceFrom = !empty($product['price_from']) && $product['price_from'] !== '0000-00-00 00:00:00' ? $product['price_from'] : null;
@@ -133,10 +145,20 @@ class SynchProductsToAiSmartTalk
                 'description' => strip_tags($product['description']),
                 'description_short' => strip_tags($product['description_short']),
                 'reference' => $product['reference'],
-                'price' => PriceFormatter::format($finalPrice, $priceDecimals),
+                'price' => PriceFormatter::format($priceInfo->finalPrice, $priceDecimals),
                 'price_decimals' => $priceDecimals,
                 'currency' => $product['currency_code'] ?? 'EUR',
                 'currency_sign' => $currencySign,
+                // Promotion fields — present only when the product is actually discounted.
+                // Backend / LLM / front all treat their absence as "no promo".
+                'original_price' => $priceInfo->hasDiscount
+                    ? PriceFormatter::format($priceInfo->originalPrice, $priceDecimals)
+                    : null,
+                'discount_percent' => $priceInfo->hasDiscount ? $priceInfo->discountPercent : null,
+                'discount_amount' => $priceInfo->hasDiscount
+                    ? PriceFormatter::format($priceInfo->discountAmount, $priceDecimals)
+                    : null,
+                'discount_type' => $priceInfo->hasDiscount ? $priceInfo->discountType : null,
                 'has_special_price' => $hasSpecialPrice,
                 'price_from' => $priceFrom,
                 'price_to' => $priceTo,

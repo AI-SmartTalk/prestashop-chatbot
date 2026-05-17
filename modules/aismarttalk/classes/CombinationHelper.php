@@ -148,25 +148,10 @@ class CombinationHelper
         $link,
         $linkRewrite
     ): array {
-        // Final price for this combination (tax included = true to match parent's getPrice() behavior).
-        $finalPrice = \Product::getPriceStatic(
-            $idProduct,
-            true,
-            $idProductAttribute,
-            $priceDecimals,
-            null,
-            false,
-            true,
-            1,
-            false,
-            null,
-            null,
-            null,
-            $specificPriceOutput,
-            true,
-            true,
-            null
-        );
+        // Reuse the same PriceCalculator as parent products so a variant's
+        // discount semantics (specific_price tied to id_product_attribute,
+        // group reduction, etc.) are calculated identically.
+        $priceInfo = PriceCalculator::calculate($idProduct, $idProductAttribute, $priceDecimals);
 
         $quantity = (int) \StockAvailable::getQuantityAvailableByProduct(
             $idProduct,
@@ -181,7 +166,17 @@ class CombinationHelper
             'reference' => isset($row['reference']) ? (string) $row['reference'] : '',
             'ean13' => isset($row['ean13']) ? (string) $row['ean13'] : '',
             'upc' => isset($row['upc']) ? (string) $row['upc'] : '',
-            'price' => PriceFormatter::format($finalPrice, $priceDecimals),
+            'price' => PriceFormatter::format($priceInfo->finalPrice, $priceDecimals),
+            // Promotion fields are null when the variant is not discounted, mirroring
+            // the parent product shape so the backend treats them uniformly.
+            'original_price' => $priceInfo->hasDiscount
+                ? PriceFormatter::format($priceInfo->originalPrice, $priceDecimals)
+                : null,
+            'discount_percent' => $priceInfo->hasDiscount ? $priceInfo->discountPercent : null,
+            'discount_amount' => $priceInfo->hasDiscount
+                ? PriceFormatter::format($priceInfo->discountAmount, $priceDecimals)
+                : null,
+            'discount_type' => $priceInfo->hasDiscount ? $priceInfo->discountType : null,
             'quantity' => $quantity,
             'in_stock' => $quantity > 0,
             'attributes' => [],
