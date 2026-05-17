@@ -54,26 +54,55 @@ class CleanProductDocuments
         }, $products ?: []);
     }
 
+    /**
+     * Map the legacy `deleteFromIds` semantics to the v1 cleanup modes:
+     *  - `delete-ids` deletes exactly the externalIds passed in (incremental
+     *    cleanup hooked from PrestaShop's product delete event);
+     *  - `keep-only` is authoritative: deletes the documents whose externalId
+     *    is NOT in the list (a full diff against the merchant's live
+     *    catalogue).
+     *
+     * The v1 endpoint refuses an empty `keep-only` list unless `?force=true`
+     * is passed — a safety net against accidental catalogue-wide wipes during
+     * maintenance windows where queries briefly return zero. The merchant
+     * explicitly running cleanup on a literally empty catalogue is the only
+     * legitimate empty case, so we surface force only there.
+     */
     private function cleanProducts()
     {
         $hasSpecificIds = is_array($this->productIds) && !empty($this->productIds);
-        $productIds = $hasSpecificIds ? $this->productIds : $this->fetchAllProductIds();
+        $productIds = $hasSpecificIds
+            ? array_values(array_map('strval', $this->productIds))
+            : $this->fetchAllProductIds();
 
         $client = ApiClient::fromConfig();
+        $siteIdentifier = $client->getSiteIdentifier();
 
-        $response = $client->post('/api/document/clean', [
-            'productIds' => $productIds,
-            'chatModelId' => $client->getChatModelId(),
-            'chatModelToken' => $client->getAccessToken(),
-            'deleteFromIds' => $hasSpecificIds,
+        $mode = $hasSpecificIds ? 'delete-ids' : 'keep-only';
+        $force = (!$hasSpecificIds && $productIds === []);
+
+        $envelope = [
             'source' => 'PRESTASHOP',
-            'siteIdentifier' => $client->getSiteIdentifier(),
-        ]);
+            'mode' => $mode,
+            'externalIds' => $productIds,
+        ];
+        if ($siteIdentifier !== null && $siteIdentifier !== '') {
+            $envelope['siteIdentifier'] = $siteIdentifier;
+        }
+
+        $path = '/api/v1/integrations/prestashop/cleanup' . ($force ? '?force=true' : '');
+        $response = $client->post($path, $envelope);
 
         if (!$response->isSuccess()) {
-            MultistoreHelper::updateConfig('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->error ?: 'HTTP ' . $response->httpCode);
+            MultistoreHelper::updateConfig(
+                'CLEAN_PRODUCT_DOCUMENTS_ERROR',
+                $response->error ?: 'HTTP ' . $response->httpCode
+            );
         } elseif ($response->get('status') === 'error') {
-            MultistoreHelper::updateConfig('CLEAN_PRODUCT_DOCUMENTS_ERROR', $response->get('message'));
+            MultistoreHelper::updateConfig(
+                'CLEAN_PRODUCT_DOCUMENTS_ERROR',
+                $response->get('message')
+            );
         } else {
             MultistoreHelper::deleteConfig('CLEAN_PRODUCT_DOCUMENTS_ERROR');
         }

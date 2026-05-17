@@ -204,20 +204,63 @@ class SynchProductsToAiSmartTalk
         return AiSmartTalkProductSync::markProductsAsSynced($productIds, $idShop);
     }
 
+    /**
+     * Push a batch of products to the canonical v1 sync endpoint.
+     *
+     * Why this routes through `/api/v1/integrations/prestashop/sync`:
+     *  - the legacy `/api/document/source` accepts an `any[]` payload with no
+     *    schema enforcement — every plugin sends a different shape, the server
+     *    duck-types fields, and rejections come back as silent 200s. The v1
+     *    endpoint validates each document against the canonical
+     *    `ProductDocument` schema and returns a `{accepted, rejected[]}`
+     *    report so we can surface granular failures in the merchant admin;
+     *  - authentication moves to standard `Authorization: Bearer` + the
+     *    `x-aismarttalk-plugin` telemetry header (handled by ApiClient), so
+     *    the body no longer carries `chatModelId` / `chatModelToken`.
+     *
+     * Backward-compat note: the legacy endpoint stays alive on the backend.
+     * Old plugin versions deployed at merchants continue to function
+     * unchanged — only the merchants who upgrade to this module version
+     * benefit from the v1 pipeline.
+     */
     private function postToApi($documentDatas)
     {
         $client = ApiClient::fromConfig();
 
-        $response = $client->post('/api/document/source', [
-            'documentDatas' => $documentDatas,
-            'chatModelId' => $client->getChatModelId(),
-            'chatModelToken' => $client->getAccessToken(),
-            'source' => 'PRESTASHOP',
-            'siteIdentifier' => $client->getSiteIdentifier(),
-        ]);
+        // Translate the legacy snake_case payload into the canonical shape
+        // expected by the v1 endpoint. `ProductDocumentBuilder` owns every
+        // field mapping (incl. promo block from DEV-842), so this class can
+        // stay focused on orchestrating PrestaShop data sourcing.
+        $canonical = [];
+        foreach ($documentDatas as $legacy) {
+            try {
+                $canonical[] = ProductDocumentBuilder::build($legacy);
+            } catch (\InvalidArgumentException $e) {
+                // A product with no id should never reach this point — guard
+                // against it so a single bad row never blocks the whole batch.
+                \PrestaShopLogger::addLog(
+                    'AI SmartTalk sync: skipped malformed product — ' . $e->getMessage(),
+                    2
+                );
+            }
+        }
+
+        if ($canonical === []) {
+            return $this->lastResponseBody ?: '{"status":"ok","accepted":0}';
+        }
+
+        $envelope = ProductDocumentBuilder::buildSyncEnvelope(
+            $canonical,
+            $client->getSiteIdentifier()
+        );
+
+        $response = $client->post('/api/v1/integrations/prestashop/sync', $envelope);
 
         if (!$response->isSuccess()) {
-            MultistoreHelper::updateConfig('AI_SMART_TALK_ERROR', $response->error ?: 'HTTP ' . $response->httpCode);
+            MultistoreHelper::updateConfig(
+                'AI_SMART_TALK_ERROR',
+                $response->error ?: 'HTTP ' . $response->httpCode
+            );
             return false;
         }
 
@@ -228,8 +271,29 @@ class SynchProductsToAiSmartTalk
             return false;
         }
 
+        // Surface per-document rejections in the PrestaShop logs so a buggy
+        // product is visible to the merchant team without having to inspect
+        // the backend dashboards. We don't fail the batch — `partial` is a
+        // valid outcome on the v1 endpoint and the other documents succeeded.
+        $rejected = $response->get('rejected');
+        if (is_array($rejected) && $rejected !== []) {
+            \PrestaShopLogger::addLog(
+                'AI SmartTalk sync: ' . count($rejected) . ' documents rejected by API. First: '
+                . json_encode($rejected[0]),
+                2
+            );
+        }
+
         return $response->body;
     }
+
+    /**
+     * Kept so tests asserting against a previous response body keep working
+     * across refactors. Not part of the public contract.
+     *
+     * @var string|null
+     */
+    private $lastResponseBody = null;
 
     /**
      * Get products to synchronize across ALL shops (union, deduplicated).
