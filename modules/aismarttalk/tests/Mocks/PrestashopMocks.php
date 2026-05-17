@@ -423,12 +423,58 @@ class Product
     public $active = true;
     public $link_rewrite = ['en' => 'test-product'];
 
+    /**
+     * Test seam for Product::getPriceStatic.
+     *
+     * Tests can set a callable that receives the same args as the real method,
+     * including a reference to the 13th arg ($specific_price_output).
+     * The default returns 29.99 with no specific_price details.
+     *
+     * @var callable|null
+     */
+    public static $priceStaticMock = null;
+
     public function __construct($id = null, $full = false, $idLang = null, $idShop = null)
     {
         $this->id = $id;
     }
 
     public function getPrice() { return 29.99; }
+
+    public static function getPriceStatic(
+        $id_product,
+        $usetax = true,
+        $id_product_attribute = null,
+        $decimals = 6,
+        $divisor = null,
+        $only_reduc = false,
+        $usereduc = true,
+        $quantity = 1,
+        $force_associated_tax = false,
+        $id_customer = null,
+        $id_cart = null,
+        $id_address = null,
+        &$specific_price_output = null,
+        $with_ecotax = true,
+        $use_group_reduction = true,
+        $context = null
+    ) {
+        if (self::$priceStaticMock !== null) {
+            $cb = self::$priceStaticMock;
+            return $cb(
+                $id_product,
+                $id_product_attribute,
+                $usereduc,
+                $specific_price_output
+            );
+        }
+        return 29.99;
+    }
+
+    public static function resetPriceStaticMock(): void
+    {
+        self::$priceStaticMock = null;
+    }
 }
 
 class StockAvailable

@@ -121,7 +121,21 @@ class SingleShopSyncTest extends TestCase
     public function testSyncReturnsCorrectCount(): void
     {
         $ids = $this->getProductIds();
-        $this->assertCount(8, $ids, 'Should return exactly 8 eligible products');
+        // 8 parent-stock products + P11 (combination-only stock) = 9
+        $this->assertCount(9, $ids, 'Should return exactly 9 eligible products');
+    }
+
+    public function testCombinationOnlyStockProductIsEligible(): void
+    {
+        // P11 has parent stock = 0 but combination 201 has 6 units.
+        // This is the Libyan client pattern: all products sold via declinations.
+        $ids = $this->getProductIds();
+
+        $this->assertContains(
+            11,
+            $ids,
+            'P11 (parent OOS, combination in stock) MUST be eligible'
+        );
     }
 
     public function testNoDuplicates(): void
@@ -214,8 +228,8 @@ class SingleShopSyncTest extends TestCase
 
     public function testIncrementalReturnsNothingWhenAllSynced(): void
     {
-        // Mark all eligible products as synced
-        $this->markSynced([1, 2, 5, 6, 7, 8, 9, 10]);
+        // Mark all eligible products as synced (including P11, combination-only)
+        $this->markSynced([1, 2, 5, 6, 7, 8, 9, 10, 11]);
 
         $ids = $this->getProductIds(false);
         $this->assertEmpty($ids, 'All synced → nothing to do');
@@ -223,10 +237,10 @@ class SingleShopSyncTest extends TestCase
 
     public function testForceSyncIgnoresSyncedFlag(): void
     {
-        $this->markSynced([1, 2, 5, 6, 7, 8, 9, 10]);
+        $this->markSynced([1, 2, 5, 6, 7, 8, 9, 10, 11]);
 
         $ids = $this->getProductIds(true); // force
-        $this->assertCount(8, $ids, 'Force sync should return all eligible regardless of sync flag');
+        $this->assertCount(9, $ids, 'Force sync should return all eligible regardless of sync flag');
     }
 
     public function testProductRestockedAfterSync(): void
