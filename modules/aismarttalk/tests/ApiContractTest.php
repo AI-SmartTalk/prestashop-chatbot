@@ -7,8 +7,8 @@
  * before they reach production.
  *
  * Contracts tested:
- * - POST /api/document/source  (product sync)
- * - POST /api/document/clean   (product cleanup)
+ * - POST /api/v1/integrations/prestashop/sync    (canonical product sync, replaces /api/document/source)
+ * - POST /api/v1/integrations/prestashop/cleanup (canonical cleanup,      replaces /api/document/clean)
  * - POST /api/v1/crm/importCustomer (customer sync)
  * - POST /api/v1/crm/removeCustomer (customer remove)
  * - Encrypted payload envelope format
@@ -18,6 +18,7 @@ namespace Tests;
 
 use PHPUnit\Framework\TestCase;
 use PrestaShop\AiSmartTalk\PayloadEncryptor;
+use PrestaShop\AiSmartTalk\ProductDocumentBuilder;
 
 class ApiContractTest extends TestCase
 {
@@ -28,85 +29,62 @@ class ApiContractTest extends TestCase
     }
 
     // =========================================================================
-    // Product sync payload: POST /api/document/source
+    // Product sync payload: POST /api/v1/integrations/prestashop/sync
     // =========================================================================
 
-    public function testProductDocumentStructure(): void
+    public function testCanonicalProductHasRequiredFields(): void
     {
-        // Simulate what sendProductsToApi() builds for each product
-        $document = [
+        $doc = ProductDocumentBuilder::build([
             'id' => 42,
             'title' => 'T-shirt bleu',
             'description' => 'Un beau t-shirt en coton bio',
             'description_short' => 'T-shirt coton',
             'reference' => 'TSHIRT-42',
-            'price' => 29.99,
+            'price' => '29.99',
             'currency' => 'EUR',
-            'currency_sign' => '€',
-            'has_special_price' => false,
-            'price_from' => null,
-            'price_to' => null,
             'url' => 'https://myshop.com/42-t-shirt-bleu.html',
             'image_url' => 'https://myshop.com/img/42-large.jpg',
-        ];
+        ]);
 
-        // Required fields
-        $this->assertArrayHasKey('id', $document);
-        $this->assertArrayHasKey('title', $document);
-        $this->assertArrayHasKey('description', $document);
-        $this->assertArrayHasKey('url', $document);
-        $this->assertArrayHasKey('price', $document);
-
-        // Types
-        $this->assertIsInt($document['id']);
-        $this->assertIsString($document['title']);
-        $this->assertIsFloat($document['price']);
-        $this->assertIsBool($document['has_special_price']);
-        $this->assertIsString($document['currency']);
-
-        // Non-empty
-        $this->assertNotEmpty($document['title']);
-        $this->assertNotEmpty($document['url']);
-        $this->assertGreaterThan(0, $document['id']);
+        $this->assertSame('product', $doc['type']);
+        $this->assertSame('42', $doc['externalId']);
+        $this->assertSame('T-shirt bleu', $doc['title']);
+        $this->assertSame('29.99', $doc['price']);
+        $this->assertSame('EUR', $doc['currency']);
+        $this->assertArrayHasKey('availability', $doc);
+        $this->assertArrayHasKey('variants', $doc);
+        $this->assertIsArray($doc['variants']);
     }
 
-    public function testProductSyncPayloadStructure(): void
+    public function testCanonicalSyncEnvelopeStructure(): void
     {
-        $payload = [
-            'documentDatas' => [
-                ['id' => 1, 'title' => 'Product 1', 'url' => 'http://...', 'price' => 10.0],
-                ['id' => 2, 'title' => 'Product 2', 'url' => 'http://...', 'price' => 20.0],
+        $envelope = ProductDocumentBuilder::buildSyncEnvelope(
+            [
+                ProductDocumentBuilder::build(['id' => 1, 'title' => 'Product 1', 'price' => '10.00', 'currency' => 'EUR']),
+                ProductDocumentBuilder::build(['id' => 2, 'title' => 'Product 2', 'price' => '20.00', 'currency' => 'EUR']),
             ],
-            'chatModelId' => 'cm-123',
-            'chatModelToken' => 'token-abc',
-            'source' => 'PRESTASHOP',
-            'siteIdentifier' => 'site-xyz',
-        ];
+            'site-xyz'
+        );
 
-        // Required top-level keys
-        $this->assertArrayHasKey('documentDatas', $payload);
-        $this->assertArrayHasKey('chatModelId', $payload);
-        $this->assertArrayHasKey('chatModelToken', $payload);
-        $this->assertArrayHasKey('source', $payload);
-        $this->assertArrayHasKey('siteIdentifier', $payload);
+        $this->assertSame('PRESTASHOP', $envelope['source']);
+        $this->assertSame('1', $envelope['payloadVersion']);
+        $this->assertSame('site-xyz', $envelope['siteIdentifier']);
+        $this->assertCount(2, $envelope['documents']);
 
-        // source must be PRESTASHOP
-        $this->assertEquals('PRESTASHOP', $payload['source']);
-
-        // documentDatas must be array of documents
-        $this->assertIsArray($payload['documentDatas']);
-        $this->assertNotEmpty($payload['documentDatas']);
-
-        // Each document must have id and title
-        foreach ($payload['documentDatas'] as $doc) {
-            $this->assertArrayHasKey('id', $doc);
-            $this->assertArrayHasKey('title', $doc);
-        }
+        // chatModelId / chatModelToken are NO LONGER in the body —
+        // authentication moved to Authorization: Bearer + x-chat-model-id headers
+        // owned by ApiClient. Asserting their absence here guards against an
+        // accidental reintroduction of legacy payload shape.
+        $this->assertArrayNotHasKey('chatModelId', $envelope);
+        $this->assertArrayNotHasKey('chatModelToken', $envelope);
+        $this->assertArrayNotHasKey('documentDatas', $envelope);
     }
 
     public function testProductSyncBatchSize(): void
     {
-        // Contract: batches of max 10 documents
+        // Contract: batches of max 10 documents on the client side. The server
+        // enforces a 500-document hard cap on the envelope, our merchant-side
+        // batching stays well under that to keep error blast radius small.
         $batchSize = 10;
         $documents = [];
         for ($i = 1; $i <= 25; $i++) {
@@ -121,44 +99,43 @@ class ApiContractTest extends TestCase
     }
 
     // =========================================================================
-    // Product cleanup payload: POST /api/document/clean
+    // Product cleanup payload: POST /api/v1/integrations/prestashop/cleanup
     // =========================================================================
 
-    public function testCleanPayloadWithSpecificIds(): void
+    public function testCleanupEnvelopeWithSpecificIds(): void
     {
-        $payload = [
-            'productIds' => ['1', '5', '12'],
-            'chatModelId' => 'cm-123',
-            'chatModelToken' => 'token-abc',
-            'deleteFromIds' => true,
+        // Pre-v1: { productIds, chatModelToken, deleteFromIds: true, source, siteIdentifier }
+        // v1:     { source, mode: "delete-ids", externalIds, siteIdentifier? }
+        $envelope = [
             'source' => 'PRESTASHOP',
+            'mode' => 'delete-ids',
+            'externalIds' => ['1', '5', '12'],
             'siteIdentifier' => 'site-xyz',
         ];
 
-        $this->assertArrayHasKey('productIds', $payload);
-        $this->assertArrayHasKey('deleteFromIds', $payload);
-        $this->assertTrue($payload['deleteFromIds']);
-        $this->assertEquals('PRESTASHOP', $payload['source']);
-
-        // productIds must be array of strings
-        foreach ($payload['productIds'] as $id) {
+        $this->assertSame('delete-ids', $envelope['mode']);
+        $this->assertSame('PRESTASHOP', $envelope['source']);
+        foreach ($envelope['externalIds'] as $id) {
             $this->assertIsString($id);
         }
+        // Auth has moved out of the body.
+        $this->assertArrayNotHasKey('chatModelToken', $envelope);
+        $this->assertArrayNotHasKey('deleteFromIds', $envelope);
     }
 
-    public function testCleanPayloadFullClean(): void
+    public function testCleanupEnvelopeKeepOnly(): void
     {
-        $payload = [
-            'productIds' => ['1', '2', '3', '4', '5'],
-            'chatModelId' => 'cm-123',
-            'chatModelToken' => 'token-abc',
-            'deleteFromIds' => false,
+        // The merchant's full live catalogue → server deletes whatever is no
+        // longer in the list. This is the diff-mode used by the periodic
+        // resync flow.
+        $envelope = [
             'source' => 'PRESTASHOP',
-            'siteIdentifier' => 'site-xyz',
+            'mode' => 'keep-only',
+            'externalIds' => ['1', '2', '3', '4', '5'],
         ];
 
-        // deleteFromIds = false means "keep these, remove the rest"
-        $this->assertFalse($payload['deleteFromIds']);
+        $this->assertSame('keep-only', $envelope['mode']);
+        $this->assertCount(5, $envelope['externalIds']);
     }
 
     // =========================================================================

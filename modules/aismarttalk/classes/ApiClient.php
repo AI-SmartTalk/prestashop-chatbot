@@ -41,21 +41,34 @@ class ApiClient
     private $siteIdentifier;
 
     /**
+     * Plugin telemetry tag — sent verbatim as the `x-aismarttalk-plugin`
+     * header on every request. The backend reads this from its structured
+     * logs to build adoption dashboards per merchant (which version of the
+     * module is calling, who is still on legacy endpoints, etc.).
+     *
+     * @var string|null
+     */
+    private $producerTag;
+
+    /**
      * @param string      $baseUrl        Base API URL
      * @param string|null $accessToken    OAuth access token
      * @param string|null $chatModelId    Chat model ID
      * @param string|null $siteIdentifier Site identifier
+     * @param string|null $producerTag    Telemetry tag `<plugin>/<version>`
      */
     public function __construct(
         string $baseUrl,
         ?string $accessToken = null,
         ?string $chatModelId = null,
-        ?string $siteIdentifier = null
+        ?string $siteIdentifier = null,
+        ?string $producerTag = null
     ) {
         $this->baseUrl = rtrim($baseUrl, '/');
         $this->accessToken = $accessToken;
         $this->chatModelId = $chatModelId;
         $this->siteIdentifier = $siteIdentifier;
+        $this->producerTag = self::sanitiseProducer($producerTag);
     }
 
     /**
@@ -70,8 +83,53 @@ class ApiClient
             OAuthHandler::getBackendApiUrl(),
             OAuthHandler::getAccessToken() ?: (MultistoreHelper::getConfig('CHAT_MODEL_TOKEN') ?: null),
             OAuthHandler::getChatModelId() ?: (MultistoreHelper::getConfig('CHAT_MODEL_ID') ?: null),
-            OAuthHandler::getSiteIdentifier()
+            OAuthHandler::getSiteIdentifier(),
+            self::resolveProducerTag()
         );
+    }
+
+    /**
+     * Best-effort lookup of the module version for the telemetry header. Falls
+     * back to `prestashop/unknown` outside of a PrestaShop runtime (tests,
+     * scripted contexts) so the header is always present and analyzable.
+     */
+    private static function resolveProducerTag(): string
+    {
+        if (class_exists('Module', false)) {
+            try {
+                /** @var \Module|false $module */
+                $module = \Module::getInstanceByName('aismarttalk');
+                if ($module instanceof \Module && !empty($module->version)) {
+                    return 'prestashop/' . $module->version;
+                }
+            } catch (\Throwable $_e) {
+                // Swallow — telemetry must never break a sync call.
+            }
+        }
+        return 'prestashop/unknown';
+    }
+
+    /**
+     * Sanitise the producer string against the server-side regex
+     * `^[A-Za-z0-9._\/+\-]{1,128}$`. Anything outside that alphabet (a stray
+     * space in a custom build version, for example) would silently drop the
+     * header server-side — we strip it proactively here so the merchant
+     * always appears in adoption dashboards.
+     */
+    private static function sanitiseProducer(?string $raw): ?string
+    {
+        if ($raw === null) {
+            return null;
+        }
+        $trimmed = trim($raw);
+        if ($trimmed === '') {
+            return null;
+        }
+        $sanitised = preg_replace('/[^A-Za-z0-9._\/+\-]/', '', $trimmed);
+        if ($sanitised === null || $sanitised === '') {
+            return null;
+        }
+        return substr($sanitised, 0, 128);
     }
 
     /**
@@ -166,6 +224,9 @@ class ApiClient
         if (!empty($this->chatModelId)) {
             $headers[] = 'x-chat-model-id: ' . $this->chatModelId;
         }
+        if (!empty($this->producerTag)) {
+            $headers[] = 'x-aismarttalk-plugin: ' . $this->producerTag;
+        }
 
         $ch = curl_init();
         curl_setopt_array($ch, [
@@ -195,8 +256,19 @@ class ApiClient
         if (!empty($this->chatModelId)) {
             $headers[] = 'x-chat-model-id: ' . $this->chatModelId;
         }
+        if (!empty($this->producerTag)) {
+            $headers[] = 'x-aismarttalk-plugin: ' . $this->producerTag;
+        }
 
         return $headers;
+    }
+
+    /**
+     * @return string|null The telemetry tag sent on every authenticated request.
+     */
+    public function getProducerTag(): ?string
+    {
+        return $this->producerTag;
     }
 
     /**
