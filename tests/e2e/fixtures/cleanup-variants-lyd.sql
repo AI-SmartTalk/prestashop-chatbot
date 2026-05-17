@@ -29,6 +29,9 @@ DELETE FROM ps_product_shop WHERE id_product = @stale_pid;
 DELETE FROM ps_product WHERE id_product = @stale_pid;
 DELETE FROM ps_product_attribute WHERE reference IN ('AST-VAR-RED-M', 'AST-VAR-BLUE-L');
 
+-- Drop the active promo on the test product (FK-less in PS, so we wipe by id).
+DELETE FROM ps_specific_price WHERE id_product = @stale_pid;
+
 -- Drop the sync tracking row for the test product, if any
 DELETE aps FROM ps_aismarttalk_product_sync aps
 LEFT JOIN ps_product p ON aps.id_product = p.id_product

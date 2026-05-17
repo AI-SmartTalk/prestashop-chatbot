@@ -174,6 +174,23 @@ VALUES
   (@ast_pid, @ast_combo2, 1, 0, 5, 5, 0, 0, 2, '');
 
 -- ─────────────────────────────────────────────────────────────────
--- 5. Hand back the inserted IDs for tests that need them
+-- 5. Active -20% promo on the test product (catalog specific_price).
+--    Exercises the PriceCalculator path that captures specificPriceOutput
+--    and surfaces original_price / discount_percent / discount_type.
+--    Idempotent: cleared by reference at the start of section 3.
+-- ─────────────────────────────────────────────────────────────────
+DELETE FROM ps_specific_price WHERE id_product = @ast_pid;
+
+INSERT INTO ps_specific_price
+  (id_specific_price_rule, id_cart, id_product, id_shop, id_shop_group, id_currency, id_country,
+   id_group, id_customer, id_product_attribute, price, from_quantity, reduction, reduction_tax,
+   reduction_type, `from`, `to`)
+VALUES
+  (0, 0, @ast_pid, 0, 0, 0, 0,
+   0, 0, 0, -1.000000, 1, 0.200000, 1,
+   'percentage', '2026-01-01 00:00:00', '2027-01-01 00:00:00');
+
+-- ─────────────────────────────────────────────────────────────────
+-- 6. Hand back the inserted IDs for tests that need them
 -- ─────────────────────────────────────────────────────────────────
 SELECT @ast_pid AS test_product_id, @ast_combo1 AS test_combo_red_id, @ast_combo2 AS test_combo_blue_id;

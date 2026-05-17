@@ -199,6 +199,10 @@ $requiredClasses = [
     'PrestaShop\AiSmartTalk\PayloadEncryptor',
     'PrestaShop\AiSmartTalk\ChatbotSettingsBuilder',
     'PrestaShop\AiSmartTalk\OAuthHandler',
+    'PrestaShop\AiSmartTalk\PriceFormatter',
+    'PrestaShop\AiSmartTalk\PriceCalculator',
+    'PrestaShop\AiSmartTalk\PriceInfo',
+    'PrestaShop\AiSmartTalk\CombinationHelper',
 ];
 
 foreach ($requiredClasses as $class) {
@@ -224,6 +228,93 @@ smokeTest('MultistoreHelper::getAllShopIds() returns at least one', function () 
 smokeTest('MultistoreHelper::getConfig() reads without error', function () {
     $val = PrestaShop\AiSmartTalk\MultistoreHelper::getConfig('AI_SMART_TALK_URL');
     return $val !== null; // can be false (not set) but should not throw
+});
+
+// ─── Price calculator (DEV-842: variants + promos) ─────────────────────────
+// Validates the runtime contract with Product::getPriceStatic on each PS
+// version. The 16-arg signature + the &$specific_price_output reference
+// have been stable since PS 1.7.0, but this section catches any drift fast.
+echo "\n\033[1m[Price Calculator]\033[0m\n";
+
+// PS 9 refuses Product::getPriceStatic from a CLI context without an employee
+// ("If no employee is assigned in the context, cart ID must be provided").
+// Bootstrap a minimal admin employee so the static price API behaves like it
+// would during a real BO-triggered sync. No-op if an employee is already set.
+if (Context::getContext()->employee === null) {
+    // No trailing LIMIT 1 — Db::getValue() appends its own via getRow().
+    $employeeId = (int) Db::getInstance()->getValue(
+        'SELECT id_employee FROM ' . _DB_PREFIX_ . 'employee WHERE active = 1 ORDER BY id_employee'
+    );
+    if ($employeeId > 0 && class_exists('Employee')) {
+        try {
+            Context::getContext()->employee = new Employee($employeeId);
+        } catch (\Throwable $e) {
+            // Best-effort — if it fails we'll let the smoke tests surface the issue.
+        }
+    }
+}
+
+$samplePid = (int) Db::getInstance()->getValue(
+    'SELECT p.id_product FROM ' . _DB_PREFIX_ . 'product p
+     INNER JOIN ' . _DB_PREFIX_ . 'product_shop ps ON p.id_product = ps.id_product
+     WHERE p.active = 1 AND ps.active = 1 ORDER BY p.id_product'
+);
+
+if ($samplePid > 0) {
+    smokeTest('PriceCalculator::calculate returns PriceInfo', function () use ($samplePid) {
+        $info = PrestaShop\AiSmartTalk\PriceCalculator::calculate($samplePid, 0, 2);
+        return $info instanceof PrestaShop\AiSmartTalk\PriceInfo;
+    });
+
+    smokeTest('PriceInfo carries finalPrice >= 0', function () use ($samplePid) {
+        $info = PrestaShop\AiSmartTalk\PriceCalculator::calculate($samplePid, 0, 2);
+        return is_float($info->finalPrice) && $info->finalPrice >= 0;
+    });
+
+    smokeTest('PriceInfo carries originalPrice >= finalPrice', function () use ($samplePid) {
+        $info = PrestaShop\AiSmartTalk\PriceCalculator::calculate($samplePid, 0, 2);
+        return $info->originalPrice >= $info->finalPrice - 0.001;
+    });
+
+    smokeTest('PriceInfo.hasDiscount is a boolean', function () use ($samplePid) {
+        $info = PrestaShop\AiSmartTalk\PriceCalculator::calculate($samplePid, 0, 2);
+        return is_bool($info->hasDiscount);
+    });
+
+    smokeTest('PriceInfo.discountType is valid', function () use ($samplePid) {
+        $info = PrestaShop\AiSmartTalk\PriceCalculator::calculate($samplePid, 0, 2);
+        $valid = ['none', 'percentage', 'amount', 'computed'];
+        return in_array($info->discountType, $valid, true);
+    });
+
+    smokeTest('PriceInfo.discountPercent in [0, 100]', function () use ($samplePid) {
+        $info = PrestaShop\AiSmartTalk\PriceCalculator::calculate($samplePid, 0, 2);
+        return is_int($info->discountPercent) && $info->discountPercent >= 0 && $info->discountPercent <= 100;
+    });
+
+    // Discount consistency: when hasDiscount, all promo fields must agree.
+    smokeTest('PriceInfo internal consistency (no discount → zeroed fields)', function () use ($samplePid) {
+        $info = PrestaShop\AiSmartTalk\PriceCalculator::calculate($samplePid, 0, 2);
+        if ($info->hasDiscount) {
+            return $info->discountAmount > 0 && $info->discountType !== 'none';
+        }
+        return $info->discountAmount === 0.0
+            && $info->discountPercent === 0
+            && $info->discountType === 'none';
+    });
+} else {
+    echo "  \033[33m⚠\033[0m Skipped — no active product found in catalog\n";
+}
+
+// PriceFormatter is pure (no PrestaShop deps) but smoke-test it on each PS
+// version anyway: it's the contract the front and backend depend on for
+// 3-decimal currencies like LYD. A regression would silently break .000 prices.
+smokeTest('PriceFormatter preserves LYD trailing zeros', function () {
+    return PrestaShop\AiSmartTalk\PriceFormatter::format(12, 3) === '12.000';
+});
+
+smokeTest('PriceFormatter falls back to 2 decimals when currency precision absent', function () {
+    return PrestaShop\AiSmartTalk\PriceFormatter::decimalsFromCurrency(null) === 2;
 });
 
 // ─── Category tree ──────────────────────────────────────────────────────────
