@@ -437,6 +437,7 @@ class AdminFormHandler
                 'mode' => ($categoryMode === 'exclude') ? SyncFilterHelper::MODE_EXCLUDE : SyncFilterHelper::MODE_INCLUDE,
                 'categories' => ($categoryMode === 'all') ? [] : \Tools::getValue('sync_filter_categories', []),
                 'include_subcategories' => false,
+                'include_out_of_stock' => (bool) \Tools::getValue('sync_filter_include_out_of_stock', 0),
             ];
 
             if (is_string($filterConfig['categories'])) {
@@ -581,7 +582,7 @@ class AdminFormHandler
             }
         } elseif ($result === 0) {
             $output .= $this->module->displayWarning(
-                $this->trans('No products found to synchronize. Check that your products are active, in stock, and match your sync filters.', [], 'Modules.Aismarttalk.Admin')
+                $this->trans('No products found to synchronize. Check that your products are active, in stock (or enable "Include out-of-stock products"), and match your sync filters.', [], 'Modules.Aismarttalk.Admin')
             );
         } else {
             if ($force) {

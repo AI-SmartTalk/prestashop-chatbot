@@ -48,7 +48,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.7.0';
+        $this->version = '3.8.0';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -911,9 +911,9 @@ class AiSmartTalk extends Module
 
             $idProduct = (int) $params['id_product'];
 
-            // Check if product is active + in stock in at least one shop
-            if (!MultistoreHelper::isProductActiveInAnyShop($idProduct)) {
-                // Not active anywhere — clean from knowledge base if it was synced
+            // Decide keep vs purge according to the current sync mode
+            // (active+stock by default, active-only when "include out-of-stock" is on).
+            if (!SyncFilterHelper::shouldProductBeKept($idProduct)) {
                 if (AiSmartTalkProductSync::isSynced($idProduct)) {
                     $api = new CleanProductDocuments();
                     $api(['productIds' => [(string) $idProduct]]);
@@ -1044,9 +1044,10 @@ class AiSmartTalk extends Module
             return;
         }
 
-        // If the parent is no longer active+in-stock anywhere (last combination removed,
-        // for example), purge it from the knowledge base instead of re-syncing empty data.
-        if (!MultistoreHelper::isProductActiveInAnyShop($idProduct)) {
+        // If the parent must no longer be kept (rule depends on the "include out-of-stock"
+        // toggle — see SyncFilterHelper::shouldProductBeKept), purge it from the knowledge
+        // base instead of re-syncing empty data.
+        if (!SyncFilterHelper::shouldProductBeKept($idProduct)) {
             if (AiSmartTalkProductSync::isSynced($idProduct)) {
                 $api = new CleanProductDocuments();
                 $api(['productIds' => [(string) $idProduct]]);
@@ -1127,10 +1128,11 @@ class AiSmartTalk extends Module
 
                 $this->triggerOutOfStockWebhook($idProduct, $idProductAttribute, 1);
 
-                // Product sync: remove from AI SmartTalk if not active in any shop
+                // Product sync: purge only if the current sync mode no longer wants this
+                // product (active-only check when out-of-stock are kept, active+stock otherwise).
                 if ((bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')
                     && AiSmartTalkProductSync::isSynced($idProduct)
-                    && !MultistoreHelper::isProductActiveInAnyShop($idProduct)
+                    && !SyncFilterHelper::shouldProductBeKept($idProduct)
                 ) {
                     $api = new CleanProductDocuments();
                     $api(['productIds' => [(string) $idProduct]]);

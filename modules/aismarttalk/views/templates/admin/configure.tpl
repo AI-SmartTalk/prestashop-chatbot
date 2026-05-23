@@ -2358,6 +2358,17 @@ a.ast-btn-success:hover {
                                         </div>
                                     </div>
                                     <input type="hidden" name="sync_filter_categories" id="sync_filter_categories" value="">
+
+                                    <div class="ast-toggle-card" style="margin-top: 16px;">
+                                        <div class="ast-toggle-info">
+                                            <h4><i class="icon icon-cubes" style="color: #667eea; margin-right: 6px;"></i>{l s='Include out-of-stock products' mod='aismarttalk'}</h4>
+                                            <p>{l s='By default, only products with stock are synchronized. Enable to sync every active product, even when its stock is zero.' mod='aismarttalk'}</p>
+                                        </div>
+                                        <label class="ast-switch">
+                                            <input type="checkbox" name="sync_filter_include_out_of_stock" value="1" {if $syncFilterConfig.include_out_of_stock}checked{/if}>
+                                            <span class="ast-switch-slider"></span>
+                                        </label>
+                                    </div>
                                 </div>
                                 {/if}
 

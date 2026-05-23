@@ -234,7 +234,12 @@ class SynchProductsToAiSmartTalk
     /**
      * Get products to synchronize across ALL shops (union, deduplicated).
      * Product data (name, price, image, URL) prefers the default shop, with fallback to any shop.
-     * A product is included if it is active + in stock in at least one shop.
+     *
+     * Inclusion rules:
+     *  - Product must be active in at least one shop (always).
+     *  - Stock requirement: when the "include out-of-stock" toggle is OFF (default),
+     *    the product must also have stock > 0 in at least one shop. When ON, the
+     *    stock check is dropped entirely so every active product is synchronized.
      */
     private function getProductsToSynchronize()
     {
@@ -244,22 +249,29 @@ class SynchProductsToAiSmartTalk
         $allShopIds = MultistoreHelper::getAllShopIds();
         $shopIdList = implode(',', array_map('intval', $allShopIds));
 
+        $includeOutOfStock = SyncFilterHelper::shouldIncludeOutOfStock();
+
         // Build a stock-availability subquery: product is in stock in at least one shop,
         // either at the parent level (id_product_attribute = 0) OR via any of its combinations.
         // Excluding combination rows here would mark stores that sell only via declinations
         // (e.g. ALL products are variants of a parent) as fully out-of-stock.
-        $stockExistsConditions = [];
-        foreach ($allShopIds as $sid) {
-            $shopGroupId = (int) \Shop::getGroupFromShop($sid);
-            $stockExistsConditions[] = 'EXISTS (
-                SELECT 1 FROM ' . _DB_PREFIX_ . 'stock_available sa_check
-                WHERE sa_check.id_product = p.id_product
-                    AND (sa_check.id_shop = ' . (int) $sid . '
-                         OR (sa_check.id_shop = 0 AND sa_check.id_shop_group = ' . $shopGroupId . '))
-                    AND sa_check.quantity > 0
-            )';
+        //
+        // When the toggle is ON, $stockCondition stays empty and is never appended below.
+        $stockCondition = '';
+        if (!$includeOutOfStock) {
+            $stockExistsConditions = [];
+            foreach ($allShopIds as $sid) {
+                $shopGroupId = (int) \Shop::getGroupFromShop($sid);
+                $stockExistsConditions[] = 'EXISTS (
+                    SELECT 1 FROM ' . _DB_PREFIX_ . 'stock_available sa_check
+                    WHERE sa_check.id_product = p.id_product
+                        AND (sa_check.id_shop = ' . (int) $sid . '
+                             OR (sa_check.id_shop = 0 AND sa_check.id_shop_group = ' . $shopGroupId . '))
+                        AND sa_check.quantity > 0
+                )';
+            }
+            $stockCondition = '(' . implode(' OR ', $stockExistsConditions) . ')';
         }
-        $stockCondition = '(' . implode(' OR ', $stockExistsConditions) . ')';
 
         // Use EXISTS instead of JOIN to avoid row multiplication (strict GROUP BY compatible)
         $activeInAnyShop = 'EXISTS (
@@ -322,8 +334,12 @@ class SynchProductsToAiSmartTalk
             LEFT JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product
                 AND aps.id_shop = ' . $defaultShopId . '
             WHERE pl.name IS NOT NULL
-                AND ' . $activeInAnyShop . '
-                AND ' . $stockCondition;
+                AND ' . $activeInAnyShop;
+
+        // Stock requirement only applies when the "include out-of-stock" toggle is OFF.
+        if ($stockCondition !== '') {
+            $sql .= ' AND ' . $stockCondition;
+        }
 
         // If not forcing sync, only get products that are not yet synced
         if ($this->forceSync === false) {
@@ -351,12 +367,13 @@ class SynchProductsToAiSmartTalk
 
     /**
      * Nettoie les produits hors stock ou inactifs d'AI SmartTalk lors d'une re-synchronisation.
-     * Un produit n'est nettoyé que s'il est inactif/hors stock dans TOUS les shops.
+     *
+     * The keep/purge decision is delegated to SyncFilterHelper::shouldProductBeKept:
+     *  - default mode: purge if not active+in-stock anywhere,
+     *  - include-out-of-stock mode: purge only if inactive everywhere (stock irrelevant).
      */
     private function cleanOutOfStockProducts()
     {
-        $defaultShopId = MultistoreHelper::getDefaultShopId();
-
         // Get all products currently synced
         $sql = 'SELECT DISTINCT aps.id_product
                 FROM ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps
@@ -370,8 +387,7 @@ class SynchProductsToAiSmartTalk
         $toClean = [];
         foreach ($syncedProducts as $row) {
             $idProduct = (int) $row['id_product'];
-            // Product should be cleaned if not active+in stock in any shop
-            if (!MultistoreHelper::isProductActiveInAnyShop($idProduct)) {
+            if (!SyncFilterHelper::shouldProductBeKept($idProduct)) {
                 $toClean[] = $idProduct;
             }
         }

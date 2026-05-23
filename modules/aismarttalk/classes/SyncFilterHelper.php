@@ -29,6 +29,7 @@ class SyncFilterHelper
     const CONFIG_FILTER_MODE = 'AI_SMART_TALK_SYNC_FILTER_MODE';
     const CONFIG_CATEGORIES = 'AI_SMART_TALK_SYNC_CATEGORIES';
     const CONFIG_INCLUDE_SUBCATEGORIES = 'AI_SMART_TALK_SYNC_INCLUDE_SUBCATEGORIES';
+    const CONFIG_INCLUDE_OUT_OF_STOCK = 'AI_SMART_TALK_SYNC_INCLUDE_OUT_OF_STOCK';
     /** Filter modes */
     const MODE_INCLUDE = 'include';
     const MODE_EXCLUDE = 'exclude';
@@ -230,6 +231,7 @@ class SyncFilterHelper
             'mode' => MultistoreHelper::getConfig(self::CONFIG_FILTER_MODE) ?: self::MODE_INCLUDE,
             'categories' => [],
             'include_subcategories' => (bool) MultistoreHelper::getConfig(self::CONFIG_INCLUDE_SUBCATEGORIES),
+            'include_out_of_stock' => (bool) MultistoreHelper::getConfig(self::CONFIG_INCLUDE_OUT_OF_STOCK),
         ];
 
         // Decode categories JSON
@@ -279,6 +281,13 @@ class SyncFilterHelper
             $includeSubcategories ? '1' : '0'
         );
 
+        // Save include out-of-stock flag
+        $includeOutOfStock = !empty($config['include_out_of_stock']);
+        $success = $success && MultistoreHelper::updateConfig(
+            self::CONFIG_INCLUDE_OUT_OF_STOCK,
+            $includeOutOfStock ? '1' : '0'
+        );
+
         return $success;
     }
 
@@ -297,6 +306,42 @@ class SyncFilterHelper
         }
 
         return false;
+    }
+
+    /**
+     * Whether out-of-stock products must also be synchronized.
+     * Default is false — the historical behaviour only syncs products with stock > 0.
+     *
+     * @return bool
+     */
+    public static function shouldIncludeOutOfStock(): bool
+    {
+        return (bool) MultistoreHelper::getConfig(self::CONFIG_INCLUDE_OUT_OF_STOCK);
+    }
+
+    /**
+     * Decide whether a product must be kept in the knowledge base when its
+     * state (active flag, stock quantity, combinations) changes.
+     *
+     * The contract differs from shouldProductBeSynced (which also checks category
+     * filters): keep semantics intentionally ignore category filters so an admin
+     * narrowing the filter scope doesn't silently purge already-synced products.
+     *
+     *  - Toggle OFF (default): a product is kept only if it is active AND in stock
+     *    somewhere — same rule as the SQL WHERE used by getProductsToSynchronize.
+     *  - Toggle ON: a product is kept as long as it is active somewhere, regardless
+     *    of stock level.
+     *
+     * @param int $idProduct
+     * @return bool
+     */
+    public static function shouldProductBeKept(int $idProduct): bool
+    {
+        if (self::shouldIncludeOutOfStock()) {
+            return MultistoreHelper::isProductActiveOnlyInAnyShop($idProduct);
+        }
+
+        return MultistoreHelper::isProductActiveInAnyShop($idProduct);
     }
 
     /**
@@ -385,6 +430,7 @@ class SyncFilterHelper
         $success = $success && \Configuration::deleteByName(self::CONFIG_FILTER_MODE);
         $success = $success && \Configuration::deleteByName(self::CONFIG_CATEGORIES);
         $success = $success && \Configuration::deleteByName(self::CONFIG_INCLUDE_SUBCATEGORIES);
+        $success = $success && \Configuration::deleteByName(self::CONFIG_INCLUDE_OUT_OF_STOCK);
         return $success;
     }
 
