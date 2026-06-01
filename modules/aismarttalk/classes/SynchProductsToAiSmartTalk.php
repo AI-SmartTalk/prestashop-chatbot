@@ -117,17 +117,6 @@ class SynchProductsToAiSmartTalk
                 $priceDecimals
             );
 
-            // Keep the legacy has_special_price flag — driven by SQL detection
-            // of an active ps_specific_price row. Combined with priceInfo it
-            // also catches group/catalog reductions that don't sit in specific_price.
-            $hasSpecialPrice = !empty($product['specific_price'])
-                || !empty($product['price_reduction'])
-                || $priceInfo->hasDiscount;
-
-            // Format dates
-            $priceFrom = !empty($product['price_from']) && $product['price_from'] !== '0000-00-00 00:00:00' ? $product['price_from'] : null;
-            $priceTo = !empty($product['price_to']) && $product['price_to'] !== '0000-00-00 00:00:00' ? $product['price_to'] : null;
-
             // Variants are only fetched for products that have combinations.
             // Empty array for simple products keeps the payload shape stable for the backend.
             $variants = CombinationHelper::getVariants(
@@ -139,35 +128,44 @@ class SynchProductsToAiSmartTalk
                 $linkRewrite
             );
 
-            $documentDatas[] = [
-                'id' => $product['id_product'],
-                'title' => $product['name'],
-                'description' => strip_tags($product['description']),
-                'description_short' => strip_tags($product['description_short']),
-                'reference' => $product['reference'],
-                'price' => PriceFormatter::format($priceInfo->finalPrice, $priceDecimals),
-                'price_decimals' => $priceDecimals,
-                'currency' => $product['currency_code'] ?? 'EUR',
-                'currency_sign' => $currencySign,
-                // Promotion fields — present only when the product is actually discounted.
-                // Backend / LLM / front all treat their absence as "no promo".
-                'original_price' => $priceInfo->hasDiscount
-                    ? PriceFormatter::format($priceInfo->originalPrice, $priceDecimals)
-                    : null,
-                'discount_percent' => $priceInfo->hasDiscount ? $priceInfo->discountPercent : null,
-                'discount_amount' => $priceInfo->hasDiscount
-                    ? PriceFormatter::format($priceInfo->discountAmount, $priceDecimals)
-                    : null,
-                'discount_type' => $priceInfo->hasDiscount ? $priceInfo->discountType : null,
-                'has_special_price' => $hasSpecialPrice,
-                'price_from' => $priceFrom,
-                'price_to' => $priceTo,
-                'url' => $productUrl,
-                'image_url' => $imageUrl,
-                'variants' => $variants,
-            ];
+            // Total stock across the resolved shop (parent level). Drives the
+            // canonical availability/restockDate; combinations carry their own.
+            $parentQuantity = (int) \StockAvailable::getQuantityAvailableByProduct(
+                (int) $product['id_product'],
+                0,
+                $bestShopId
+            );
 
-            if (count($documentDatas) === 10) {
+            $brand = !empty($psProduct->id_manufacturer)
+                ? \Manufacturer::getNameById((int) $psProduct->id_manufacturer)
+                : null;
+
+            // Emit the cross-platform canonical v1 document. CanonicalProductMapper
+            // owns the Money/availability/variant conversions so the payload is
+            // identical in shape to every other connector.
+            $documentDatas[] = CanonicalProductMapper::map([
+                'idProduct' => (int) $product['id_product'],
+                'name' => $product['name'],
+                'description' => strip_tags($product['description']),
+                'descriptionShort' => strip_tags($product['description_short']),
+                'reference' => $product['reference'],
+                'brand' => $brand ?: null,
+                'decimals' => $priceDecimals,
+                'currency' => $product['currency_code'] ?? 'EUR',
+                'sign' => $currencySign,
+                'url' => $productUrl,
+                'imageUrl' => $imageUrl,
+                'quantity' => $parentQuantity,
+                'availableDate' => $product['available_date'] ?? null,
+                'categories' => CanonicalProductMapper::productCategories(
+                    (int) $product['id_product'],
+                    $defaultLangId
+                ),
+                'variants' => $variants,
+                'priceInfo' => $priceInfo,
+            ]);
+
+            if (count($documentDatas) === 50) {
                 if (!$this->postIfDataExists($documentDatas)) {
                     return false;
                 }
@@ -204,16 +202,23 @@ class SynchProductsToAiSmartTalk
         return AiSmartTalkProductSync::markProductsAsSynced($productIds, $idShop);
     }
 
+    /**
+     * Posts a batch of canonical v1 documents to the source-agnostic ingestion
+     * endpoint. Validation is synchronous (per-document); the heavy ingestion
+     * runs asynchronously in the backend RabbitMQ worker.
+     *
+     * The endpoint answers 200 (`ok`) or 207 (`partial`, some documents failed
+     * canonical validation) — both are successes here; a partial response only
+     * surfaces a warning so a single malformed product never aborts the sync.
+     */
     private function postToApi($documentDatas)
     {
         $client = ApiClient::fromConfig();
 
-        $response = $client->post('/api/document/source', [
-            'documentDatas' => $documentDatas,
-            'chatModelId' => $client->getChatModelId(),
-            'chatModelToken' => $client->getAccessToken(),
-            'source' => 'PRESTASHOP',
+        $response = $client->post('/api/v1/integrations/prestashop/sync', [
+            'payloadVersion' => '1',
             'siteIdentifier' => $client->getSiteIdentifier(),
+            'documents' => $documentDatas,
         ]);
 
         if (!$response->isSuccess()) {
@@ -221,11 +226,21 @@ class SynchProductsToAiSmartTalk
             return false;
         }
 
-        MultistoreHelper::deleteConfig('AI_SMART_TALK_ERROR');
-
         if ($response->get('status') === 'error') {
             MultistoreHelper::updateConfig('AI_SMART_TALK_ERROR', $response->get('message'));
             return false;
+        }
+
+        // `partial`: at least one document failed canonical validation. Keep the
+        // sync going but record a non-fatal diagnostic for the merchant.
+        $rejected = $response->get('rejected');
+        if (is_array($rejected) && count($rejected) > 0) {
+            MultistoreHelper::updateConfig(
+                'AI_SMART_TALK_ERROR',
+                count($rejected) . ' product(s) rejected by canonical validation during sync'
+            );
+        } else {
+            MultistoreHelper::deleteConfig('AI_SMART_TALK_ERROR');
         }
 
         return $response->body;

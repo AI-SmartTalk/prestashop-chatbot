@@ -59,15 +59,21 @@ class CleanProductDocuments
         $hasSpecificIds = is_array($this->productIds) && !empty($this->productIds);
         $productIds = $hasSpecificIds ? $this->productIds : $this->fetchAllProductIds();
 
+        // Canonical sync stores each combination as its own document with
+        // externalId "<product>::<combination>" (see the backend
+        // VARIANT_ID_SEPARATOR). Expand the product ids so cleanup targets the
+        // variant documents too — otherwise removing a product would orphan its
+        // variant documents.
+        $externalIds = $this->expandWithVariantIds($productIds);
+
         $client = ApiClient::fromConfig();
 
-        $response = $client->post('/api/document/clean', [
-            'productIds' => $productIds,
-            'chatModelId' => $client->getChatModelId(),
-            'chatModelToken' => $client->getAccessToken(),
-            'deleteFromIds' => $hasSpecificIds,
-            'source' => 'PRESTASHOP',
+        $response = $client->post('/api/v1/integrations/prestashop/cleanup', [
             'siteIdentifier' => $client->getSiteIdentifier(),
+            // delete-ids: purge the listed products; keep-only: full snapshot,
+            // delete everything NOT in the list. Mirrors the previous semantics.
+            'mode' => $hasSpecificIds ? 'delete-ids' : 'keep-only',
+            'externalIds' => $externalIds,
         ]);
 
         if (!$response->isSuccess()) {
@@ -77,5 +83,36 @@ class CleanProductDocuments
         } else {
             MultistoreHelper::deleteConfig('CLEAN_PRODUCT_DOCUMENTS_ERROR');
         }
+    }
+
+    /**
+     * Expand a list of product ids to also include every combination's
+     * canonical externalId ("<product>::<id_product_attribute>"), so cleanup
+     * reaches both the parent product and its variant documents.
+     *
+     * @param string[] $productIds
+     * @return string[]
+     */
+    private function expandWithVariantIds(array $productIds): array
+    {
+        if (empty($productIds)) {
+            return [];
+        }
+
+        $idList = implode(',', array_map('intval', $productIds));
+
+        $rows = \Db::getInstance()->executeS(
+            'SELECT id_product, id_product_attribute
+             FROM ' . _DB_PREFIX_ . 'product_attribute
+             WHERE id_product IN (' . $idList . ')'
+        );
+
+        $externalIds = array_map('strval', $productIds);
+        foreach ($rows ?: [] as $row) {
+            // Keep in sync with the backend VARIANT_ID_SEPARATOR ("::").
+            $externalIds[] = (string) $row['id_product'] . '::' . (string) $row['id_product_attribute'];
+        }
+
+        return array_values(array_unique($externalIds));
     }
 }
