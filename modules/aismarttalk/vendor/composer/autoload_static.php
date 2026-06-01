@@ -29,6 +29,8 @@ class ComposerStaticInit3bdbd939a184a583fcb24dad87c35c72
         'PrestaShop\\AiSmartTalk\\AiSmartTalkProductSync' => __DIR__ . '/../..' . '/classes/AiSmartTalkProductSync.php',
         'PrestaShop\\AiSmartTalk\\ApiClient' => __DIR__ . '/../..' . '/classes/ApiClient.php',
         'PrestaShop\\AiSmartTalk\\ApiResponse' => __DIR__ . '/../..' . '/classes/ApiResponse.php',
+        'PrestaShop\\AiSmartTalk\\CartGuard' => __DIR__ . '/../..' . '/classes/CartGuard.php',
+        'PrestaShop\\AiSmartTalk\\CartService' => __DIR__ . '/../..' . '/classes/CartService.php',
         'PrestaShop\\AiSmartTalk\\ChatbotSettingsBuilder' => __DIR__ . '/../..' . '/classes/ChatbotSettingsBuilder.php',
         'PrestaShop\\AiSmartTalk\\CleanProductDocuments' => __DIR__ . '/../..' . '/classes/CleanProductDocuments.php',
         'PrestaShop\\AiSmartTalk\\CombinationHelper' => __DIR__ . '/../..' . '/classes/CombinationHelper.php',
