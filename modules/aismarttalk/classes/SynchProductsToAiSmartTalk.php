@@ -165,6 +165,9 @@ class SynchProductsToAiSmartTalk
                 'url' => $productUrl,
                 'image_url' => $imageUrl,
                 'variants' => $variants,
+                // Back-in-stock date — PrestaShop's product.available_date. The
+                // builder normalises it and only keeps it when out of stock.
+                'restock_date' => $product['available_date'] ?? null,
             ];
 
             if (count($documentDatas) === 10) {
