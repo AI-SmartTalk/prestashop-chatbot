@@ -420,6 +420,12 @@ class OAuthHandler
             MultistoreHelper::updateConfig('AI_SMART_TALK_SITE_IDENTIFIER', $tokenData['site_identifier']);
         }
 
+        // Store the shared HMAC secret used to verify server-to-server cart/checkout
+        // calls coming from the AI SmartTalk backend (see CartGuard / cart controller).
+        if (!empty($tokenData['hmac_secret'])) {
+            MultistoreHelper::updateConfig('AI_SMART_TALK_HMAC_SECRET', $tokenData['hmac_secret']);
+        }
+
         // For backward compatibility, also update the old config keys
         MultistoreHelper::updateConfig('CHAT_MODEL_ID', $tokenData['chat_model_id']);
         MultistoreHelper::updateConfig('CHAT_MODEL_TOKEN', $tokenData['access_token']);
@@ -548,6 +554,19 @@ class OAuthHandler
         $id = MultistoreHelper::getConfig('AI_SMART_TALK_CHAT_MODEL_ID');
 
         return !empty($id) ? $id : null;
+    }
+
+    /**
+     * Get the shared HMAC secret used to authenticate cart/checkout calls from the
+     * AI SmartTalk backend.
+     *
+     * @return string|null
+     */
+    public static function getHmacSecret(): ?string
+    {
+        $secret = MultistoreHelper::getConfig('AI_SMART_TALK_HMAC_SECRET');
+
+        return !empty($secret) ? $secret : null;
     }
 
     /**

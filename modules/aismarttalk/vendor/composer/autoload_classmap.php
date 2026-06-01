@@ -14,6 +14,8 @@ return array(
     'PrestaShop\\AiSmartTalk\\AiSmartTalkProductSync' => $baseDir . '/classes/AiSmartTalkProductSync.php',
     'PrestaShop\\AiSmartTalk\\ApiClient' => $baseDir . '/classes/ApiClient.php',
     'PrestaShop\\AiSmartTalk\\ApiResponse' => $baseDir . '/classes/ApiResponse.php',
+    'PrestaShop\\AiSmartTalk\\CartGuard' => $baseDir . '/classes/CartGuard.php',
+    'PrestaShop\\AiSmartTalk\\CartService' => $baseDir . '/classes/CartService.php',
     'PrestaShop\\AiSmartTalk\\ChatbotSettingsBuilder' => $baseDir . '/classes/ChatbotSettingsBuilder.php',
     'PrestaShop\\AiSmartTalk\\CleanProductDocuments' => $baseDir . '/classes/CleanProductDocuments.php',
     'PrestaShop\\AiSmartTalk\\CombinationHelper' => $baseDir . '/classes/CombinationHelper.php',
