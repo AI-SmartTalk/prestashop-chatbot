@@ -289,6 +289,69 @@ class ProductDocumentBuilderTest extends TestCase
     }
 
     // =========================================================================
+    // Unified stock / restock date (DEV-857 — same standard across connectors)
+    // =========================================================================
+
+    public function testInStockProductNeverEmitsRestockDate(): void
+    {
+        $doc = ProductDocumentBuilder::build([
+            'id' => 100,
+            'title' => 'Available',
+            'quantity' => 5,
+            'restock_date' => '2026-06-15',
+        ]);
+        self::assertSame('in_stock', $doc['availability']);
+        self::assertArrayNotHasKey('restockDate', $doc);
+    }
+
+    public function testOutOfStockWithoutDateOmitsRestockDate(): void
+    {
+        $doc = ProductDocumentBuilder::build([
+            'id' => 101,
+            'title' => 'Sold out',
+            'quantity' => 0,
+        ]);
+        self::assertSame('out_of_stock', $doc['availability']);
+        self::assertArrayNotHasKey('restockDate', $doc);
+    }
+
+    public function testOutOfStockWithDateEmitsRestockDate(): void
+    {
+        $doc = ProductDocumentBuilder::build([
+            'id' => 102,
+            'title' => 'Back soon',
+            'quantity' => 0,
+            'restock_date' => '2026-06-15',
+        ]);
+        self::assertSame('out_of_stock', $doc['availability']);
+        self::assertSame('2026-06-15', $doc['restockDate']);
+    }
+
+    public function testRestockDateNormalisesDatetimeToIsoDay(): void
+    {
+        $doc = ProductDocumentBuilder::build([
+            'id' => 103,
+            'title' => 'Back soon',
+            'quantity' => 0,
+            'restock_date' => '2026-06-15 09:30:00',
+        ]);
+        self::assertSame('2026-06-15', $doc['restockDate']);
+    }
+
+    public function testRestockDateRejectsZeroAndMalformedDates(): void
+    {
+        foreach (['0000-00-00', 'not-a-date', '2026-02-30'] as $bad) {
+            $doc = ProductDocumentBuilder::build([
+                'id' => 104,
+                'title' => 'Sold out',
+                'quantity' => 0,
+                'restock_date' => $bad,
+            ]);
+            self::assertArrayNotHasKey('restockDate', $doc, "Expected restockDate dropped for: {$bad}");
+        }
+    }
+
+    // =========================================================================
     // Failure mode
     // =========================================================================
 

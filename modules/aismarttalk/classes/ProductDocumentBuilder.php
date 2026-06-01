@@ -74,11 +74,13 @@ class ProductDocumentBuilder
         // `optional()` so a null value (invalid currency, no description,
         // simple product without variants…) gets omitted from the envelope
         // rather than sent as a noisy `null`.
+        $availability = self::deriveAvailability($legacy);
+
         $document = [
             'type' => 'product',
             'externalId' => $externalId,
             'title' => $title !== '' ? $title : $externalId,
-            'availability' => self::deriveAvailability($legacy),
+            'availability' => $availability,
             'variants' => self::buildVariants($externalId, $legacy['variants'] ?? []),
         ];
 
@@ -93,6 +95,7 @@ class ProductDocumentBuilder
             ),
             'reference' => self::nullableString($legacy['reference'] ?? null),
             'quantity' => self::normaliseQuantity($legacy['quantity'] ?? null),
+            'restockDate' => self::deriveRestockDate($legacy, $availability),
             'image' => self::nullableString($legacy['image_url'] ?? $legacy['image'] ?? null),
             'url' => self::nullableString($legacy['url'] ?? null),
             'categories' => self::collectStringList($legacy['categories'] ?? null),
@@ -261,6 +264,55 @@ class ProductDocumentBuilder
             return ((int) $legacy['quantity']) > 0 ? self::STOCK_IN : self::STOCK_OUT;
         }
         return self::STOCK_UNKNOWN;
+    }
+
+    /**
+     * Resolve the expected back-in-stock date.
+     *
+     * Only meaningful when the product is NOT in stock — an in-stock product has
+     * nothing to restock. Reads `restock_date` / `restockDate` (the sync feeds it
+     * from PrestaShop's `product.available_date`). Returns an ISO-8601 day
+     * ("YYYY-MM-DD") or null.
+     *
+     * @param array<string,mixed> $legacy
+     */
+    private static function deriveRestockDate(array $legacy, string $availability): ?string
+    {
+        if ($availability === self::STOCK_IN) {
+            return null;
+        }
+        $raw = $legacy['restock_date'] ?? $legacy['restockDate'] ?? null;
+        return self::normaliseRestockDate($raw);
+    }
+
+    /**
+     * Normalise a raw date to a bare ISO-8601 day ("YYYY-MM-DD") or null.
+     *
+     * Accepts a date or datetime; rejects empty values, zero-dates and impossible
+     * calendar dates. Parity with the canonical server schema (OptionalIsoDate)
+     * and the other connectors so AI SmartTalk gets one shape from every source.
+     *
+     * @param mixed $raw
+     */
+    private static function normaliseRestockDate($raw): ?string
+    {
+        if ($raw === null || !is_scalar($raw)) {
+            return null;
+        }
+        $trimmed = trim((string) $raw);
+        if ($trimmed === '' || strpos($trimmed, '0000-00-00') === 0) {
+            return null;
+        }
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $trimmed, $m) !== 1) {
+            return null;
+        }
+        $year = (int) $m[1];
+        $month = (int) $m[2];
+        $day = (int) $m[3];
+        if ($year <= 0 || !checkdate($month, $day, $year)) {
+            return null;
+        }
+        return sprintf('%04d-%02d-%02d', $year, $month, $day);
     }
 
     private static function normalisePrice($raw): ?string
