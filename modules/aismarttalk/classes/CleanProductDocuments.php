@@ -68,7 +68,9 @@ class CleanProductDocuments
 
         $client = ApiClient::fromConfig();
 
-        $response = $client->post('/api/v1/integrations/prestashop/cleanup', [
+        // Unified product endpoint shared by every connector (source in body).
+        $response = $client->post('/api/v1/products/cleanup', [
+            'source' => 'prestashop',
             'siteIdentifier' => $client->getSiteIdentifier(),
             // delete-ids: purge the listed products; keep-only: full snapshot,
             // delete everything NOT in the list. Mirrors the previous semantics.

@@ -215,8 +215,11 @@ class SynchProductsToAiSmartTalk
     {
         $client = ApiClient::fromConfig();
 
-        $response = $client->post('/api/v1/integrations/prestashop/sync', [
+        // Unified product endpoint shared by every connector: the platform is
+        // passed in the body (`source`), there is no per-platform route.
+        $response = $client->post('/api/v1/products', [
             'payloadVersion' => '1',
+            'source' => 'prestashop',
             'siteIdentifier' => $client->getSiteIdentifier(),
             'documents' => $documentDatas,
         ]);

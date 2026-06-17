@@ -17,14 +17,18 @@ renseigner un champ optionnel doit envoyer `null` (jamais une valeur factice).
 
 ## 1. Endpoint
 
-`POST /api/v1/integrations/{platform}/sync` — `{platform}` ∈ `prestashop | woocommerce | shopify | joomla`.
+**Point d'entrée unique, commun à tous les connecteurs** (pas de route par plateforme) :
+
+`POST /api/v1/products`
 
 Auth : en-têtes `Authorization: Bearer <token>` + `x-chat-model-id` (le chatModel est
-résolu côté backend ; il n'est pas répété dans le body). La plateforme vient de l'URL.
+résolu côté backend ; il n'est pas répété dans le body). La plateforme est dans le
+body via `source` ∈ `prestashop | woocommerce | shopify | joomla`.
 
 ```jsonc
 {
   "payloadVersion": "1",
+  "source": "prestashop",
   "siteIdentifier": "…",
   "documents": [ /* tableau de documents produit, max 50 par batch */ ]
 }
@@ -33,8 +37,8 @@ résolu côté backend ; il n'est pas répété dans le body). La plateforme vie
 Le backend répond `200` (`ok`), `207` (`partial`, certains produits rejetés par la
 validation canonique — la liste est dans `rejected`), ou `4xx/5xx` (`error`).
 
-Nettoyage des produits retirés : `POST /api/v1/integrations/{platform}/cleanup` avec
-`{ "siteIdentifier": "…", "mode": "delete-ids" | "keep-only", "externalIds": [ … ] }`.
+Nettoyage des produits retirés : `POST /api/v1/products/cleanup` avec
+`{ "source": "prestashop", "siteIdentifier": "…", "mode": "delete-ids" | "keep-only", "externalIds": [ … ] }`.
 
 ## 2. Document produit
 
