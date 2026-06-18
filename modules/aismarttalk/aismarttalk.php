@@ -49,7 +49,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.9.0';
+        $this->version = '3.9.1';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -135,6 +135,13 @@ class AiSmartTalk extends Module
             'actionProductAttributeCreate',
             'actionProductAttributeUpdate',
             'actionProductAttributeDelete',
+            // Generic ObjectModel combination hooks — PrestaShop 8/9's new product
+            // page often deletes/edits combinations through the ObjectModel base
+            // (which fires these) rather than the legacy actionProductAttribute*
+            // hooks. Registering both maximizes incremental-sync coverage.
+            'actionObjectCombinationAddAfter',
+            'actionObjectCombinationUpdateAfter',
+            'actionObjectCombinationDeleteAfter',
             // Category lifecycle — keep the backend category tree (used to attach
             // products + drive hierarchy) in sync when the merchant edits it.
             'actionCategoryAdd',
@@ -228,6 +235,9 @@ class AiSmartTalk extends Module
             'actionProductAttributeCreate',
             'actionProductAttributeUpdate',
             'actionProductAttributeDelete',
+            'actionObjectCombinationAddAfter',
+            'actionObjectCombinationUpdateAfter',
+            'actionObjectCombinationDeleteAfter',
             'actionCategoryAdd',
             'actionCategoryUpdate',
             'actionCategoryDelete',
@@ -1027,11 +1037,38 @@ class AiSmartTalk extends Module
     }
 
     /**
+     * Hook: actionObjectCombinationAddAfter — generic ObjectModel combination create.
+     */
+    public function hookActionObjectCombinationAddAfter($params)
+    {
+        $this->handleCombinationChange($params);
+    }
+
+    /**
+     * Hook: actionObjectCombinationUpdateAfter — generic ObjectModel combination edit.
+     */
+    public function hookActionObjectCombinationUpdateAfter($params)
+    {
+        $this->handleCombinationChange($params);
+    }
+
+    /**
+     * Hook: actionObjectCombinationDeleteAfter — generic ObjectModel combination delete.
+     * Fires on PrestaShop 8/9's new product page where the legacy
+     * actionProductAttributeDelete hook may not.
+     */
+    public function hookActionObjectCombinationDeleteAfter($params)
+    {
+        $this->handleCombinationChange($params);
+    }
+
+    /**
      * Resolve the parent product of a changed combination and trigger a parent re-sync.
      *
-     * Hook params may contain `id_product` directly, or only `id_product_attribute`.
-     * On delete the attribute row may already be gone, so we lookup the parent first
-     * and fall back to whatever the hook gave us.
+     * Hook params may carry: `id_product` directly, an `object` (Combination
+     * ObjectModel, for the actionObjectCombination*After hooks), or only
+     * `id_product_attribute`. On delete the attribute row may already be gone,
+     * so we try the object/params first and fall back to a DB lookup.
      */
     protected function handleCombinationChange(array $params): void
     {
@@ -1040,6 +1077,19 @@ class AiSmartTalk extends Module
         }
 
         $idProduct = isset($params['id_product']) ? (int) $params['id_product'] : 0;
+
+        // Generic ObjectModel hooks pass the Combination instance in `object`.
+        if ($idProduct <= 0 && isset($params['object']) && is_object($params['object'])) {
+            $combination = $params['object'];
+            if (!empty($combination->id_product)) {
+                $idProduct = (int) $combination->id_product;
+            } elseif (!empty($combination->id)) {
+                $idProduct = (int) \Db::getInstance()->getValue(
+                    'SELECT id_product FROM ' . _DB_PREFIX_ . 'product_attribute
+                     WHERE id_product_attribute = ' . (int) $combination->id
+                );
+            }
+        }
 
         if ($idProduct <= 0 && !empty($params['id_product_attribute'])) {
             $idProductAttribute = (int) $params['id_product_attribute'];
