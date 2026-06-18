@@ -135,13 +135,6 @@ class AiSmartTalk extends Module
             'actionProductAttributeCreate',
             'actionProductAttributeUpdate',
             'actionProductAttributeDelete',
-            // Generic ObjectModel combination hooks — PrestaShop 8/9's new product
-            // page often deletes/edits combinations through the ObjectModel base
-            // (which fires these) rather than the legacy actionProductAttribute*
-            // hooks. Registering both maximizes incremental-sync coverage.
-            'actionObjectCombinationAddAfter',
-            'actionObjectCombinationUpdateAfter',
-            'actionObjectCombinationDeleteAfter',
             // Category lifecycle — keep the backend category tree (used to attach
             // products + drive hierarchy) in sync when the merchant edits it.
             'actionCategoryAdd',
@@ -178,6 +171,27 @@ class AiSmartTalk extends Module
                 if (!$this->registerHook($hook)) {
                     return false;
                 }
+            }
+        }
+
+        // Optional / best-effort hooks — registration failure must NEVER abort the
+        // install. The generic ObjectModel combination hooks are how PrestaShop
+        // 8/9's new product page surfaces variant changes (the legacy
+        // actionProductAttribute* hooks above cover 1.6/1.7). On any version where
+        // one of these can't be registered we simply skip it — incremental sync
+        // degrades gracefully (Force Sync remains the snapshot reconciliation).
+        $optionalHooks = [
+            'actionObjectCombinationAddAfter',
+            'actionObjectCombinationUpdateAfter',
+            'actionObjectCombinationDeleteAfter',
+        ];
+        foreach ($optionalHooks as $hook) {
+            try {
+                if (!$this->isRegisteredInHook($hook)) {
+                    $this->registerHook($hook);
+                }
+            } catch (\Throwable $e) {
+                // ignore — optional coverage only
             }
         }
 

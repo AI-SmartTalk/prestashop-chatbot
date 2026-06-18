@@ -35,12 +35,18 @@ function upgrade_module_3_9_1($module)
         'actionObjectCombinationDeleteAfter',
     ];
 
-    $ok = true;
+    // Best-effort: these are optional incremental-sync hooks. A registration
+    // failure on any PrestaShop version must NOT fail the upgrade (Force Sync
+    // remains the reliable snapshot reconciliation). Always return true.
     foreach ($hooks as $hook) {
-        if (!$module->isRegisteredInHook($hook)) {
-            $ok = $module->registerHook($hook) && $ok;
+        try {
+            if (!$module->isRegisteredInHook($hook)) {
+                $module->registerHook($hook);
+            }
+        } catch (\Throwable $e) {
+            // ignore — optional coverage only
         }
     }
 
-    return $ok;
+    return true;
 }
