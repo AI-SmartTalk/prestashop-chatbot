@@ -28,6 +28,7 @@ return array(
     'PrestaShop\\AiSmartTalk\\PriceInfo' => $baseDir . '/classes/PriceInfo.php',
     'PrestaShop\\AiSmartTalk\\StockStatusHelper' => $baseDir . '/classes/StockStatusHelper.php',
     'PrestaShop\\AiSmartTalk\\SyncFilterHelper' => $baseDir . '/classes/SyncFilterHelper.php',
+    'PrestaShop\\AiSmartTalk\\SynchCategoriesToAiSmartTalk' => $baseDir . '/classes/SynchCategoriesToAiSmartTalk.php',
     'PrestaShop\\AiSmartTalk\\SynchProductsToAiSmartTalk' => $baseDir . '/classes/SynchProductsToAiSmartTalk.php',
     'PrestaShop\\AiSmartTalk\\WebhookHandler' => $baseDir . '/classes/WebhookHandler.php',
 );

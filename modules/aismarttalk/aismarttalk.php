@@ -31,6 +31,7 @@ use PrestaShop\AiSmartTalk\MultistoreHelper;
 use PrestaShop\AiSmartTalk\OAuthHandler;
 use PrestaShop\AiSmartTalk\OAuthTokenHandler;
 use PrestaShop\AiSmartTalk\SyncFilterHelper;
+use PrestaShop\AiSmartTalk\SynchCategoriesToAiSmartTalk;
 use PrestaShop\AiSmartTalk\SynchProductsToAiSmartTalk;
 use PrestaShop\AiSmartTalk\WebhookHandler;
 
@@ -48,7 +49,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.8.0';
+        $this->version = '3.9.0';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -134,6 +135,11 @@ class AiSmartTalk extends Module
             'actionProductAttributeCreate',
             'actionProductAttributeUpdate',
             'actionProductAttributeDelete',
+            // Category lifecycle — keep the backend category tree (used to attach
+            // products + drive hierarchy) in sync when the merchant edits it.
+            'actionCategoryAdd',
+            'actionCategoryUpdate',
+            'actionCategoryDelete',
             'actionAuthentication',
             'actionCustomerLogout',
             'actionCustomerAccountAdd',
@@ -222,6 +228,9 @@ class AiSmartTalk extends Module
             'actionProductAttributeCreate',
             'actionProductAttributeUpdate',
             'actionProductAttributeDelete',
+            'actionCategoryAdd',
+            'actionCategoryUpdate',
+            'actionCategoryDelete',
             'actionAuthentication',
             'actionCustomerLogout',
             'actionCustomerAccountAdd',
@@ -1065,6 +1074,50 @@ class AiSmartTalk extends Module
         $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
 
         AiSmartTalkProductSync::updateLastSyncTime($idProduct);
+    }
+
+    /**
+     * Hook: actionCategoryAdd — a category was created.
+     */
+    public function hookActionCategoryAdd($params)
+    {
+        $this->resyncCategoryTree();
+    }
+
+    /**
+     * Hook: actionCategoryUpdate — a category was renamed / moved in the tree.
+     */
+    public function hookActionCategoryUpdate($params)
+    {
+        $this->resyncCategoryTree();
+    }
+
+    /**
+     * Hook: actionCategoryDelete — a category was removed.
+     */
+    public function hookActionCategoryDelete($params)
+    {
+        $this->resyncCategoryTree();
+    }
+
+    /**
+     * Resync the whole category tree to the backend (idempotent upsert). The tree
+     * is small enough to push wholesale on any change; a missing/renamed/moved
+     * category is reflected immediately so products stay attached to real ids.
+     * Gated behind the product-sync toggle and fully non-fatal.
+     */
+    protected function resyncCategoryTree(): void
+    {
+        try {
+            if (!(bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')) {
+                return;
+            }
+
+            $sync = new SynchCategoriesToAiSmartTalk($this->context);
+            $sync();
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk resyncCategoryTree error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     /**

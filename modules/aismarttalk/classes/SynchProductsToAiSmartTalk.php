@@ -204,12 +204,13 @@ class SynchProductsToAiSmartTalk
 
     /**
      * Posts a batch of canonical v1 documents to the source-agnostic ingestion
-     * endpoint. Validation is synchronous (per-document); the heavy ingestion
-     * runs asynchronously in the backend RabbitMQ worker.
+     * endpoint. The endpoint is fire-and-forget: it validates ONLY the envelope
+     * synchronously, enqueues the batch on RabbitMQ and answers 202 Accepted.
      *
-     * The endpoint answers 200 (`ok`) or 207 (`partial`, some documents failed
-     * canonical validation) — both are successes here; a partial response only
-     * surfaces a warning so a single malformed product never aborts the sync.
+     * Per-product canonical validation runs asynchronously in the backend worker,
+     * so there is no synchronous `rejected` list to react to here. Any 2xx
+     * (200 or 202) is a success; only a transport error or an `error` status
+     * aborts the sync.
      */
     private function postToApi($documentDatas)
     {
@@ -234,17 +235,8 @@ class SynchProductsToAiSmartTalk
             return false;
         }
 
-        // `partial`: at least one document failed canonical validation. Keep the
-        // sync going but record a non-fatal diagnostic for the merchant.
-        $rejected = $response->get('rejected');
-        if (is_array($rejected) && count($rejected) > 0) {
-            MultistoreHelper::updateConfig(
-                'AI_SMART_TALK_ERROR',
-                count($rejected) . ' product(s) rejected by canonical validation during sync'
-            );
-        } else {
-            MultistoreHelper::deleteConfig('AI_SMART_TALK_ERROR');
-        }
+        // Accepted (202) / ok (200): the batch is queued. Clear any stale error.
+        MultistoreHelper::deleteConfig('AI_SMART_TALK_ERROR');
 
         return $response->body;
     }

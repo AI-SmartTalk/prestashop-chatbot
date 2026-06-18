@@ -43,6 +43,7 @@ class ComposerStaticInit3bdbd939a184a583fcb24dad87c35c72
         'PrestaShop\\AiSmartTalk\\PriceInfo' => __DIR__ . '/../..' . '/classes/PriceInfo.php',
         'PrestaShop\\AiSmartTalk\\StockStatusHelper' => __DIR__ . '/../..' . '/classes/StockStatusHelper.php',
         'PrestaShop\\AiSmartTalk\\SyncFilterHelper' => __DIR__ . '/../..' . '/classes/SyncFilterHelper.php',
+        'PrestaShop\\AiSmartTalk\\SynchCategoriesToAiSmartTalk' => __DIR__ . '/../..' . '/classes/SynchCategoriesToAiSmartTalk.php',
         'PrestaShop\\AiSmartTalk\\SynchProductsToAiSmartTalk' => __DIR__ . '/../..' . '/classes/SynchProductsToAiSmartTalk.php',
         'PrestaShop\\AiSmartTalk\\WebhookHandler' => __DIR__ . '/../..' . '/classes/WebhookHandler.php',
     );

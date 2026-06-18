@@ -190,6 +190,7 @@ echo "\n\033[1m[Module Classes]\033[0m\n";
 $requiredClasses = [
     'PrestaShop\AiSmartTalk\MultistoreHelper',
     'PrestaShop\AiSmartTalk\SyncFilterHelper',
+    'PrestaShop\AiSmartTalk\SynchCategoriesToAiSmartTalk',
     'PrestaShop\AiSmartTalk\SynchProductsToAiSmartTalk',
     'PrestaShop\AiSmartTalk\CleanProductDocuments',
     'PrestaShop\AiSmartTalk\AdminFormHandler',

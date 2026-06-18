@@ -569,6 +569,18 @@ class AdminFormHandler
     private function handleProductSync(bool $force): string
     {
         $output = '';
+
+        // Sync the category tree up-front so products reference real Category ids
+        // and get auto-attached during ingestion. Non-fatal: a category-sync
+        // failure only surfaces a warning (the product sync upserts categories as
+        // a fallback), so it never blocks the catalog from syncing.
+        $categorySync = new SynchCategoriesToAiSmartTalk($this->context);
+        if ($categorySync() === false) {
+            $output .= $this->module->displayWarning(
+                $this->trans('Category tree could not be synchronized; product categories will be created on the fly.', [], 'Modules.Aismarttalk.Admin')
+            );
+        }
+
         $api = new SynchProductsToAiSmartTalk($this->context);
         $result = $api(['forceSync' => $force]);
 

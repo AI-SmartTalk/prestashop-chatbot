@@ -47,7 +47,7 @@ class CanonicalProductMapper
      * @param int         $decimals Currency precision (2 = cents, 3 = milli-units…).
      * @param string      $currency ISO-4217 code.
      * @param string|null $sign     Optional currency sign for the display string.
-     * @return array{amount:int,currency:string,display:string}|null
+     * @return array{amount:int,currency:string,display:string,decimals:int}|null
      */
     public static function toMoney($amount, int $decimals, string $currency, $sign = null): ?array
     {
@@ -65,6 +65,9 @@ class CanonicalProductMapper
             'amount' => $minorUnits,
             'currency' => strtoupper(trim($currency)),
             'display' => $display,
+            // Currency precision so the backend can format minor units back to a
+            // localized display without re-deriving it (EUR=2, JPY=0, LYD=3…).
+            'decimals' => $decimals,
         ];
     }
 
@@ -182,12 +185,10 @@ class CanonicalProductMapper
             'restockDate' => $quantity > 0
                 ? null
                 : StockStatusHelper::normalizeDate($args['availableDate'] ?? null),
-            'categories' => array_values(array_filter(
-                $args['categories'] ?? [],
-                function ($c) {
-                    return is_string($c) && trim($c) !== '';
-                }
-            )),
+            // Canonical CategoryRef[] objects (externalId + name + parentExternalId)
+            // so the backend can upsert the Category entities, resolve the hierarchy
+            // and auto-attach the product. See self::productCategories().
+            'categories' => self::filterCategoryRefs($args['categories'] ?? []),
             'url' => self::nullIfEmpty($args['url'] ?? null),
             'image' => self::nullIfEmpty($args['imageUrl'] ?? null),
             'variants' => array_map(
@@ -209,20 +210,29 @@ class CanonicalProductMapper
     }
 
     /**
-     * Fetch the product's category names (used as canonical `categories[]` for
-     * facet filtering). One query per product — acceptable for an offline sync.
+     * Fetch the product's categories as canonical CategoryRef objects
+     * (`{externalId, name, parentExternalId}`) so the backend can upsert the
+     * Category entities, rebuild the hierarchy and auto-attach the product.
+     *
+     * The PrestaShop virtual Root category (id 1) is excluded — it carries no
+     * merchandising meaning. The real shop root (e.g. "Home") is kept and emitted
+     * with `parentExternalId = null` so it anchors the tree. One query per product
+     * — acceptable for an offline sync.
      *
      * @param int $idProduct
      * @param int $idLang
-     * @return string[]
+     * @return array<int,array{externalId:string,name:string,parentExternalId:?string}>
      */
     public static function productCategories(int $idProduct, int $idLang): array
     {
-        $sql = 'SELECT DISTINCT cl.name
+        $sql = 'SELECT DISTINCT c.id_category, c.id_parent, cl.name
                 FROM ' . _DB_PREFIX_ . 'category_product cp
+                INNER JOIN ' . _DB_PREFIX_ . 'category c
+                    ON c.id_category = cp.id_category
                 INNER JOIN ' . _DB_PREFIX_ . 'category_lang cl
                     ON cl.id_category = cp.id_category AND cl.id_lang = ' . (int) $idLang . '
                 WHERE cp.id_product = ' . (int) $idProduct . '
+                    AND c.id_category > 1
                     AND cl.name IS NOT NULL AND cl.name != ""';
 
         $rows = \Db::getInstance()->executeS($sql);
@@ -230,15 +240,60 @@ class CanonicalProductMapper
             return [];
         }
 
-        $names = [];
+        return self::rowsToCategoryRefs($rows);
+    }
+
+    /**
+     * Convert raw `{id_category, id_parent, name}` rows to canonical CategoryRefs.
+     * A parent pointing at the virtual Root (id 1) becomes `null` so the category
+     * anchors the tree instead of referencing a category we never emit.
+     *
+     * @param array $rows
+     * @return array<int,array{externalId:string,name:string,parentExternalId:?string}>
+     */
+    public static function rowsToCategoryRefs(array $rows): array
+    {
+        $refs = [];
+        $seen = [];
         foreach ($rows as $row) {
+            $id = (int) ($row['id_category'] ?? 0);
             $name = trim((string) ($row['name'] ?? ''));
-            if ($name !== '') {
-                $names[] = $name;
+            if ($id <= 1 || $name === '' || isset($seen[$id])) {
+                continue;
+            }
+            $seen[$id] = true;
+
+            $parentId = (int) ($row['id_parent'] ?? 0);
+            $refs[] = [
+                'externalId' => (string) $id,
+                'name' => $name,
+                'parentExternalId' => $parentId > 1 ? (string) $parentId : null,
+            ];
+        }
+
+        return array_values($refs);
+    }
+
+    /**
+     * Normalize a caller-provided categories value into canonical CategoryRefs.
+     * Accepts the object form (already a CategoryRef) and tolerates legacy bare
+     * name strings so older call-sites keep working.
+     *
+     * @param array $categories
+     * @return array<int,array>
+     */
+    private static function filterCategoryRefs(array $categories): array
+    {
+        $out = [];
+        foreach ($categories as $c) {
+            if (is_array($c) && isset($c['name']) && trim((string) $c['name']) !== '') {
+                $out[] = $c;
+            } elseif (is_string($c) && trim($c) !== '') {
+                $out[] = ['name' => trim($c)];
             }
         }
 
-        return array_values(array_unique($names));
+        return array_values($out);
     }
 
     /**
