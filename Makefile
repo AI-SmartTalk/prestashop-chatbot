@@ -1,4 +1,4 @@
-.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 smoke-test-ps1751 e2e e2e-install e2e-ps17 e2e-ps1751 e2e-headed e2e-ui e2e-setup e2e-reset e2e-reset-ps17 e2e-reset-ps1751 e2e-all e2e-multistore e2e-multistore-ps17 e2e-multistore-ps1751 e2e-multistore-enable e2e-multistore-disable e2e-multistore-enable-ps17 e2e-multistore-disable-ps17 e2e-multistore-enable-ps1751 e2e-multistore-disable-ps1751 ps1751 ps1751-stop ps1751-clean ps1751-logs ps1751-bash ps1751-admin init-test init-test-ps1751
+.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 smoke-test-ps1751 seed-products seed-products-purge e2e e2e-install e2e-ps17 e2e-ps1751 e2e-headed e2e-ui e2e-setup e2e-reset e2e-reset-ps17 e2e-reset-ps1751 e2e-all e2e-multistore e2e-multistore-ps17 e2e-multistore-ps1751 e2e-multistore-enable e2e-multistore-disable e2e-multistore-enable-ps17 e2e-multistore-disable-ps17 e2e-multistore-enable-ps1751 e2e-multistore-disable-ps1751 ps1751 ps1751-stop ps1751-clean ps1751-logs ps1751-bash ps1751-admin init-test init-test-ps1751
 
 # ──────────────────────────────────────────────
 # Unit Tests (no DB needed)
@@ -68,6 +68,24 @@ smoke-test-ps17:
 # Smoke test on PS 1.7.5.1
 smoke-test-ps1751:
 	docker exec prestashop1751 php modules/aismarttalk/tests/Smoke/run_smoke_tests.php
+
+# ──────────────────────────────────────────────
+# Massive product seeding (dev — stress-test the sync end to end)
+# ──────────────────────────────────────────────
+# Generates a big-group-grade catalog: deep category tree, brands, attribute
+# groups, simple AND multi-variant products, full price spectrum + promos,
+# in-stock / out-of-stock (+ restock dates), varied default category.
+# Override volume with COUNT=… and any flag with SEED_ARGS=…
+COUNT ?= 10000
+SEED_ARGS ?=
+
+# Generate products (e.g. make seed-products COUNT=50000)
+seed-products:
+	docker exec prestashop php modules/aismarttalk/tools/seed_products.php --count=$(COUNT) $(SEED_ARGS)
+
+# Remove EVERYTHING this seeder created (products, brands, attribute groups, category tree)
+seed-products-purge:
+	docker exec prestashop php modules/aismarttalk/tools/seed_products.php --purge
 
 # ──────────────────────────────────────────────
 # E2E Tests (Playwright — browser-based)
