@@ -161,6 +161,7 @@ class SynchProductsToAiSmartTalk
                     (int) $product['id_product'],
                     $defaultLangId
                 ),
+                'defaultCategoryExternalId' => (int) $psProduct->id_category_default,
                 'variants' => $variants,
                 'priceInfo' => $priceInfo,
             ]);

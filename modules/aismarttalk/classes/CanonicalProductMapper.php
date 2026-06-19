@@ -189,6 +189,13 @@ class CanonicalProductMapper
             // so the backend can upsert the Category entities, resolve the hierarchy
             // and auto-attach the product. See self::productCategories().
             'categories' => self::filterCategoryRefs($args['categories'] ?? []),
+            // Primary category (id_category_default). The backend uses this as the
+            // Document's category instead of the first `categories` entry, which is
+            // usually the shop root ("Home"/"Accueil"). Null for the virtual Root.
+            'defaultCategoryExternalId' => isset($args['defaultCategoryExternalId'])
+                && (int) $args['defaultCategoryExternalId'] > 1
+                ? (string) (int) $args['defaultCategoryExternalId']
+                : null,
             'url' => self::nullIfEmpty($args['url'] ?? null),
             'image' => self::nullIfEmpty($args['imageUrl'] ?? null),
             'variants' => array_map(

@@ -96,6 +96,32 @@ class CanonicalProductMapperTest extends TestCase
         $this->assertArrayNotHasKey('originalPrice', $doc, 'No promo block when not discounted.');
     }
 
+    public function testMapEmitsDefaultCategoryAsStringWhenAboveRoot(): void
+    {
+        $priceInfo = new PriceInfo(19.99, 19.99, 0.0, 0, false, 'none');
+
+        $doc = CanonicalProductMapper::map([
+            'idProduct' => 1, 'name' => 'X', 'decimals' => 2, 'currency' => 'EUR',
+            'quantity' => 1, 'categories' => [], 'variants' => [], 'priceInfo' => $priceInfo,
+            'defaultCategoryExternalId' => 8,
+        ]);
+
+        $this->assertSame('8', $doc['defaultCategoryExternalId']);
+    }
+
+    public function testMapNullsDefaultCategoryForVirtualRoot(): void
+    {
+        $priceInfo = new PriceInfo(19.99, 19.99, 0.0, 0, false, 'none');
+
+        $doc = CanonicalProductMapper::map([
+            'idProduct' => 1, 'name' => 'X', 'decimals' => 2, 'currency' => 'EUR',
+            'quantity' => 1, 'categories' => [], 'variants' => [], 'priceInfo' => $priceInfo,
+            'defaultCategoryExternalId' => 1,
+        ]);
+
+        $this->assertNull($doc['defaultCategoryExternalId']);
+    }
+
     public function testMapEmitsPromotionAndRestockDate(): void
     {
         $priceInfo = new PriceInfo(15.0, 20.0, 5.0, 25, true, 'percentage');
