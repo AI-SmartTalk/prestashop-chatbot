@@ -243,6 +243,49 @@ class SynchProductsToAiSmartTalk
     }
 
     /**
+     * Resolve the list of product IDs that a forced "Sync All" would send,
+     * WITHOUT fetching/posting anything. Used by the asynchronous, browser-driven
+     * sync to know the total up-front and drive a progress bar.
+     *
+     * Mirrors __invoke()'s force path: when forcing, out-of-stock/inactive
+     * products are purged once here (the per-batch calls then carry explicit
+     * productIds, so cleanup never runs again).
+     *
+     * @param bool $force
+     * @return int[] Ordered list of product IDs to synchronize
+     */
+    public function resolveProductIdsToSync($force)
+    {
+        $this->forceSync = (bool) $force;
+
+        if ($this->forceSync) {
+            $this->cleanOutOfStockProducts();
+        }
+
+        return $this->getProductIdsToSynchronize();
+    }
+
+    /**
+     * ID-only variant of getProductsToSynchronize(): same filters, no payload columns.
+     * Kept in lock-step with the full query via the shared buildSyncFromWhere().
+     *
+     * @return int[]
+     */
+    private function getProductIdsToSynchronize()
+    {
+        $sql = 'SELECT p.id_product ' . $this->buildSyncFromWhere();
+        $rows = \Db::getInstance()->executeS($sql);
+
+        if (!$rows) {
+            return [];
+        }
+
+        return array_map(static function ($row) {
+            return (int) $row['id_product'];
+        }, $rows);
+    }
+
+    /**
      * Get products to synchronize across ALL shops (union, deduplicated).
      * Product data (name, price, image, URL) prefers the default shop, with fallback to any shop.
      *
@@ -253,6 +296,33 @@ class SynchProductsToAiSmartTalk
      *    stock check is dropped entirely so every active product is synchronized.
      */
     private function getProductsToSynchronize()
+    {
+        $sql = 'SELECT p.id_product, pl.name, pl.description, pl.description_short,
+                   p.reference, p.price, cl.link_rewrite, i.id_image,
+                   p.active,
+                   p.available_date,
+                   pl.id_shop as best_shop_id,
+                   c.iso_code as currency_code,
+                   sp.price as specific_price,
+                   sp.from as price_from,
+                   sp.to as price_to,
+                   sp.reduction as price_reduction,
+                   sp.reduction_type '
+            . $this->buildSyncFromWhere();
+
+        $products = \Db::getInstance()->executeS($sql);
+
+        return $products ?: [];
+    }
+
+    /**
+     * Builds the shared FROM/JOIN/WHERE/GROUP BY tail used by both the full
+     * product fetch and the ID-only resolution, so the two never drift apart
+     * (same stock/force/productIds/category filters).
+     *
+     * @return string SQL starting at "FROM ..." through "GROUP BY p.id_product"
+     */
+    private function buildSyncFromWhere()
     {
         $defaultLangId = (int) \Configuration::get('PS_LANG_DEFAULT');
         $defaultShopId = MultistoreHelper::getDefaultShopId();
@@ -309,18 +379,7 @@ class SynchProductsToAiSmartTalk
             ORDER BY (ims2.id_shop = ' . $defaultShopId . ') DESC, ims2.id_shop ASC
             LIMIT 1)';
 
-        $sql = 'SELECT p.id_product, pl.name, pl.description, pl.description_short,
-                   p.reference, p.price, cl.link_rewrite, i.id_image,
-                   p.active,
-                   p.available_date,
-                   pl.id_shop as best_shop_id,
-                   c.iso_code as currency_code,
-                   sp.price as specific_price,
-                   sp.from as price_from,
-                   sp.to as price_to,
-                   sp.reduction as price_reduction,
-                   sp.reduction_type
-            FROM ' . _DB_PREFIX_ . 'product p
+        $sql = 'FROM ' . _DB_PREFIX_ . 'product p
             LEFT JOIN ' . _DB_PREFIX_ . 'product_lang pl
                 ON p.id_product = pl.id_product AND pl.id_lang = ' . $defaultLangId . '
                 AND pl.id_shop = ' . $plShopSubquery . '
@@ -371,9 +430,7 @@ class SynchProductsToAiSmartTalk
 
         $sql .= ' GROUP BY p.id_product';
 
-        $products = \Db::getInstance()->executeS($sql);
-
-        return $products ?: [];
+        return $sql;
     }
 
     /**

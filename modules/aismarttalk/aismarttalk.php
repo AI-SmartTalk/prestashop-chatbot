@@ -49,7 +49,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.9.1';
+        $this->version = '3.9.2';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -399,6 +399,25 @@ class AiSmartTalk extends Module
 
         // Ensure default URLs are always available
         $this->ensureDefaultUrls();
+
+        // Asynchronous, browser-driven "Sync All Products": short-circuit here and
+        // answer JSON instead of rendering the whole BO page. The admin token has
+        // already been validated by AdminModulesController before getContent() runs.
+        // A dedicated param (not "ajax"/"action") is used on purpose so the native
+        // AdminController ajax router never intercepts the request before getContent().
+        $astSyncStep = Tools::getValue('astSync');
+        if ($astSyncStep === 'init' || $astSyncStep === 'batch') {
+            $ajaxHandler = new AdminFormHandler($this, $this->context);
+            $ajaxHandler->handleProductSyncAjax($astSyncStep);
+            // handleProductSyncAjax() always exits.
+        }
+
+        $astCustomerStep = Tools::getValue('astCustomerSync');
+        if ($astCustomerStep === 'init' || $astCustomerStep === 'batch') {
+            $ajaxHandler = new AdminFormHandler($this, $this->context);
+            $ajaxHandler->handleCustomerSyncAjax($astCustomerStep);
+            // handleCustomerSyncAjax() always exits.
+        }
 
         // Process all form submissions and actions via AdminFormHandler
         $handler = new AdminFormHandler($this, $this->context);

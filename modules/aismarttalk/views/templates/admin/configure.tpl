@@ -623,6 +623,39 @@ a.ast-btn-warning:hover {
 }
 .ast-modal-btn.confirm-clean:hover { box-shadow: 0 6px 16px rgba(100, 116, 139, 0.4); }
 
+/* Sync progress modal */
+#astSyncIcon {
+    background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+    color: #4f46e5;
+}
+.ast-modal-icon .icon-refresh { animation: ast-spin 1s linear infinite; }
+@keyframes ast-spin { to { transform: rotate(360deg); } }
+.ast-progress-track {
+    width: 100%;
+    height: 10px;
+    background: #e2e8f0;
+    border-radius: 999px;
+    overflow: hidden;
+    margin: 8px 0 14px;
+}
+.ast-progress-fill {
+    height: 100%;
+    width: 0;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    transition: width 0.3s ease;
+}
+.ast-progress-text {
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569 !important;
+}
+.ast-sync-error {
+    margin-top: 12px !important;
+    color: #dc2626 !important;
+    font-size: 13px !important;
+}
+
 .ast-action-customer {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: #fff !important;
@@ -2422,7 +2455,7 @@ a.ast-btn-success:hover {
                         </div>
                         <div class="ast-card-body" style="padding: 12px 24px 24px;">
                             <div class="ast-sync-actions">
-                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;forceSync=true" class="ast-action-btn ast-action-product" {if $hasExistingProductSync}onclick="return astConfirm(event, this.href, '{l s='Sync All Products' mod='aismarttalk' js=1}', '{l s='This will re-send ALL your products to AI SmartTalk, not just new ones. Existing products will be updated.' mod='aismarttalk' js=1}', 'warning');"{/if}>
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;forceSync=true" class="ast-action-btn ast-action-product" onclick="return astSyncProducts(event);">
                                     <span class="ast-action-icon"><i class="icon icon-refresh"></i></span>
                                     <span class="ast-action-label">{l s='Sync All Products' mod='aismarttalk'}</span>
                                 </a>
@@ -2441,7 +2474,7 @@ a.ast-btn-success:hover {
                         </div>
                         <div class="ast-card-body" style="padding: 12px 24px 24px;">
                             <div class="ast-sync-actions">
-                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;syncCustomers=1" class="ast-action-btn ast-action-customer" {if $hasExistingCustomerSync}onclick="return astConfirm(event, this.href, '{l s='Sync All Customers' mod='aismarttalk' js=1}', '{l s='This will re-send ALL your customers to AI SmartTalk, not just new ones. Existing customers will be updated.' mod='aismarttalk' js=1}', 'warning');"{/if}>
+                                <a href="{$formAction|escape:'html':'UTF-8'}&amp;syncCustomers=1" class="ast-action-btn ast-action-customer" onclick="return astSyncCustomers(event);">
                                     <span class="ast-action-icon"><i class="icon icon-refresh"></i></span>
                                     <span class="ast-action-label">{l s='Sync All Customers' mod='aismarttalk'}</span>
                                 </a>
@@ -3574,8 +3607,29 @@ document.addEventListener('DOMContentLoaded', function() {
         </div>
     </div>
 </div>
+
+{* ===== SYNC PROGRESS MODAL ===== *}
+<div class="ast-modal-overlay" id="astSyncModal">
+    <div class="ast-modal">
+        <div class="ast-modal-header">
+            <div class="ast-modal-icon" id="astSyncIcon"><i class="icon icon-refresh"></i></div>
+            <h3 id="astSyncTitle">{l s='Synchronizing products…' mod='aismarttalk'}</h3>
+        </div>
+        <div class="ast-modal-body">
+            <div class="ast-progress-track"><div class="ast-progress-fill" id="astSyncFill"></div></div>
+            <p class="ast-progress-text">
+                <span id="astSyncCount">0</span> / <span id="astSyncTotal">0</span> <span id="astSyncUnit">{l s='products' mod='aismarttalk'}</span>
+            </p>
+            <p class="ast-sync-error" id="astSyncError" style="display:none;"></p>
+        </div>
+        <div class="ast-modal-footer">
+            <button type="button" class="ast-modal-btn cancel" id="astSyncCancelBtn" onclick="astSyncCancel();">{l s='Cancel' mod='aismarttalk'}</button>
+            <a href="javascript:window.location.reload();" class="ast-modal-btn confirm-warning" id="astSyncDoneBtn" style="display:none;">{l s='Done' mod='aismarttalk'}</a>
+        </div>
+    </div>
+</div>
 <script>
-function astConfirm(e, url, title, message, type) {
+function astConfirm(e, url, title, message, type, onConfirm) {
     e.preventDefault();
     var modal = document.getElementById('astConfirmModal');
     document.getElementById('astConfirmTitle').textContent = title;
@@ -3585,7 +3639,15 @@ function astConfirm(e, url, title, message, type) {
     icon.innerHTML = type === 'clean' ? '<i class="icon icon-trash"></i>' : '<i class="icon icon-warning"></i>';
     var btn = document.getElementById('astConfirmBtn');
     btn.className = 'ast-modal-btn confirm-' + type;
-    btn.href = url;
+    // Two modes: a plain link (navigates to url) or a JS callback. Reset both each
+    // call so a stale onclick from a previous open never leaks into the next one.
+    if (typeof onConfirm === 'function') {
+        btn.removeAttribute('href');
+        btn.onclick = function (ev) { ev.preventDefault(); astConfirmClose(); onConfirm(); return false; };
+    } else {
+        btn.onclick = null;
+        btn.href = url;
+    }
     modal.classList.add('active');
     return false;
 }
@@ -3595,6 +3657,133 @@ function astConfirmClose() {
 document.getElementById('astConfirmModal').addEventListener('click', function(e) {
     if (e.target === this) astConfirmClose();
 });
+
+/* ===== Asynchronous "Sync All" with progress (products & customers) ===== */
+var AST_SYNC_URL = "{$moduleLink|escape:'javascript':'UTF-8'}";
+var AST_SYNC_BATCH = 50;
+var astSyncAborted = false;
+var astSyncCfg = null;
+
+function astSyncProducts(e) {
+    e.preventDefault();
+    var cfg = {
+        param: 'astSync',
+        unit: '{l s='products' mod='aismarttalk' js=1}',
+        running: '{l s='Synchronizing products…' mod='aismarttalk' js=1}'
+    };
+{if $hasExistingProductSync}
+    return astConfirm(
+        e, '#',
+        '{l s='Sync All Products' mod='aismarttalk' js=1}',
+        '{l s='This will re-send ALL your products to AI SmartTalk, not just new ones. Existing products will be updated.' mod='aismarttalk' js=1}',
+        'warning',
+        function () { astRunSync(cfg); }
+    );
+{else}
+    astRunSync(cfg);
+    return false;
+{/if}
+}
+
+function astSyncCustomers(e) {
+    e.preventDefault();
+    var cfg = {
+        param: 'astCustomerSync',
+        unit: '{l s='customers' mod='aismarttalk' js=1}',
+        running: '{l s='Synchronizing customers…' mod='aismarttalk' js=1}'
+    };
+{if $hasExistingCustomerSync}
+    return astConfirm(
+        e, '#',
+        '{l s='Sync All Customers' mod='aismarttalk' js=1}',
+        '{l s='This will re-send ALL your customers to AI SmartTalk, not just new ones. Existing customers will be updated.' mod='aismarttalk' js=1}',
+        'warning',
+        function () { astRunSync(cfg); }
+    );
+{else}
+    astRunSync(cfg);
+    return false;
+{/if}
+}
+
+function astSyncPost(step, params) {
+    var body = new URLSearchParams();
+    body.append(astSyncCfg.param, step);
+    if (params && params.ids) {
+        params.ids.forEach(function (id) { body.append('ids[]', id); });
+    }
+    return fetch(AST_SYNC_URL, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: body
+    }).then(function (r) { return r.json(); });
+}
+
+function astRunSync(cfg) {
+    astSyncCfg = cfg;
+    astSyncAborted = false;
+    var modal = document.getElementById('astSyncModal');
+    document.getElementById('astSyncFill').style.width = '0%';
+    document.getElementById('astSyncCount').textContent = '0';
+    document.getElementById('astSyncTotal').textContent = '…';
+    document.getElementById('astSyncUnit').textContent = cfg.unit;
+    document.getElementById('astSyncError').style.display = 'none';
+    document.getElementById('astSyncDoneBtn').style.display = 'none';
+    document.getElementById('astSyncCancelBtn').style.display = '';
+    document.getElementById('astSyncTitle').textContent = '{l s='Preparing synchronization…' mod='aismarttalk' js=1}';
+    document.getElementById('astSyncIcon').innerHTML = '<i class="icon icon-refresh"></i>';
+    modal.classList.add('active');
+
+    astSyncPost('init').then(function (res) {
+        if (!res || !res.success) { return astSyncFail(res && res.error); }
+        var ids = res.ids || [];
+        var total = ids.length;
+        document.getElementById('astSyncTotal').textContent = total;
+        if (total === 0) { return astSyncComplete(0); }
+        document.getElementById('astSyncTitle').textContent = cfg.running;
+        astSyncProcess(ids, 0, 0, total);
+    }).catch(function (err) { astSyncFail(String(err)); });
+}
+
+function astSyncProcess(ids, index, done, total) {
+    if (astSyncAborted) { return; }
+    if (index >= ids.length) { return astSyncComplete(done); }
+    var batch = ids.slice(index, index + AST_SYNC_BATCH);
+    astSyncPost('batch', { ids: batch }).then(function (res) {
+        if (astSyncAborted) { return; }
+        if (!res || !res.success) { return astSyncFail(res && res.error); }
+        done += (typeof res.synced === 'number' ? res.synced : batch.length);
+        var pct = total > 0 ? Math.round((done / total) * 100) : 100;
+        document.getElementById('astSyncFill').style.width = pct + '%';
+        document.getElementById('astSyncCount').textContent = done;
+        astSyncProcess(ids, index + AST_SYNC_BATCH, done, total);
+    }).catch(function (err) { astSyncFail(String(err)); });
+}
+
+function astSyncComplete(count) {
+    document.getElementById('astSyncFill').style.width = '100%';
+    document.getElementById('astSyncCount').textContent = count;
+    document.getElementById('astSyncTitle').textContent = '{l s='Synchronization complete' mod='aismarttalk' js=1}';
+    document.getElementById('astSyncIcon').innerHTML = '<i class="icon icon-check"></i>';
+    document.getElementById('astSyncCancelBtn').style.display = 'none';
+    document.getElementById('astSyncDoneBtn').style.display = '';
+}
+
+function astSyncFail(message) {
+    var err = document.getElementById('astSyncError');
+    err.textContent = message || '{l s='An error occurred during synchronization.' mod='aismarttalk' js=1}';
+    err.style.display = '';
+    document.getElementById('astSyncIcon').innerHTML = '<i class="icon icon-warning"></i>';
+    document.getElementById('astSyncTitle').textContent = '{l s='Synchronization failed' mod='aismarttalk' js=1}';
+    document.getElementById('astSyncCancelBtn').style.display = 'none';
+    document.getElementById('astSyncDoneBtn').style.display = '';
+}
+
+function astSyncCancel() {
+    astSyncAborted = true;
+    document.getElementById('astSyncModal').classList.remove('active');
+}
 </script>
 
 {* ===== CHATBOT PREVIEW IN ADMIN ===== *}

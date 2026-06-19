@@ -566,6 +566,140 @@ class AdminFormHandler
         exit;
     }
 
+    /**
+     * AJAX entry point for the browser-driven, batched "Sync All Products".
+     *
+     * Two steps, both POSTed to the (admin-token-protected) module configure URL:
+     *  - astSync=init  : sync the category tree once, purge stale products, and return
+     *                    the full ordered list of product IDs to push (+ total).
+     *  - astSync=batch : push a single slice of IDs (ids[]) and return how many were sent.
+     *
+     * The browser owns the loop, so no single PHP request runs the whole catalog —
+     * this keeps each request short and lets the front render a real progress bar.
+     * Always emits JSON and exits.
+     *
+     * @param string $step Either 'init' or 'batch'
+     */
+    public function handleProductSyncAjax(string $step): void
+    {
+        // Drop any buffered BO chrome so the response is pure JSON.
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/json');
+
+        try {
+            if ($step === 'init') {
+                // Sync the category tree up-front (best-effort, same as the sync path)
+                // so products reference real Category ids during ingestion.
+                $categorySync = new SynchCategoriesToAiSmartTalk($this->context);
+                $categorySync();
+
+                $api = new SynchProductsToAiSmartTalk($this->context);
+                $ids = $api->resolveProductIdsToSync(true);
+
+                echo json_encode([
+                    'success' => true,
+                    'ids' => $ids,
+                    'total' => count($ids),
+                ]);
+            } elseif ($step === 'batch') {
+                $ids = \Tools::getValue('ids');
+                $ids = array_values(array_filter(array_map('intval', (array) $ids)));
+
+                if (empty($ids)) {
+                    echo json_encode(['success' => true, 'synced' => 0]);
+                    exit;
+                }
+
+                $api = new SynchProductsToAiSmartTalk($this->context);
+                $result = $api(['forceSync' => true, 'productIds' => $ids]);
+
+                if ($result === false) {
+                    echo json_encode([
+                        'success' => false,
+                        'error' => (string) \Configuration::get('AI_SMART_TALK_ERROR') ?: 'Synchronization error',
+                    ]);
+                    exit;
+                }
+
+                echo json_encode(['success' => true, 'synced' => (int) $result]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Unknown step']);
+            }
+        } catch (\Throwable $e) {
+            \PrestaShopLogger::addLog(
+                'AI SmartTalk: async product sync failed (' . $step . '): ' . $e->getMessage(),
+                3, null, 'AiSmartTalk', null, true
+            );
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+
+        exit;
+    }
+
+    /**
+     * AJAX entry point for the browser-driven, batched "Sync All Customers".
+     * Mirrors handleProductSyncAjax():
+     *  - astCustomerSync=init  : partition + cleanup + removals, returns to-sync IDs.
+     *  - astCustomerSync=batch : export a slice of customer IDs (ids[]).
+     * Always emits JSON and exits.
+     *
+     * @param string $step Either 'init' or 'batch'
+     */
+    public function handleCustomerSyncAjax(string $step): void
+    {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/json');
+
+        try {
+            AiSmartTalkCustomerSync::createTable();
+            $sync = new CustomerSync($this->context);
+
+            if ($step === 'init') {
+                $prep = $sync->prepareSyncAll();
+                // Removal failures are non-fatal: the export still proceeds, we only
+                // surface them as a note. Init only "fails" on a thrown exception.
+                echo json_encode([
+                    'success' => true,
+                    'ids' => $prep['ids'],
+                    'total' => count($prep['ids']),
+                    'removed' => (int) $prep['removed'],
+                    'error' => empty($prep['errors']) ? null : implode(' ', $prep['errors']),
+                ]);
+            } elseif ($step === 'batch') {
+                $ids = \Tools::getValue('ids');
+                $ids = array_values(array_filter(array_map('intval', (array) $ids)));
+
+                if (empty($ids)) {
+                    echo json_encode(['success' => true, 'synced' => 0]);
+                    exit;
+                }
+
+                $result = $sync->syncCustomerBatchByIds($ids);
+
+                if ($result === false) {
+                    echo json_encode(['success' => false, 'error' => 'Customer synchronization error']);
+                    exit;
+                }
+
+                echo json_encode(['success' => true, 'synced' => (int) $result]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Unknown step']);
+            }
+        } catch (\Throwable $e) {
+            \PrestaShopLogger::addLog(
+                'AI SmartTalk: async customer sync failed (' . $step . '): ' . $e->getMessage(),
+                3, null, 'AiSmartTalk', null, true
+            );
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+
+        exit;
+    }
+
     private function handleProductSync(bool $force): string
     {
         $output = '';

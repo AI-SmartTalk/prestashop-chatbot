@@ -397,6 +397,105 @@ class CustomerSync
     }
 
     /**
+     * Init phase of the asynchronous, browser-driven "Sync All Customers".
+     *
+     * Does everything syncAllCustomers() does EXCEPT the per-batch export:
+     *  - partitions active customers into to-sync / to-remove (consent filter),
+     *  - unmarks orphaned (deleted) previously-synced customers,
+     *  - removes from the CRM the customers that no longer match but were synced.
+     *
+     * The to-sync IDs are returned so the browser can push them batch by batch
+     * (via syncCustomerBatchByIds) while showing a progress bar.
+     *
+     * @return array{ids:int[], removed:int, errors:string[]}
+     */
+    public function prepareSyncAll()
+    {
+        $allCustomers = \Customer::getCustomers(true);
+
+        $toSyncIds = [];
+        $toRemove = [];
+        foreach ($allCustomers as $cData) {
+            $customer = new \Customer((int) $cData['id_customer']);
+            if (self::customerMatchesConsentFilter($customer)) {
+                $toSyncIds[] = (int) $customer->id;
+            } else {
+                $toRemove[] = $customer;
+            }
+        }
+
+        // Unmark previously synced customers that no longer exist (deleted).
+        $syncedIds = AiSmartTalkCustomerSync::getSyncedCustomerIds();
+        $activeIds = array_column($allCustomers, 'id_customer');
+        $orphanedIds = array_diff($syncedIds, $activeIds);
+        foreach ($orphanedIds as $orphanedId) {
+            AiSmartTalkCustomerSync::markAsNotSynced((int) $orphanedId);
+        }
+
+        // Remove customers that no longer match the consent filter but were synced.
+        $errors = [];
+        $removedCount = 0;
+        foreach ($toRemove as $customer) {
+            $wasSynced = AiSmartTalkCustomerSync::getByCustomerId((int) $customer->id);
+            if ($wasSynced === null) {
+                continue;
+            }
+            if ($wasSynced->synced) {
+                if ($this->removeCustomer($customer->email)) {
+                    $removedCount++;
+                } else {
+                    $errors[] = sprintf('Failed to remove customer #%d from CRM', $customer->id);
+                }
+            }
+            AiSmartTalkCustomerSync::markAsNotSynced((int) $customer->id);
+        }
+
+        return [
+            'ids' => $toSyncIds,
+            'removed' => $removedCount,
+            'errors' => $errors,
+        ];
+    }
+
+    /**
+     * Export a single slice of customers (by id) and mark them synced.
+     * Batch counterpart of prepareSyncAll(), driven by the browser loop.
+     *
+     * @param int[] $ids
+     *
+     * @return int|false Number of customers exported, or false on transport failure
+     */
+    public function syncCustomerBatchByIds(array $ids)
+    {
+        $ids = array_values(array_filter(array_map('intval', $ids)));
+        if (empty($ids)) {
+            return 0;
+        }
+
+        $customers = [];
+        foreach ($ids as $id) {
+            $customer = new \Customer($id);
+            if (\Validate::isLoadedObject($customer)) {
+                $customers[] = $customer;
+            }
+        }
+
+        if (empty($customers)) {
+            return 0;
+        }
+
+        if (!$this->exportCustomerBatch($customers)) {
+            return false;
+        }
+
+        foreach ($customers as $customer) {
+            AiSmartTalkCustomerSync::markAsSynced((int) $customer->id);
+        }
+
+        return count($customers);
+    }
+
+    /**
      * Get current sync progress in terms of total customers and processed customers.
      *
      * @return array Progress with keys: total, processed, percentage
