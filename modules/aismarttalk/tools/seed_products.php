@@ -177,6 +177,12 @@ if ($PURGE) {
         echo "Category tree deleted (root #{$rootRow['id_category']}).\n";
     }
 
+    // Deleting the category tree (above) can leave category_product rows pointing
+    // at categories that no longer exist — and any product still linked ONLY to
+    // such a dead category syncs with EMPTY categories (no category/brand/attribute
+    // facets). Sweep these dangling links so the shop never carries orphans.
+    purgeOrphanCategoryLinks($db, $p);
+
     echo "\033[32mPurge complete.\033[0m\n";
     exit(0);
 }
@@ -328,6 +334,13 @@ $pick = static function (array $arr) {
 $chance = static function (float $p): bool {
     return (mt_rand() / mt_getrandmax()) < $p;
 };
+
+// Self-heal: `make seed-products` APPENDS (it does not purge first), so repeated
+// runs — or an interrupted purge — can leave products linked to categories that
+// were later deleted. Such a product syncs with EMPTY categories (no facets).
+// Sweep any dangling category_product link before building so the resulting
+// catalog is always facet-clean, regardless of prior runs.
+purgeOrphanCategoryLinks($db, $p);
 
 // ─── 1. Category tree (derived from archetype paths → guaranteed coherent) ────
 echo "Building category tree…\n";
@@ -543,6 +556,34 @@ echo "Purge later with: make seed-products-purge\n";
 // ════════════════════════════════════════════════════════════════════════════
 // Helpers
 // ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Delete category_product rows that point at a category which no longer exists.
+ * These orphans (left by deleting a category without cleaning its product links)
+ * are invisible in the back-office but make the affected products sync to AI
+ * SmartTalk with EMPTY categories — i.e. no category/brand/attribute facets, so
+ * they cannot be filtered or surfaced by attribute questions. Global on purpose:
+ * it heals the whole shop, not just this seeder's products.
+ *
+ * @param Db     $db
+ * @param string $p  table prefix (_DB_PREFIX_)
+ */
+function purgeOrphanCategoryLinks($db, string $p): void
+{
+    $orphans = (int) $db->getValue(
+        "SELECT COUNT(*) FROM {$p}category_product cp
+           LEFT JOIN {$p}category c ON c.id_category = cp.id_category
+         WHERE c.id_category IS NULL"
+    );
+    if ($orphans > 0) {
+        $db->execute(
+            "DELETE cp FROM {$p}category_product cp
+               LEFT JOIN {$p}category c ON c.id_category = cp.id_category
+             WHERE c.id_category IS NULL"
+        );
+        echo "Orphaned category_product links removed: {$orphans}.\n";
+    }
+}
 
 function createCategory(string $name, int $idParent, array $languages): int
 {
