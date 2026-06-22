@@ -29,9 +29,9 @@ if (!defined('_PS_VERSION_')) {
  *  - prices are `Money { amount:int (minor units / cents), currency, display }`,
  *    so the backend can range-filter and sort exactly. The float price is
  *    converted to integer minor units via the currency's decimal precision;
- *  - field names are camelCase and the set is closed: the backend validates
- *    with a `.strict()` Zod schema, so emitting an unknown key would reject the
- *    whole document. Optional fields are omitted, not sent as noise;
+ *  - field names are camelCase; the backend validates with a `.passthrough()` Zod
+ *    schema, so unknown keys are tolerated (forward-compatible). We still omit
+ *    null optionals rather than sending noise;
  *  - PrestaShop combinations map to canonical `variants[]`; the backend expands
  *    each into an independently-filterable product document.
  *
@@ -99,6 +99,61 @@ class CanonicalProductMapper
         }
 
         return $out;
+    }
+
+    /**
+     * Normalize a list of `{name,value}` attributes (e.g. product features) to the
+     * canonical shape, trimming and dropping incomplete entries.
+     *
+     * @param array $attributes
+     * @return array<int,array{name:string,value:string}>
+     */
+    public static function normalizeAttributes(array $attributes): array
+    {
+        $out = [];
+        foreach ($attributes as $attr) {
+            if (!is_array($attr)) {
+                continue;
+            }
+            $name = isset($attr['name']) ? trim((string) $attr['name']) : '';
+            $value = isset($attr['value']) ? trim((string) $attr['value']) : '';
+            if ($name !== '' && $value !== '') {
+                $out[] = ['name' => $name, 'value' => $value];
+            }
+        }
+
+        return array_values($out);
+    }
+
+    /**
+     * Fetch the product's FEATURES (Material, Style, Gender…) as canonical
+     * product-level `{name,value}` attributes. PrestaShop features are product-level
+     * (unlike combination attributes, which are variant-level), so they let a SIMPLE
+     * product expose facetable attributes — e.g. "Matériau: Porcelaine" on a
+     * dinnerware set with no combinations. Raw SQL keeps it PS8/PS9-compatible.
+     *
+     * @param int $idProduct
+     * @param int $idLang
+     * @return array<int,array{name:string,value:string}>
+     */
+    public static function productFeatures(int $idProduct, int $idLang): array
+    {
+        $sql = 'SELECT fl.name AS name, fvl.value AS value
+                FROM ' . _DB_PREFIX_ . 'feature_product fp
+                INNER JOIN ' . _DB_PREFIX_ . 'feature_lang fl
+                    ON fl.id_feature = fp.id_feature AND fl.id_lang = ' . (int) $idLang . '
+                INNER JOIN ' . _DB_PREFIX_ . 'feature_value_lang fvl
+                    ON fvl.id_feature_value = fp.id_feature_value AND fvl.id_lang = ' . (int) $idLang . '
+                WHERE fp.id_product = ' . (int) $idProduct . '
+                    AND fl.name IS NOT NULL AND fl.name != ""
+                    AND fvl.value IS NOT NULL AND fvl.value != ""';
+
+        $rows = \Db::getInstance()->executeS($sql);
+        if (empty($rows) || !is_array($rows)) {
+            return [];
+        }
+
+        return self::normalizeAttributes($rows);
     }
 
     /**
@@ -179,6 +234,9 @@ class CanonicalProductMapper
             'descriptionShort' => self::nullIfEmpty($args['descriptionShort'] ?? null),
             'reference' => self::nullIfEmpty($args['reference'] ?? null),
             'brand' => self::nullIfEmpty($args['brand'] ?? null),
+            // Product-level attributes from PrestaShop features (Material, Style…),
+            // facetable by the backend even when the product has no combinations.
+            'attributes' => self::normalizeAttributes($args['attributes'] ?? []),
             'price' => self::toMoney($priceInfo->finalPrice, $decimals, $currency, $sign),
             'availability' => self::availability($quantity),
             'quantity' => $quantity,

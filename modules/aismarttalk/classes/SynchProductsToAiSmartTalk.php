@@ -161,6 +161,12 @@ class SynchProductsToAiSmartTalk
                     (int) $product['id_product'],
                     $defaultLangId
                 ),
+                // Product-level features (Material, Style…) → canonical attributes,
+                // so even a simple product exposes facetable attributes.
+                'attributes' => CanonicalProductMapper::productFeatures(
+                    (int) $product['id_product'],
+                    $defaultLangId
+                ),
                 'defaultCategoryExternalId' => (int) $psProduct->id_category_default,
                 'variants' => $variants,
                 'priceInfo' => $priceInfo,

@@ -91,7 +91,8 @@ class CanonicalProductMapperTest extends TestCase
         $this->assertSame(1999, $doc['price']['amount']);
         $this->assertSame('in_stock', $doc['availability']);
         $this->assertSame(7, $doc['quantity']);
-        $this->assertSame(['Vêtements', 'Homme'], $doc['categories']);
+        // Bare-string categories are normalized to canonical CategoryRef objects.
+        $this->assertSame([['name' => 'Vêtements'], ['name' => 'Homme']], $doc['categories']);
         $this->assertSame([], $doc['variants']);
         $this->assertArrayNotHasKey('originalPrice', $doc, 'No promo block when not discounted.');
     }
@@ -168,5 +169,42 @@ class CanonicalProductMapperTest extends TestCase
         $this->assertSame(3, $variant['quantity']);
         $this->assertSame([['name' => 'Taille', 'value' => 'M']], $variant['attributes']);
         $this->assertArrayNotHasKey('originalPrice', $variant);
+    }
+
+    public function testNormalizeAttributesTrimsAndDropsIncomplete(): void
+    {
+        $out = CanonicalProductMapper::normalizeAttributes([
+            ['name' => '  Matériau ', 'value' => ' Porcelaine '],
+            ['name' => 'Style', 'value' => ''],   // dropped (empty value)
+            ['name' => '', 'value' => 'x'],        // dropped (empty name)
+            'not-an-array',                         // dropped
+        ]);
+
+        $this->assertSame([['name' => 'Matériau', 'value' => 'Porcelaine']], $out);
+    }
+
+    public function testMapEmitsProductLevelAttributes(): void
+    {
+        $priceInfo = new PriceInfo(49.95, 49.95, 0.0, 0, false, 'none');
+
+        $doc = CanonicalProductMapper::map([
+            'idProduct' => 1, 'name' => "Service d'assiettes", 'decimals' => 2, 'currency' => 'EUR',
+            'quantity' => 5, 'categories' => [], 'variants' => [], 'priceInfo' => $priceInfo,
+            'attributes' => [['name' => 'Matériau', 'value' => 'Porcelaine']],
+        ]);
+
+        $this->assertSame([['name' => 'Matériau', 'value' => 'Porcelaine']], $doc['attributes']);
+    }
+
+    public function testMapAttributesDefaultToEmptyArrayWhenAbsent(): void
+    {
+        $priceInfo = new PriceInfo(10.0, 10.0, 0.0, 0, false, 'none');
+
+        $doc = CanonicalProductMapper::map([
+            'idProduct' => 1, 'name' => 'X', 'decimals' => 2, 'currency' => 'EUR',
+            'quantity' => 1, 'categories' => [], 'variants' => [], 'priceInfo' => $priceInfo,
+        ]);
+
+        $this->assertSame([], $doc['attributes']);
     }
 }
