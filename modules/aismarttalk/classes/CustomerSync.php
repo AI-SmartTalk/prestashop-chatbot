@@ -57,7 +57,7 @@ class CustomerSync
      *
      * @param \Context|null $context PrestaShop context (injected dependency)
      */
-    public function __construct(\Context $context = null)
+    public function __construct(?\Context $context = null)
     {
         $this->context = $context;
     }
