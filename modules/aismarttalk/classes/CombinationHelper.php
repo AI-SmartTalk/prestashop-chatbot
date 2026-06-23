@@ -94,6 +94,13 @@ class CombinationHelper
             return [];
         }
 
+        // getAttributeCombinations exposes only the attribute group's INTERNAL
+        // name (agl.name) as `group_name`. We want the customer-facing label
+        // (agl.public_name): it is what the merchant shows on the storefront and
+        // what the assistant must surface (the internal name can be technical or
+        // prefixed). Resolve it once for every group present in this product.
+        $publicNames = self::publicGroupNames($rows, $idLang);
+
         $variants = [];
         foreach ($rows as $row) {
             $idPa = (int) ($row['id_product_attribute'] ?? 0);
@@ -113,7 +120,13 @@ class CombinationHelper
                 );
             }
 
+            $idGroup = (int) ($row['id_attribute_group'] ?? 0);
             $groupName = isset($row['group_name']) ? (string) $row['group_name'] : '';
+            // Prefer the public name; fall back to the internal name only when no
+            // public name is set for this group/lang.
+            if ($idGroup > 0 && isset($publicNames[$idGroup]) && $publicNames[$idGroup] !== '') {
+                $groupName = $publicNames[$idGroup];
+            }
             $attrName = isset($row['attribute_name']) ? (string) $row['attribute_name'] : '';
 
             if ($attrName !== '') {
@@ -125,6 +138,51 @@ class CombinationHelper
         }
 
         return array_values($variants);
+    }
+
+    /**
+     * Map id_attribute_group → public_name for every group appearing in $rows,
+     * for the given language. One query; empty map when nothing resolves. The
+     * public name is the storefront-facing attribute label (e.g. "Size"), as
+     * opposed to the internal `name` that getAttributeCombinations returns.
+     *
+     * @param array $rows  Rows from Product::getAttributeCombinations
+     * @param int   $idLang
+     * @return array<int,string>
+     */
+    private static function publicGroupNames(array $rows, int $idLang): array
+    {
+        $ids = [];
+        foreach ($rows as $row) {
+            $idGroup = (int) ($row['id_attribute_group'] ?? 0);
+            if ($idGroup > 0) {
+                $ids[$idGroup] = true;
+            }
+        }
+        if (empty($ids)) {
+            return [];
+        }
+
+        $sql = 'SELECT id_attribute_group, public_name
+                FROM ' . _DB_PREFIX_ . 'attribute_group_lang
+                WHERE id_lang = ' . (int) $idLang . '
+                  AND id_attribute_group IN (' . implode(',', array_map('intval', array_keys($ids))) . ')';
+
+        $result = \Db::getInstance()->executeS($sql);
+        if (empty($result) || !is_array($result)) {
+            return [];
+        }
+
+        $map = [];
+        foreach ($result as $r) {
+            $idGroup = (int) ($r['id_attribute_group'] ?? 0);
+            $public = isset($r['public_name']) ? trim((string) $r['public_name']) : '';
+            if ($idGroup > 0 && $public !== '') {
+                $map[$idGroup] = $public;
+            }
+        }
+
+        return $map;
     }
 
     /**
