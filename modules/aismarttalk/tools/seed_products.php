@@ -340,7 +340,9 @@ $chance = static function (float $p): bool {
 // were later deleted. Such a product syncs with EMPTY categories (no facets).
 // Sweep any dangling category_product link before building so the resulting
 // catalog is always facet-clean, regardless of prior runs.
-purgeOrphanCategoryLinks($db, $p);
+// NB: this is top-level GENERATE scope — _DB_PREFIX_ directly (no $p var here,
+// unlike purge() which defines its own $p = _DB_PREFIX_).
+purgeOrphanCategoryLinks($db, _DB_PREFIX_);
 
 // ─── 1. Category tree (derived from archetype paths → guaranteed coherent) ────
 echo "Building category tree…\n";
