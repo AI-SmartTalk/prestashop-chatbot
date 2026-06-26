@@ -46,6 +46,24 @@ class PriceCalculator
     const DISCOUNT_EPSILON = 0.0001;
 
     /**
+     * Guarantee a context Product::getPriceStatic accepts. When our price calc runs
+     * from a stock/quantity hook (live stock sync) the legacy Context has neither an
+     * employee nor a cart, and PrestaShop throws "If no employee is assigned in the
+     * context, cart ID must be provided" (Product.php). That check is only
+     * `is_object($context->cart)`, so seeding an EMPTY, unsaved cart satisfies it —
+     * no DB write, and an id-less cart carries no cart rules, so the catalog/specific
+     * price is unaffected. Idempotent: once the context holds a cart object this is a
+     * no-op.
+     */
+    private static function ensurePricingContext(): void
+    {
+        $context = \Context::getContext();
+        if ($context && !is_object($context->cart)) {
+            $context->cart = new \Cart();
+        }
+    }
+
+    /**
      * Calculate a complete PriceInfo for a product (or one of its combinations).
      *
      * Passing $idProductAttribute = 0 calculates for the parent / default combination.
@@ -57,6 +75,8 @@ class PriceCalculator
      */
     public static function calculate(int $idProduct, int $idProductAttribute = 0, int $priceDecimals = 2): PriceInfo
     {
+        self::ensurePricingContext();
+
         $idPa = $idProductAttribute > 0 ? $idProductAttribute : null;
 
         // 1) Final price WITH all reductions applied. We also capture
