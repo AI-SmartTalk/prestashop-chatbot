@@ -2276,6 +2276,23 @@ a.ast-btn-success:hover {
                                     <input type="hidden" name="submitProductSync" value="1">
                                 </div>
                             </form>
+
+                            {* Live Stock Sync — sub-option, only when product sync is on *}
+                            {if $productSyncEnabled}
+                            <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
+                                <div class="ast-toggle-card" style="margin-top: 12px; padding-top: 12px; border-top: 1px solid #edf2f7;">
+                                    <div class="ast-toggle-info">
+                                        <h4><i class="icon icon-refresh" style="color: #667eea; margin-right: 6px;"></i>{l s='Live stock sync' mod='aismarttalk'}</h4>
+                                        <p>{l s='Push every stock change so the assistant shows the exact remaining quantity. Leave off to save requests (availability still updates on out-of-stock).' mod='aismarttalk'}</p>
+                                    </div>
+                                    <label class="ast-switch">
+                                        <input type="checkbox" name="AI_SMART_TALK_LIVE_STOCK_SYNC" value="1" {if $liveStockSyncEnabled}checked{/if} onchange="this.form.submit()">
+                                        <span class="ast-switch-slider"></span>
+                                    </label>
+                                    <input type="hidden" name="submitLiveStockSync" value="1">
+                                </div>
+                            </form>
+                            {/if}
                         </div>
                     </div>
 

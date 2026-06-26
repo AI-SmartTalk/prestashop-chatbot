@@ -49,7 +49,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.9.2';
+        $this->version = '3.9.3';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -85,6 +85,10 @@ class AiSmartTalk extends Module
             'AI_SMART_TALK_WS' => self::DEFAULT_WS_URL,
             'AI_SMART_TALK_IFRAME_POSITION' => 'footer',
             'AI_SMART_TALK_PRODUCT_SYNC' => false,
+            // Live stock sync OFF by default: only push every quantity change when a
+            // merchant opts in (otherwise we keep the lighter zero-crossing behaviour
+            // and save requests for shops that don't need exact live stock).
+            'AI_SMART_TALK_LIVE_STOCK_SYNC' => false,
             'AI_SMART_TALK_CUSTOMER_SYNC' => false,
             'AI_SMART_TALK_CUSTOMER_SYNC_CONSENT' => 'all',
         ];
@@ -287,6 +291,7 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_WS')
             && Configuration::deleteByName('AI_SMART_TALK_IFRAME_POSITION')
             && Configuration::deleteByName('AI_SMART_TALK_PRODUCT_SYNC')
+            && Configuration::deleteByName('AI_SMART_TALK_LIVE_STOCK_SYNC')
             && Configuration::deleteByName('AI_SMART_TALK_ACCESS_TOKEN')
             && Configuration::deleteByName('AI_SMART_TALK_CHAT_MODEL_ID')
             && Configuration::deleteByName('AI_SMART_TALK_OAUTH_SCOPE')
@@ -494,6 +499,7 @@ class AiSmartTalk extends Module
 
             // Sync settings
             'productSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC'),
+            'liveStockSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_LIVE_STOCK_SYNC'),
             'hasExistingProductSync' => !empty(AiSmartTalkProductSync::getSyncedProductIds((int) $this->context->shop->id)),
             'customerSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC'),
             'hasExistingCustomerSync' => !empty(AiSmartTalkCustomerSync::getSyncedCustomerIds()),
@@ -1282,11 +1288,30 @@ class AiSmartTalk extends Module
                 Configuration::deleteByName($cacheKey);
             }
 
-            // Sync product if it hasn't been synced yet (new product or restock)
-            // and it matches category filters
-            if ((bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')
-                && !AiSmartTalkProductSync::isSynced($idProduct)
-                && SyncFilterHelper::shouldProductBeSynced($idProduct, MultistoreHelper::getDefaultShopId())
+            if (!(bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')) {
+                return;
+            }
+
+            // Not synced yet (new product or restock from zero) → sync if it passes
+            // the filters. This is the baseline behaviour, independent of live stock.
+            if (!AiSmartTalkProductSync::isSynced($idProduct)) {
+                if (SyncFilterHelper::shouldProductBeSynced($idProduct, MultistoreHelper::getDefaultShopId())) {
+                    $api = new SynchProductsToAiSmartTalk($this->context);
+                    $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
+                    AiSmartTalkProductSync::updateLastSyncTime($idProduct);
+                }
+                return;
+            }
+
+            // Already synced + LIVE STOCK opt-in → push this quantity change so the
+            // assistant reflects the exact remaining units. Debounced (canSync) to
+            // coalesce bursts; on the backend this resolves to a metadata-only update
+            // (no re-vectorization). When the toggle is OFF (default) we do nothing
+            // here for an in-stock change, saving requests for shops that don't need
+            // live quantity (availability still updated on the zero-crossing above).
+            if ((bool) MultistoreHelper::getConfig('AI_SMART_TALK_LIVE_STOCK_SYNC')
+                && AiSmartTalkProductSync::canSync($idProduct)
+                && SyncFilterHelper::shouldProductBeKept($idProduct)
             ) {
                 $api = new SynchProductsToAiSmartTalk($this->context);
                 $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
