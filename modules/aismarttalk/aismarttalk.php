@@ -49,7 +49,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.9.4';
+        $this->version = '3.9.5';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -188,6 +188,14 @@ class AiSmartTalk extends Module
             'actionObjectCombinationAddAfter',
             'actionObjectCombinationUpdateAfter',
             'actionObjectCombinationDeleteAfter',
+            // Stock — the robust, version-agnostic signal. PrestaShop fires
+            // actionObject<Class>Add/UpdateAfter via the legacy Hook::exec on EVERY
+            // StockAvailable ObjectModel write (PS 1.6 → 9), from EVERY path: product
+            // page, the dedicated stock page, orders, webservice, CSV import. The
+            // dedicated actionUpdateQuantity hook is NOT emitted consistently by the
+            // PS 8/9 admin stock screens, so these are what make live stock reliable.
+            'actionObjectStockAvailableAddAfter',
+            'actionObjectStockAvailableUpdateAfter',
         ];
         foreach ($optionalHooks as $hook) {
             try {
@@ -1230,6 +1238,42 @@ class AiSmartTalk extends Module
             $this->handleQuantityUpdate($params);
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog('AI SmartTalk hookActionUpdateQuantity error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
+    }
+
+    /**
+     * Robust, version-agnostic stock signal. PrestaShop fires
+     * actionObject<Class>Add/UpdateAfter via the legacy Hook::exec on EVERY
+     * StockAvailable ObjectModel write — product page, stock page, orders,
+     * webservice, CSV import — across PS 1.6 → 9. Unlike actionUpdateQuantity
+     * (not emitted by PS 8/9 admin stock screens), this fires reliably, so it is
+     * what drives live stock. We normalize the StockAvailable object to the same
+     * shape handleQuantityUpdate expects and reuse its debounced logic.
+     */
+    public function hookActionObjectStockAvailableUpdateAfter($params)
+    {
+        $this->handleStockAvailableObjectHook($params);
+    }
+
+    public function hookActionObjectStockAvailableAddAfter($params)
+    {
+        $this->handleStockAvailableObjectHook($params);
+    }
+
+    private function handleStockAvailableObjectHook($params): void
+    {
+        try {
+            $stock = isset($params['object']) ? $params['object'] : null;
+            if (!is_object($stock) || empty($stock->id_product)) {
+                return;
+            }
+            $this->handleQuantityUpdate([
+                'id_product' => (int) $stock->id_product,
+                'id_product_attribute' => isset($stock->id_product_attribute) ? (int) $stock->id_product_attribute : 0,
+                'quantity' => isset($stock->quantity) ? (int) $stock->quantity : null,
+            ]);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionObjectStockAvailableUpdateAfter error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
     }
 
