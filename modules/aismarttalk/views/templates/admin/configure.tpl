@@ -2279,27 +2279,6 @@ a.ast-btn-success:hover {
                         </div>
                     </div>
 
-                    {* Live Stock Sync Toggle — sibling card, only when product sync is on *}
-                    {if $productSyncEnabled}
-                    <div class="ast-card ast-sync-card {if $liveStockSyncEnabled}ast-sync-active{/if}">
-                        <div class="ast-card-body">
-                            <form action="{$formAction|escape:'html':'UTF-8'}" method="post">
-                                <div class="ast-toggle-card">
-                                    <div class="ast-toggle-info">
-                                        <h4><i class="icon icon-refresh" style="color: #667eea; margin-right: 6px;"></i>{l s='Live Stock Sync' mod='aismarttalk'}</h4>
-                                        <p>{l s='Show the exact remaining quantity to the assistant (uses more requests)' mod='aismarttalk'}</p>
-                                    </div>
-                                    <label class="ast-switch">
-                                        <input type="checkbox" name="AI_SMART_TALK_LIVE_STOCK_SYNC" value="1" {if $liveStockSyncEnabled}checked{/if} onchange="this.form.submit()">
-                                        <span class="ast-switch-slider"></span>
-                                    </label>
-                                    <input type="hidden" name="submitLiveStockSync" value="1">
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    {/if}
-
                     {* Customer Sync Toggle *}
                     <div class="ast-card ast-sync-card {if $customerSyncEnabled}ast-sync-active{/if}">
                         <div class="ast-card-body">
@@ -2412,6 +2391,17 @@ a.ast-btn-success:hover {
                                         </div>
                                     </div>
                                     <input type="hidden" name="sync_filter_categories" id="sync_filter_categories" value="">
+
+                                    <div class="ast-toggle-card" style="margin-top: 16px;">
+                                        <div class="ast-toggle-info">
+                                            <h4><i class="icon icon-refresh" style="color: #667eea; margin-right: 6px;"></i>{l s='Live stock sync' mod='aismarttalk'}</h4>
+                                            <p>{l s='Push every stock change so the assistant shows the exact remaining quantity. Leave off to save requests — availability still updates when a product goes out of stock.' mod='aismarttalk'}</p>
+                                        </div>
+                                        <label class="ast-switch">
+                                            <input type="checkbox" name="AI_SMART_TALK_LIVE_STOCK_SYNC" value="1" {if $liveStockSyncEnabled}checked{/if}>
+                                            <span class="ast-switch-slider"></span>
+                                        </label>
+                                    </div>
 
                                     <div class="ast-toggle-card" style="margin-top: 16px;">
                                         <div class="ast-toggle-info">

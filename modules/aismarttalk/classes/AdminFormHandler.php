@@ -197,10 +197,6 @@ class AdminFormHandler
             $output .= $this->handleProductSyncToggle();
         }
 
-        if (\Tools::isSubmit('submitLiveStockSync')) {
-            $output .= $this->handleLiveStockSyncToggle();
-        }
-
         if (\Tools::isSubmit('submitCustomerSync')) {
             $output .= $this->handleCustomerSyncToggle();
         }
@@ -434,6 +430,15 @@ class AdminFormHandler
         }
         \Configuration::updateValue('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT', $consentFilter);
 
+        // Live stock sync (only relevant — and only present in the form — when
+        // product sync is on; guarded so saving customer-only settings can't flip it).
+        if ((bool) \Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+            \Configuration::updateValue(
+                'AI_SMART_TALK_LIVE_STOCK_SYNC',
+                (bool) \Tools::getValue('AI_SMART_TALK_LIVE_STOCK_SYNC', 0)
+            );
+        }
+
         // Handle sync filters in the same form submission
         $categoryMode = \Tools::getValue('sync_filter_category_mode', '');
         if ($categoryMode !== '') {
@@ -522,18 +527,6 @@ class AdminFormHandler
             $productSyncEnabled
                 ? $this->trans('Product sync enabled.', [], 'Modules.Aismarttalk.Admin')
                 : $this->trans('Product sync disabled.', [], 'Modules.Aismarttalk.Admin')
-        );
-    }
-
-    private function handleLiveStockSyncToggle(): string
-    {
-        $liveStockEnabled = (bool) \Tools::getValue('AI_SMART_TALK_LIVE_STOCK_SYNC');
-        \Configuration::updateValue('AI_SMART_TALK_LIVE_STOCK_SYNC', $liveStockEnabled);
-
-        return $this->module->displayConfirmation(
-            $liveStockEnabled
-                ? $this->trans('Live stock sync enabled.', [], 'Modules.Aismarttalk.Admin')
-                : $this->trans('Live stock sync disabled.', [], 'Modules.Aismarttalk.Admin')
         );
     }
 
