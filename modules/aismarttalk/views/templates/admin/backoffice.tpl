@@ -100,7 +100,7 @@
 <script>
 window.chatbotSettings = JSON.parse(atob("{$chatbotSettingsEncoded|escape:'html':'UTF-8'}"));
 </script>
-<script src="{$cdnUrl|escape:'html':'UTF-8'}/universal-chatbot.js" async></script>
+<script src="{$cdnUrl|escape:'html':'UTF-8'}/universal-chatbot.js{if isset($moduleVersion)}?v={$moduleVersion|escape:'html':'UTF-8'}{/if}" async></script>
 
 <script type="text/javascript">
 $(document).ready(function() {

@@ -2195,6 +2195,32 @@ a.ast-btn-success:hover {
                         </div>
                     </div>
 
+                    {* Widget Languages — restrict the language switcher *}
+                    <div class="ast-card">
+                        <div class="ast-card-header">
+                            <h3><i class="icon icon-globe"></i> {l s='Languages' mod='aismarttalk'}</h3>
+                            {if $allowedLanguagesSelected|@count > 0}
+                                <span class="ast-badge ast-badge-info">{$allowedLanguagesSelected|@count} {l s='selected' mod='aismarttalk'}</span>
+                            {else}
+                                <span class="ast-badge ast-badge-success">{l s='All languages' mod='aismarttalk'}</span>
+                            {/if}
+                        </div>
+                        <div class="ast-card-body">
+                            <p style="color: #64748b; margin: 0 0 16px; font-size: 13px;">
+                                {l s='Choose which languages the chatbot offers in its language switcher. Leave everything unchecked to offer all available languages.' mod='aismarttalk'}
+                            </p>
+                            <div class="ast-lang-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px;">
+                                {foreach from=$availableLanguages item=widgetLang}
+                                    <label class="ast-lang-chip" style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 8px; cursor: pointer;">
+                                        <input type="checkbox" name="AI_SMART_TALK_ALLOWED_LANGUAGES[]" value="{$widgetLang.code|escape:'html':'UTF-8'}" {if isset($allowedLanguagesMap[$widgetLang.code])}checked{/if}>
+                                        <span>{$widgetLang.flag} {$widgetLang.name|escape:'html':'UTF-8'}</span>
+                                    </label>
+                                {/foreach}
+                            </div>
+                            <p class="ast-help" style="margin-top: 12px;">{l s='This overrides the language setting configured on the AI SmartTalk platform for this store.' mod='aismarttalk'}</p>
+                        </div>
+                    </div>
+
                     {* GDPR / Privacy Settings *}
                     <div class="ast-card">
                         <div class="ast-card-header">
@@ -3807,5 +3833,5 @@ window.onChatbotLogout = function() {
   delete window.chatbotSettings.userToken;
 };
 </script>
-<script src="{$cdnUrl|escape:'html':'UTF-8'}/universal-chatbot.js" async></script>
+<script src="{$cdnUrl|escape:'html':'UTF-8'}/universal-chatbot.js?v={$moduleVersion|escape:'html':'UTF-8'}" async></script>
 {/if}

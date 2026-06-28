@@ -31,4 +31,5 @@ return array(
     'PrestaShop\\AiSmartTalk\\SynchCategoriesToAiSmartTalk' => $baseDir . '/classes/SynchCategoriesToAiSmartTalk.php',
     'PrestaShop\\AiSmartTalk\\SynchProductsToAiSmartTalk' => $baseDir . '/classes/SynchProductsToAiSmartTalk.php',
     'PrestaShop\\AiSmartTalk\\WebhookHandler' => $baseDir . '/classes/WebhookHandler.php',
+    'PrestaShop\\AiSmartTalk\\WidgetLocales' => $baseDir . '/classes/WidgetLocales.php',
 );

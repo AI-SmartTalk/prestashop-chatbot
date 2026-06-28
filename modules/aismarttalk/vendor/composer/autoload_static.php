@@ -46,6 +46,7 @@ class ComposerStaticInit3bdbd939a184a583fcb24dad87c35c72
         'PrestaShop\\AiSmartTalk\\SynchCategoriesToAiSmartTalk' => __DIR__ . '/../..' . '/classes/SynchCategoriesToAiSmartTalk.php',
         'PrestaShop\\AiSmartTalk\\SynchProductsToAiSmartTalk' => __DIR__ . '/../..' . '/classes/SynchProductsToAiSmartTalk.php',
         'PrestaShop\\AiSmartTalk\\WebhookHandler' => __DIR__ . '/../..' . '/classes/WebhookHandler.php',
+        'PrestaShop\\AiSmartTalk\\WidgetLocales' => __DIR__ . '/../..' . '/classes/WidgetLocales.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

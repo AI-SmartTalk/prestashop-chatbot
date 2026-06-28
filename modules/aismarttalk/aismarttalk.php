@@ -25,6 +25,7 @@ use PrestaShop\AiSmartTalk\AiSmartTalkCustomerSync;
 use PrestaShop\AiSmartTalk\AiSmartTalkProductSync;
 use PrestaShop\AiSmartTalk\ApiClient;
 use PrestaShop\AiSmartTalk\ChatbotSettingsBuilder;
+use PrestaShop\AiSmartTalk\WidgetLocales;
 use PrestaShop\AiSmartTalk\CleanProductDocuments;
 use PrestaShop\AiSmartTalk\CustomerSync;
 use PrestaShop\AiSmartTalk\MultistoreHelper;
@@ -49,7 +50,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.9.5';
+        $this->version = '3.9.8';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -321,6 +322,7 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_MODE')
             && Configuration::deleteByName('AI_SMART_TALK_BORDER_RADIUS')
             && Configuration::deleteByName('AI_SMART_TALK_BUTTON_BORDER_RADIUS')
+            && Configuration::deleteByName('AI_SMART_TALK_ALLOWED_LANGUAGES')
             // Customer sync
             && Configuration::deleteByName('AI_SMART_TALK_CUSTOMER_SYNC')
             && Configuration::deleteByName('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT')
@@ -556,6 +558,11 @@ class AiSmartTalk extends Module
             'enableVoiceInput' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_INPUT') ?: '',
             'enableVoiceMode' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_MODE') ?: '',
             'enableAutoLogin' => Configuration::get('AI_SMART_TALK_ENABLE_AUTO_LOGIN') ?: '',
+
+            // Widget languages — restrict the language switcher (empty = all)
+            'availableLanguages' => WidgetLocales::all(),
+            'allowedLanguagesSelected' => $this->getAllowedLanguagesSelected(),
+            'allowedLanguagesMap' => array_fill_keys($this->getAllowedLanguagesSelected(), true),
 
             // GDPR settings
             'gdprEnabled' => Configuration::get('AI_SMART_TALK_GDPR_ENABLED') ?: '',
@@ -963,6 +970,7 @@ class AiSmartTalk extends Module
         $this->context->smarty->assign([
             'chatbotSettingsEncoded' => base64_encode(json_encode($chatbotSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
             'cdnUrl' => $cdnUrl,
+            'moduleVersion' => $this->version,
         ]);
 
         return $this->display(__FILE__, 'views/templates/hook/footer.tpl');
@@ -1823,6 +1831,22 @@ class AiSmartTalk extends Module
      * Prevents URL parameter pollution where action params (forceSync, syncCustomers, clean)
      * persist in form actions and re-trigger on every subsequent form submission.
      */
+    /**
+     * Decode the merchant's saved language restriction for the back-office picker.
+     *
+     * @return array<int, string> Valid locale codes (empty = all languages offered)
+     */
+    private function getAllowedLanguagesSelected(): array
+    {
+        $raw = Configuration::get('AI_SMART_TALK_ALLOWED_LANGUAGES');
+        if (empty($raw)) {
+            return [];
+        }
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? WidgetLocales::sanitize($decoded) : [];
+    }
+
     private function getCleanFormAction(): string
     {
         $uri = $_SERVER['REQUEST_URI'];
@@ -1857,6 +1881,7 @@ class AiSmartTalk extends Module
             'AI_SMART_TALK_ENABLE_FEEDBACK',
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
+            'AI_SMART_TALK_ALLOWED_LANGUAGES',
         ];
 
         foreach ($settingsToCheck as $setting) {

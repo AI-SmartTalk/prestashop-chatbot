@@ -414,6 +414,20 @@ class AdminFormHandler
         $consentWallMessage = \Tools::getValue('AI_SMART_TALK_CONSENT_WALL_MESSAGE', '');
         \Configuration::updateValue('AI_SMART_TALK_CONSENT_WALL_MESSAGE', pSQL($consentWallMessage));
 
+        // Allowed languages — restrict the widget's language switcher.
+        // Empty selection = offer every supported language (default).
+        $allowedLanguages = \Tools::getValue('AI_SMART_TALK_ALLOWED_LANGUAGES', []);
+        if (!is_array($allowedLanguages)) {
+            $allowedLanguages = [];
+        }
+        $allowedLanguages = WidgetLocales::sanitize($allowedLanguages);
+        // Store '' (not '[]') when nothing is selected so it reads as "no local
+        // restriction" everywhere (builder, reset detection) — empty = all langs.
+        \Configuration::updateValue(
+            'AI_SMART_TALK_ALLOWED_LANGUAGES',
+            count($allowedLanguages) > 0 ? json_encode($allowedLanguages) : ''
+        );
+
         $output .= $this->module->displayConfirmation(
             $this->trans('Chatbot customization saved.', [], 'Modules.Aismarttalk.Admin')
         );
@@ -950,6 +964,7 @@ class AdminFormHandler
             'AI_SMART_TALK_ENABLE_FEEDBACK',
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
+            'AI_SMART_TALK_ALLOWED_LANGUAGES',
         ];
 
         foreach ($settingsToDelete as $setting) {

@@ -2,6 +2,16 @@
 
 All notable changes to the AI SmartTalk PrestaShop module will be documented in this file.
 
+## [3.9.8] - 2026-06-28
+
+### Fixed
+- **Language restriction now actually reaches the widget**: the active language is reconciled with the allowed set (a visitor whose language isn't offered now starts in the first allowed one instead of an unselectable language), and the loader script URL is versioned (`?v={version}`) so a changed loader is fetched immediately instead of being served stale from the 1h browser cache.
+
+## [3.9.6] - 2026-06-28
+
+### Added
+- **Configurable widget languages**: a new "Languages" card in the appearance settings lets you restrict the chatbot's language switcher to a chosen subset of locales. Leave everything unchecked to keep offering all available languages (default). The selection overrides the language configuration set on the AI SmartTalk platform for this store.
+
 ## [3.6.1] - 2026-04-29
 
 ### Fixed

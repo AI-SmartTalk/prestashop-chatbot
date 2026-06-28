@@ -20,4 +20,4 @@ window.onChatbotLogout = function() {
   delete window.chatbotSettings.userToken;
 };
 </script>
-<script src="{$cdnUrl|escape:'html':'UTF-8'}/universal-chatbot.js" async></script>
+<script src="{$cdnUrl|escape:'html':'UTF-8'}/universal-chatbot.js?v={$moduleVersion|escape:'html':'UTF-8'}" async></script>
