@@ -105,8 +105,10 @@ class ChatbotSettingsBuilder
         $loggedIn = isset($context->customer) && (int) $context->customer->id > 0 && $context->customer->isLogged();
 
         $url = '';
+        $checkoutUrl = '';
         try {
             $url = $context->link->getModuleLink('aismarttalk', 'cart', [], true);
+            $checkoutUrl = $context->link->getPageLink('order', true);
         } catch (\Throwable $e) {
             $url = '';
         }
@@ -114,7 +116,12 @@ class ChatbotSettingsBuilder
         return [
             'enabled' => true,
             'isCustomerLoggedIn' => $loggedIn,
+            'currency' => isset($context->currency) ? $context->currency->iso_code : '',
+            // Single canonical endpoint (action=add|get|update|remove) + the native
+            // checkout page. The widget never sees these; only the same-origin loader does.
             'url' => $url,
+            'checkoutUrl' => $checkoutUrl,
+            'nativeRefreshEvent' => 'updateCart',
             'token' => $loggedIn ? self::cartTokenForCustomer((int) $context->customer->id) : null,
         ];
     }

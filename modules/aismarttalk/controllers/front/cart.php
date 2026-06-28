@@ -21,17 +21,22 @@ if (!defined('_PS_VERSION_')) {
 }
 
 /**
- * Same-origin AJAX endpoint that adds a product to the CURRENT logged-in
- * customer's cart, driven from the chatbot widget's product cards.
+ * Same-origin AJAX endpoint that lets the chatbot widget READ and MANAGE the
+ * CURRENT logged-in customer's cart: add a line, list the cart, change a line's
+ * quantity, remove a line.
  *
- * Why a front controller: the AI SmartTalk widget UI runs in a cross-origin
- * iframe and cannot carry the storefront cookie. The widget's parent loader
- * (injected same-origin on the storefront) POSTs here, so PrestaShop hydrates
- * the customer/cart from the session cookie just like any storefront request.
+ * It implements AI SmartTalk's canonical cart contract: every action returns the
+ * fresh canonical cart so the widget re-renders from a single source of truth.
+ * A WooCommerce/other plugin can expose the same contract and the widget + loader
+ * stay unchanged.
  *
- * Version-safe across PrestaShop 1.6 → 9: relies only on the stable
- * Cart::updateQty / Product::getDefaultAttribute / StockAvailable APIs and
- * emits JSON directly (no ajaxRender/ajaxDie version differences).
+ * Why a front controller: the widget UI runs in a cross-origin iframe and cannot
+ * carry the storefront cookie. Its same-origin parent loader POSTs here, so
+ * PrestaShop hydrates the customer/cart from the session cookie like any request.
+ *
+ * Version-safe across PrestaShop 1.6 → 9 (Cart::updateQty/deleteProduct,
+ * Product::getDefaultAttribute, StockAvailable, locale-aware price formatting);
+ * emits JSON directly (no ajaxRender/ajaxDie version drift).
  */
 class AismarttalkCartModuleFrontController extends ModuleFrontController
 {
@@ -57,34 +62,65 @@ class AismarttalkCartModuleFrontController extends ModuleFrontController
 
         $context = $this->context;
 
-        // 1) Hard gate — only a logged-in customer may add to their own cart.
+        // Hard gate — only a logged-in customer may read/manage their own cart.
         if (!isset($context->customer) || !$context->customer->isLogged()) {
             $this->respond(401, ['error' => 'not_logged_in']);
         }
 
-        // 2) CSRF — token bound to this customer.
+        // CSRF — token bound to this customer.
         $token = (string) Tools::getValue('token');
         if (!ChatbotSettingsBuilder::isCartTokenValid($token, (int) $context->customer->id)) {
             $this->respond(403, ['error' => 'invalid_token']);
         }
 
-        // 3) Inputs.
+        $action = Tools::getValue('action', 'add');
+
+        switch ($action) {
+            case 'get':
+                // Read-only — never create a cart just to look at it.
+                break;
+            case 'add':
+                $this->doAdd($context);
+                break;
+            case 'update':
+                $this->doUpdate($context);
+                break;
+            case 'remove':
+                $this->doRemove($context);
+                break;
+            default:
+                $this->respond(400, ['error' => 'unknown_action']);
+        }
+
+        $this->respond(200, ['ok' => true, 'cart' => $this->canonicalCart($context)]);
+    }
+
+    // -----------------------------------------------------------------------
+    // Actions
+    // -----------------------------------------------------------------------
+
+    /**
+     * Add a product (optionally a combination) to the cart.
+     *
+     * @param Context $context
+     * @return void
+     */
+    private function doAdd($context)
+    {
         $idProduct = (int) Tools::getValue('id_product');
         $idProductAttribute = (int) Tools::getValue('id_product_attribute');
-        $qty = (int) Tools::getValue('qty', 1);
-        $qty = max(1, min(100, $qty));
+        $qty = max(1, min(100, (int) Tools::getValue('qty', 1)));
         if ($idProduct <= 0) {
             $this->respond(400, ['error' => 'invalid_product']);
         }
 
-        // 4) Product must exist and be active.
         $product = new Product($idProduct, false, (int) $context->language->id);
         if (!Validate::isLoadedObject($product) || !$product->active) {
             $this->respond(404, ['error' => 'product_not_found']);
         }
 
-        // 5) Resolve the combination: take the default when the product has
-        //    combinations and none (or an invalid one) was provided.
+        // Resolve the combination: default when the product has combinations and
+        // none (or an invalid one) was provided.
         if ($idProductAttribute > 0) {
             if (!$this->combinationBelongsToProduct($idProduct, $idProductAttribute)) {
                 $idProductAttribute = (int) Product::getDefaultAttribute($idProduct);
@@ -93,7 +129,218 @@ class AismarttalkCartModuleFrontController extends ModuleFrontController
             $idProductAttribute = (int) Product::getDefaultAttribute($idProduct);
         }
 
-        // 6) Stock pre-check honouring the out-of-stock policy.
+        $this->assertStock($context, $idProduct, $idProductAttribute, $qty, $product);
+
+        $cart = $this->ensureCart($context);
+        $added = $cart->updateQty($qty, $idProduct, $idProductAttribute > 0 ? $idProductAttribute : 0, false, 'up');
+        if ($added === false) {
+            $this->respond(409, ['error' => 'cannot_add']);
+        }
+    }
+
+    /**
+     * Set a cart line's quantity to an absolute value (0 removes it).
+     *
+     * @param Context $context
+     * @return void
+     */
+    private function doUpdate($context)
+    {
+        $cart = $context->cart;
+        if (!Validate::isLoadedObject($cart)) {
+            return; // nothing to update
+        }
+        $k = $this->parseKey((string) Tools::getValue('key'));
+        if ($k['id_product'] <= 0) {
+            $this->respond(400, ['error' => 'invalid_key']);
+        }
+        $qty = (int) Tools::getValue('qty');
+
+        if ($qty <= 0) {
+            $cart->deleteProduct($k['id_product'], $k['id_product_attribute'], $k['id_customization']);
+            return;
+        }
+        $qty = min(100, $qty);
+
+        $current = $this->currentLineQty($cart, $k);
+        $delta = $qty - $current;
+        if ($delta === 0) {
+            return;
+        }
+        if ($delta > 0) {
+            $product = new Product($k['id_product']);
+            $this->assertStock($context, $k['id_product'], $k['id_product_attribute'], $qty, $product);
+            $cart->updateQty($delta, $k['id_product'], $k['id_product_attribute'] ?: 0, (int) $k['id_customization'], 'up');
+        } else {
+            $cart->updateQty(abs($delta), $k['id_product'], $k['id_product_attribute'] ?: 0, (int) $k['id_customization'], 'down');
+        }
+    }
+
+    /**
+     * Remove a cart line entirely.
+     *
+     * @param Context $context
+     * @return void
+     */
+    private function doRemove($context)
+    {
+        $cart = $context->cart;
+        if (!Validate::isLoadedObject($cart)) {
+            return;
+        }
+        $k = $this->parseKey((string) Tools::getValue('key'));
+        if ($k['id_product'] <= 0) {
+            $this->respond(400, ['error' => 'invalid_key']);
+        }
+        $cart->deleteProduct($k['id_product'], $k['id_product_attribute'], $k['id_customization']);
+    }
+
+    // -----------------------------------------------------------------------
+    // Canonical cart
+    // -----------------------------------------------------------------------
+
+    /**
+     * Build the canonical cart payload from the current context cart.
+     *
+     * @param Context $context
+     * @return array
+     */
+    private function canonicalCart($context)
+    {
+        $currency = isset($context->currency) ? $context->currency->iso_code : '';
+        $checkoutUrl = $context->link->getPageLink('order', true);
+        $cart = $context->cart;
+
+        if (!Validate::isLoadedObject($cart)) {
+            return [
+                'currency' => $currency,
+                'count' => 0,
+                'items' => [],
+                'totals' => $this->zeroTotals($context),
+                'checkoutUrl' => $checkoutUrl,
+            ];
+        }
+
+        $items = [];
+        foreach ($cart->getProducts() as $p) {
+            $idPA = (int) $p['id_product_attribute'];
+            $idCust = isset($p['id_customization']) ? (int) $p['id_customization'] : 0;
+
+            $variantLabel = '';
+            if (!empty($p['attributes'])) {
+                $variantLabel = $p['attributes'];
+            } elseif (!empty($p['attributes_small'])) {
+                $variantLabel = $p['attributes_small'];
+            }
+
+            $image = '';
+            if (!empty($p['id_image']) && isset($p['link_rewrite'])) {
+                $image = $context->link->getImageLink($p['link_rewrite'], $p['id_image'], 'home_default');
+            }
+
+            $unit = isset($p['price_wt']) ? (float) $p['price_wt'] : (float) $p['price'];
+            $lineTotal = isset($p['total_wt'])
+                ? (float) $p['total_wt']
+                : ($unit * (int) $p['cart_quantity']);
+
+            $items[] = [
+                'key' => (int) $p['id_product'] . ':' . $idPA . ':' . $idCust,
+                'productId' => (string) $p['id_product'],
+                'variantId' => $idPA > 0 ? (string) $idPA : null,
+                'title' => isset($p['name']) ? $p['name'] : '',
+                'variantLabel' => $variantLabel,
+                'image' => $image,
+                'url' => $context->link->getProductLink((int) $p['id_product']),
+                'qty' => (int) $p['cart_quantity'],
+                'unitPrice' => $this->formatPrice($unit, $context),
+                'lineTotal' => $this->formatPrice($lineTotal, $context),
+                'removable' => true,
+                'maxQty' => (int) StockAvailable::getQuantityAvailableByProduct(
+                    (int) $p['id_product'],
+                    $idPA ?: null,
+                    (int) $context->shop->id
+                ),
+            ];
+        }
+
+        return [
+            'currency' => $currency,
+            'count' => (int) $cart->nbProducts(),
+            'items' => $items,
+            'totals' => [
+                'subtotal' => $this->formatPrice((float) $cart->getOrderTotal(true, Cart::ONLY_PRODUCTS), $context),
+                'shipping' => $this->formatPrice((float) $cart->getOrderTotal(true, Cart::ONLY_SHIPPING), $context),
+                'total' => $this->formatPrice((float) $cart->getOrderTotal(true, Cart::BOTH), $context),
+            ],
+            'checkoutUrl' => $checkoutUrl,
+        ];
+    }
+
+    /**
+     * @param Context $context
+     * @return array
+     */
+    private function zeroTotals($context)
+    {
+        $zero = $this->formatPrice(0, $context);
+
+        return ['subtotal' => $zero, 'shipping' => $zero, 'total' => $zero];
+    }
+
+    // -----------------------------------------------------------------------
+    // Helpers
+    // -----------------------------------------------------------------------
+
+    /**
+     * Parse an opaque line key "idProduct:idProductAttribute:idCustomization".
+     *
+     * @param string $key
+     * @return array{id_product:int,id_product_attribute:int,id_customization:int}
+     */
+    private function parseKey($key)
+    {
+        $parts = explode(':', (string) $key);
+
+        return [
+            'id_product' => isset($parts[0]) ? (int) $parts[0] : 0,
+            'id_product_attribute' => isset($parts[1]) ? (int) $parts[1] : 0,
+            'id_customization' => isset($parts[2]) ? (int) $parts[2] : 0,
+        ];
+    }
+
+    /**
+     * Current quantity of a specific cart line.
+     *
+     * @param Cart  $cart
+     * @param array $k
+     * @return int
+     */
+    private function currentLineQty($cart, $k)
+    {
+        foreach ($cart->getProducts() as $p) {
+            $idCust = isset($p['id_customization']) ? (int) $p['id_customization'] : 0;
+            if ((int) $p['id_product'] === $k['id_product']
+                && (int) $p['id_product_attribute'] === $k['id_product_attribute']
+                && $idCust === $k['id_customization']) {
+                return (int) $p['cart_quantity'];
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * Reject when there isn't enough stock and out-of-stock ordering is denied.
+     *
+     * @param Context $context
+     * @param int     $idProduct
+     * @param int     $idProductAttribute
+     * @param int     $qty
+     * @param Product $product
+     * @return void
+     */
+    private function assertStock($context, $idProduct, $idProductAttribute, $qty, $product)
+    {
         $available = (int) StockAvailable::getQuantityAvailableByProduct(
             $idProduct,
             $idProductAttribute > 0 ? $idProductAttribute : null,
@@ -103,28 +350,11 @@ class AismarttalkCartModuleFrontController extends ModuleFrontController
         if ($available < $qty && !$allowOutOfStock) {
             $this->respond(409, ['error' => 'out_of_stock', 'available' => max(0, $available)]);
         }
-
-        // 7) Ensure a persisted cart bound to the session.
-        $cart = $this->ensureCart($context);
-
-        // 8) Add the line (stable signature 1.6 → 9: stop at $operator).
-        $added = $cart->updateQty($qty, $idProduct, $idProductAttribute > 0 ? $idProductAttribute : 0, false, 'up');
-        if ($added === false) {
-            $this->respond(409, ['error' => 'cannot_add']);
-        }
-
-        // 9) Confirm + lightweight summary for the widget toast.
-        $this->respond(200, [
-            'ok' => true,
-            'cartCount' => (int) $cart->nbProducts(),
-            'cartTotal' => $this->formatPrice((float) $cart->getOrderTotal(true, Cart::BOTH), $context),
-            'cartUrl' => $context->link->getPageLink('cart', true, null, ['action' => 'show']),
-        ]);
     }
 
     /**
-     * Format a price for display in a version-safe way (the modern Locale API
-     * when available, else the legacy Tools helper, else a bare number).
+     * Format a price for display in a version-safe way (modern Locale API when
+     * available, else the legacy Tools helper, else a bare number).
      *
      * @param float   $price
      * @param Context $context
