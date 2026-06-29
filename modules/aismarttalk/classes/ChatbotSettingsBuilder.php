@@ -121,7 +121,9 @@ class ChatbotSettingsBuilder
             // checkout page. The widget never sees these; only the same-origin loader does.
             'url' => $url,
             'checkoutUrl' => $checkoutUrl,
-            'nativeRefreshEvent' => 'updateCart',
+            // How the loader refreshes the native cart block after a mutation
+            // (canonical contract): PrestaShop fires prestashop.emit('updateCart').
+            'nativeRefresh' => ['type' => 'prestashop', 'event' => 'updateCart'],
             'token' => $loggedIn ? self::cartTokenForCustomer((int) $context->customer->id) : null,
         ];
     }

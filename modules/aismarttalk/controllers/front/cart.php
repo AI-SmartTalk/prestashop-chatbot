@@ -88,6 +88,12 @@ class AismarttalkCartModuleFrontController extends ModuleFrontController
             case 'remove':
                 $this->doRemove($context);
                 break;
+            case 'voucher':
+                $this->doVoucher($context);
+                break;
+            case 'recommendations':
+                $this->doRecommendations($context); // responds + exits
+                break;
             default:
                 $this->respond(400, ['error' => 'unknown_action']);
         }
@@ -107,8 +113,10 @@ class AismarttalkCartModuleFrontController extends ModuleFrontController
      */
     private function doAdd($context)
     {
-        $idProduct = (int) Tools::getValue('id_product');
-        $idProductAttribute = (int) Tools::getValue('id_product_attribute');
+        // Canonical contract: productId / variantId map to PrestaShop's
+        // id_product / id_product_attribute.
+        $idProduct = (int) Tools::getValue('productId');
+        $idProductAttribute = (int) Tools::getValue('variantId');
         $qty = max(1, min(100, (int) Tools::getValue('qty', 1)));
         if ($idProduct <= 0) {
             $this->respond(400, ['error' => 'invalid_product']);
@@ -195,6 +203,182 @@ class AismarttalkCartModuleFrontController extends ModuleFrontController
         $cart->deleteProduct($k['id_product'], $k['id_product_attribute'], $k['id_customization']);
     }
 
+    /**
+     * Apply or remove a discount voucher (CartRule). On an invalid code, returns
+     * ok:false WITH the unchanged cart so the widget can show the error in place.
+     *
+     * @param Context $context
+     * @return void
+     */
+    private function doVoucher($context)
+    {
+        $cart = $this->ensureCart($context);
+        $op = Tools::getValue('op', 'apply');
+
+        if ($op === 'remove') {
+            // Canonical contract removes a voucher by its code (universal across
+            // platforms); resolve it to the PrestaShop CartRule id.
+            $code = trim((string) Tools::getValue('code'));
+            $idRule = $code !== '' ? (int) CartRule::getIdByCode($code) : 0;
+            if ($idRule) {
+                $cart->removeCartRule($idRule);
+            }
+            return;
+        }
+
+        $code = trim((string) Tools::getValue('code'));
+        if ($code === '') {
+            $this->respond(400, ['error' => 'empty_code']);
+        }
+
+        $idRule = (int) CartRule::getIdByCode($code);
+        $cartRule = $idRule ? new CartRule($idRule, (int) $context->language->id) : null;
+        if (!$cartRule || !Validate::isLoadedObject($cartRule)) {
+            $this->respond(200, [
+                'ok' => false,
+                'error' => 'invalid_code',
+                'cart' => $this->canonicalCart($context),
+            ]);
+        }
+
+        // checkValidity returns a (truthy) error message when invalid, false when OK.
+        $error = $cartRule->checkValidity($context, false, true);
+        if ($error) {
+            $this->respond(200, [
+                'ok' => false,
+                'error' => 'voucher_invalid',
+                'message' => is_string($error) ? $error : '',
+                'cart' => $this->canonicalCart($context),
+            ]);
+        }
+
+        $cart->addCartRule((int) $cartRule->id);
+    }
+
+    /**
+     * Cross-sell: accessory products configured for the items already in the cart
+     * (excluding what's already there). Fast, deterministic, no LLM latency.
+     *
+     * @param Context $context
+     * @return void
+     */
+    private function doRecommendations($context)
+    {
+        $items = [];
+        $cart = $context->cart;
+        $idLang = (int) $context->language->id;
+
+        if (Validate::isLoadedObject($cart)) {
+            $inCart = [];
+            $seen = [];
+            $categories = [];
+            $products = $cart->getProducts();
+            foreach ($products as $p) {
+                $inCart[(int) $p['id_product']] = true;
+            }
+
+            // 1) Configured accessories (true cross-sell) for each cart product.
+            foreach ($products as $p) {
+                $product = new Product((int) $p['id_product'], false, $idLang);
+                if (!Validate::isLoadedObject($product)) {
+                    continue;
+                }
+                $idCat = (int) $product->id_category_default;
+                if ($idCat > 0) {
+                    $categories[$idCat] = true;
+                }
+                $accessories = $product->getAccessories($idLang);
+                if (is_array($accessories)) {
+                    foreach ($accessories as $a) {
+                        $id = (int) $a['id_product'];
+                        if ($id <= 0 || isset($inCart[$id]) || isset($seen[$id]) || empty($a['active'])
+                            || !$this->isOrderable($context, $id)) {
+                            continue;
+                        }
+                        $seen[$id] = true;
+                        $items[] = $this->recoItem($context, $a);
+                        if (count($items) >= 8) {
+                            break 2;
+                        }
+                    }
+                }
+            }
+
+            // 2) Fallback: newest products from the cart items' categories, so the
+            //    carousel is rarely empty even when no accessories are configured.
+            if (count($items) < 4) {
+                foreach (array_keys($categories) as $idCat) {
+                    $category = new Category($idCat, $idLang);
+                    if (!Validate::isLoadedObject($category)) {
+                        continue;
+                    }
+                    $catProducts = $category->getProducts($idLang, 1, 12, 'date_add', 'desc');
+                    if (!is_array($catProducts)) {
+                        continue;
+                    }
+                    foreach ($catProducts as $cp) {
+                        $id = (int) $cp['id_product'];
+                        if ($id <= 0 || isset($inCart[$id]) || isset($seen[$id])
+                            || !$this->isOrderable($context, $id)) {
+                            continue;
+                        }
+                        $seen[$id] = true;
+                        $items[] = $this->recoItem($context, $cp);
+                        if (count($items) >= 8) {
+                            break 2;
+                        }
+                    }
+                }
+            }
+        }
+
+        $this->respond(200, ['ok' => true, 'items' => $items]);
+    }
+
+    /**
+     * Whether a product can be added to the cart (in stock, or out-of-stock
+     * ordering allowed) — so we never recommend something that can't be bought.
+     *
+     * @param Context $context
+     * @param int     $id
+     * @return bool
+     */
+    private function isOrderable($context, $id)
+    {
+        $qty = (int) StockAvailable::getQuantityAvailableByProduct($id, null, (int) $context->shop->id);
+        if ($qty > 0) {
+            return true;
+        }
+        $product = new Product($id);
+
+        return Validate::isLoadedObject($product)
+            && (bool) Product::isAvailableWhenOutOfStock((int) $product->out_of_stock);
+    }
+
+    /**
+     * @param Context $context
+     * @param array   $a Accessory product row (getProductProperties-enriched).
+     * @return array
+     */
+    private function recoItem($context, $a)
+    {
+        $id = (int) $a['id_product'];
+        $image = (!empty($a['id_image']) && !empty($a['link_rewrite']))
+            ? $context->link->getImageLink($a['link_rewrite'], $a['id_image'], 'home_default')
+            : '';
+        $price = isset($a['price_tax_incl'])
+            ? (float) $a['price_tax_incl']
+            : (isset($a['price']) ? (float) $a['price'] : 0);
+
+        return [
+            'productId' => (string) $id,
+            'title' => isset($a['name']) ? $a['name'] : '',
+            'image' => $image,
+            'price' => $this->formatPrice($price, $context),
+            'url' => $context->link->getProductLink($id),
+        ];
+    }
+
     // -----------------------------------------------------------------------
     // Canonical cart
     // -----------------------------------------------------------------------
@@ -217,6 +401,8 @@ class AismarttalkCartModuleFrontController extends ModuleFrontController
                 'count' => 0,
                 'items' => [],
                 'totals' => $this->zeroTotals($context),
+                'freeShipping' => $this->freeShippingInfo($context, null),
+                'vouchers' => [],
                 'checkoutUrl' => $checkoutUrl,
             ];
         }
@@ -263,16 +449,59 @@ class AismarttalkCartModuleFrontController extends ModuleFrontController
             ];
         }
 
+        $discount = (float) $cart->getOrderTotal(true, Cart::ONLY_DISCOUNTS);
+
+        $vouchers = [];
+        foreach ($cart->getCartRules() as $cr) {
+            $vouchers[] = [
+                'id' => isset($cr['id_cart_rule']) ? (int) $cr['id_cart_rule'] : 0,
+                'code' => isset($cr['code']) ? $cr['code'] : '',
+                'name' => isset($cr['name']) ? $cr['name'] : '',
+                'value' => $this->formatPrice(-1 * (float) (isset($cr['value_real']) ? $cr['value_real'] : 0), $context),
+            ];
+        }
+
         return [
             'currency' => $currency,
             'count' => (int) $cart->nbProducts(),
             'items' => $items,
             'totals' => [
                 'subtotal' => $this->formatPrice((float) $cart->getOrderTotal(true, Cart::ONLY_PRODUCTS), $context),
+                'discount' => $discount > 0 ? $this->formatPrice(-1 * $discount, $context) : null,
                 'shipping' => $this->formatPrice((float) $cart->getOrderTotal(true, Cart::ONLY_SHIPPING), $context),
                 'total' => $this->formatPrice((float) $cart->getOrderTotal(true, Cart::BOTH), $context),
             ],
+            'freeShipping' => $this->freeShippingInfo($context, $cart),
+            'vouchers' => $vouchers,
             'checkoutUrl' => $checkoutUrl,
+        ];
+    }
+
+    /**
+     * Free-shipping progress, based on the shop's PS_SHIPPING_FREE_PRICE threshold.
+     * Returns null when no monetary threshold is configured. Amounts are converted
+     * to the cart currency and pre-formatted; `progress` is a 0..1 ratio for the bar.
+     *
+     * @param Context   $context
+     * @param Cart|null $cart
+     * @return array|null
+     */
+    private function freeShippingInfo($context, $cart)
+    {
+        $threshold = (float) Configuration::get('PS_SHIPPING_FREE_PRICE');
+        if ($threshold <= 0) {
+            return null;
+        }
+        $thresholdConverted = (float) Tools::convertPrice($threshold, $context->currency);
+        $subtotal = ($cart && Validate::isLoadedObject($cart))
+            ? (float) $cart->getOrderTotal(true, Cart::ONLY_PRODUCTS)
+            : 0.0;
+        $remaining = max(0.0, $thresholdConverted - $subtotal);
+
+        return [
+            'qualified' => $remaining <= 0,
+            'remaining' => $this->formatPrice($remaining, $context),
+            'progress' => $thresholdConverted > 0 ? round(min(1, $subtotal / $thresholdConverted), 4) : 1,
         ];
     }
 
@@ -284,7 +513,7 @@ class AismarttalkCartModuleFrontController extends ModuleFrontController
     {
         $zero = $this->formatPrice(0, $context);
 
-        return ['subtotal' => $zero, 'shipping' => $zero, 'total' => $zero];
+        return ['subtotal' => $zero, 'discount' => null, 'shipping' => $zero, 'total' => $zero];
     }
 
     // -----------------------------------------------------------------------
