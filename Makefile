@@ -138,12 +138,15 @@ e2e: e2e-reset
 	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test
 
 # Run E2E on PS 1.7 — auto-resets before running
+# PS_DB_CONTAINER pins SQL-fixture loading (variants-sync) to THIS version's DB
+# container; without it helpers.ts defaults to the PS9 `prestashop_db` and any
+# fixture-backed spec fails ("container prestashop_db is not running").
 e2e-ps17: e2e-reset-ps17
-	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta17! npx playwright test
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) PS_DB_CONTAINER=prestashop17_db PS_CONTAINER=prestashop17 ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta17! npx playwright test
 
 # Run E2E on PS 1.7.5.1 — auto-resets before running
 e2e-ps1751: e2e-reset-ps1751
-	cd tests/e2e && PS_URL=http://localhost:8093 PS_ADMIN_PATH=$(PS1751_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta1751! npx playwright test
+	cd tests/e2e && PS_URL=http://localhost:8093 PS_ADMIN_PATH=$(PS1751_ADMIN_PATH) PS_DB_CONTAINER=prestashop1751_db PS_CONTAINER=prestashop1751 ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta1751! npx playwright test
 
 # Run E2E headed (visible browser)
 e2e-headed: e2e-reset
@@ -199,14 +202,14 @@ e2e-multistore: e2e-multistore-enable e2e-reset
 
 # Run E2E on PS 1.7 with multistore
 e2e-multistore-ps17: e2e-multistore-enable-ps17 e2e-reset-ps17
-	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta17! npx playwright test; \
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) PS_DB_CONTAINER=prestashop17_db PS_CONTAINER=prestashop17 ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta17! npx playwright test; \
 	EXIT_CODE=$$?; \
 	$(MAKE) -C $(CURDIR) -s e2e-multistore-disable-ps17; \
 	exit $$EXIT_CODE
 
 # Run E2E on PS 1.7.5.1 with multistore
 e2e-multistore-ps1751: e2e-multistore-enable-ps1751 e2e-reset-ps1751
-	cd tests/e2e && PS_URL=http://localhost:8093 PS_ADMIN_PATH=$(PS1751_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta1751! npx playwright test; \
+	cd tests/e2e && PS_URL=http://localhost:8093 PS_ADMIN_PATH=$(PS1751_ADMIN_PATH) PS_DB_CONTAINER=prestashop1751_db PS_CONTAINER=prestashop1751 ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta1751! npx playwright test; \
 	EXIT_CODE=$$?; \
 	$(MAKE) -C $(CURDIR) -s e2e-multistore-disable-ps1751; \
 	exit $$EXIT_CODE

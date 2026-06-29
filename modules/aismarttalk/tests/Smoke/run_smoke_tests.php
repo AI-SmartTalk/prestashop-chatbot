@@ -204,6 +204,10 @@ $requiredClasses = [
     'PrestaShop\AiSmartTalk\PriceCalculator',
     'PrestaShop\AiSmartTalk\PriceInfo',
     'PrestaShop\AiSmartTalk\CombinationHelper',
+    // DEV-857 — canonical product document + out-of-stock sync
+    'PrestaShop\AiSmartTalk\CanonicalProductMapper',
+    'PrestaShop\AiSmartTalk\StockStatusHelper',
+    'PrestaShop\AiSmartTalk\WidgetLocales',
 ];
 
 foreach ($requiredClasses as $class) {
@@ -335,6 +339,220 @@ smokeTest('getCategoryTree() has at least one category', function () {
     $flat = PrestaShop\AiSmartTalk\SyncFilterHelper::flattenCategoryTree($tree);
     return count($flat) >= 1;
 });
+
+// ─── DEV-857: Stock status normalization ─────────────────────────────────────
+// The canonical "stock" block is the contract the backend + LLM read to reason
+// about availability. Pure logic, but smoke-tested on every PS version so a
+// regression is caught where it ships, not in production.
+echo "\n\033[1m[DEV-857: Stock Status]\033[0m\n";
+
+smokeTest('StockStatusHelper::normalize → in_stock when qty > 0 (no restock date)', function () {
+    $b = PrestaShop\AiSmartTalk\StockStatusHelper::normalize(5, '2026-09-01');
+    return $b['status'] === 'in_stock' && $b['quantity'] === 5 && $b['restock_date'] === null;
+});
+
+smokeTest('StockStatusHelper::normalize → out_of_stock keeps restock date', function () {
+    $b = PrestaShop\AiSmartTalk\StockStatusHelper::normalize(0, '2026-09-01');
+    return $b['status'] === 'out_of_stock' && $b['quantity'] === 0 && $b['restock_date'] === '2026-09-01';
+});
+
+smokeTest('StockStatusHelper::normalizeDate strips time + rejects zero-date', function () {
+    return PrestaShop\AiSmartTalk\StockStatusHelper::normalizeDate('0000-00-00') === null
+        && PrestaShop\AiSmartTalk\StockStatusHelper::normalizeDate('2026-09-01 12:00:00') === '2026-09-01';
+});
+
+// ─── DEV-857: Canonical product document ──────────────────────────────────────
+// The cross-platform v1 shape every connector emits. toMoney's integer minor
+// units are the part most sensitive to currency precision (EUR=2, LYD=3).
+echo "\n\033[1m[DEV-857: Canonical Document]\033[0m\n";
+
+smokeTest('CanonicalProductMapper::toMoney → integer minor units + uppercased currency', function () {
+    $m = PrestaShop\AiSmartTalk\CanonicalProductMapper::toMoney(12.34, 2, 'eur');
+    return is_array($m) && $m['amount'] === 1234 && $m['currency'] === 'EUR' && $m['decimals'] === 2;
+});
+
+smokeTest('CanonicalProductMapper::toMoney → 3-decimal currency (LYD) keeps .000', function () {
+    $m = PrestaShop\AiSmartTalk\CanonicalProductMapper::toMoney(12, 3, 'LYD');
+    return $m['amount'] === 12000 && $m['display'] === '12.000';
+});
+
+smokeTest('CanonicalProductMapper::toMoney → null on non-numeric', function () {
+    return PrestaShop\AiSmartTalk\CanonicalProductMapper::toMoney('n/a', 2, 'EUR') === null;
+});
+
+smokeTest('CanonicalProductMapper::availability maps qty → enum', function () {
+    return PrestaShop\AiSmartTalk\CanonicalProductMapper::availability(3) === 'in_stock'
+        && PrestaShop\AiSmartTalk\CanonicalProductMapper::availability(0) === 'out_of_stock';
+});
+
+smokeTest('CanonicalProductMapper::mapAttributes group/value → name/value (drops incomplete)', function () {
+    $out = PrestaShop\AiSmartTalk\CanonicalProductMapper::mapAttributes([
+        ['group' => 'Color', 'value' => 'Red'],
+        ['group' => '', 'value' => 'X'],
+    ]);
+    return count($out) === 1 && $out[0]['name'] === 'Color' && $out[0]['value'] === 'Red';
+});
+
+if ($samplePid > 0) {
+    // Full document for a real catalog product — exercises map() + the
+    // Product::getPriceStatic / StockAvailable wiring on this exact PS version.
+    smokeTest('CanonicalProductMapper::map builds a canonical document for a real product', function () use ($samplePid) {
+        $idShop = (int) Context::getContext()->shop->id;
+        $priceInfo = PrestaShop\AiSmartTalk\PriceCalculator::calculate($samplePid, 0, 2);
+        $qty = (int) StockAvailable::getQuantityAvailableByProduct($samplePid, null, $idShop);
+        $doc = PrestaShop\AiSmartTalk\CanonicalProductMapper::map([
+            'idProduct' => $samplePid,
+            'name' => 'Smoke product',
+            'decimals' => 2,
+            'currency' => 'EUR',
+            'quantity' => $qty,
+            'categories' => [],
+            'variants' => [],
+            'priceInfo' => $priceInfo,
+        ]);
+
+        return is_array($doc)
+            && $doc['type'] === 'product'
+            && $doc['externalId'] === (string) $samplePid
+            && is_array($doc['price'])
+            && in_array($doc['availability'], ['in_stock', 'out_of_stock'], true)
+            && array_key_exists('variants', $doc);
+    });
+
+    smokeTest('CanonicalProductMapper::productFeatures / productCategories execute', function () use ($samplePid) {
+        $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+        $feat = PrestaShop\AiSmartTalk\CanonicalProductMapper::productFeatures($samplePid, $idLang);
+        $cats = PrestaShop\AiSmartTalk\CanonicalProductMapper::productCategories($samplePid, $idLang);
+        return is_array($feat) && is_array($cats);
+    });
+}
+
+// ─── DEV-857: Combinations (variants) ─────────────────────────────────────────
+// Stores that sell everything as combinations (Libyan client) need the variant
+// payload built from Product::getAttributeCombinations — whose row shape is the
+// kind of thing that drifts between PS 1.7 and 8/9.
+echo "\n\033[1m[DEV-857: Combinations]\033[0m\n";
+
+$comboPid = (int) Db::getInstance()->getValue(
+    'SELECT id_product FROM ' . _DB_PREFIX_ . 'product_attribute ORDER BY id_product'
+);
+
+if ($comboPid > 0) {
+    smokeTest('CombinationHelper::hasCombinations true for a combination product', function () use ($comboPid) {
+        return PrestaShop\AiSmartTalk\CombinationHelper::hasCombinations($comboPid) === true;
+    });
+
+    smokeTest('CombinationHelper::getVariants returns well-formed variant rows', function () use ($comboPid) {
+        $idLang = (int) Configuration::get('PS_LANG_DEFAULT');
+        $idShop = (int) Context::getContext()->shop->id;
+        $variants = PrestaShop\AiSmartTalk\CombinationHelper::getVariants($comboPid, $idLang, $idShop, 2);
+        if (!is_array($variants) || count($variants) === 0) {
+            return false;
+        }
+        $v = $variants[0];
+        return isset($v['id_product_attribute']) && (int) $v['id_product_attribute'] > 0
+            && array_key_exists('price', $v)
+            && array_key_exists('quantity', $v)
+            && isset($v['attributes']) && is_array($v['attributes']);
+    });
+} else {
+    echo "  \033[33m⚠\033[0m Skipped — no combination product in catalog (seed one with make seed-products)\n";
+}
+
+// ─── DEV-857: Out-of-stock sync filter ────────────────────────────────────────
+// The toggle that lets out-of-stock products be synced, plus the version-safe
+// stock JOIN that has to read BOTH PS 1.7 shared-stock rows (id_shop = 0) and
+// PS 8+ per-shop rows (id_shop = X).
+echo "\n\033[1m[DEV-857: Out-of-stock Filter]\033[0m\n";
+
+smokeTest('SyncFilterHelper::shouldIncludeOutOfStock returns bool', function () {
+    return is_bool(PrestaShop\AiSmartTalk\SyncFilterHelper::shouldIncludeOutOfStock());
+});
+
+smokeTest('SyncFilterHelper::buildStockAvailableJoin covers shop AND shop-group rows + runs', function () {
+    $idShop = (int) Context::getContext()->shop->id;
+    $join = PrestaShop\AiSmartTalk\SyncFilterHelper::buildStockAvailableJoin($idShop, 'p', 'sa');
+    if (strpos($join, 'stock_available') === false
+        || strpos($join, 'id_shop = 0') === false
+        || strpos($join, 'id_shop = ' . $idShop) === false) {
+        return false;
+    }
+    // Splice into a real query: a malformed JOIN throws here and fails the test.
+    $sql = 'SELECT p.id_product, sa.quantity FROM ' . _DB_PREFIX_ . 'product p '
+        . $join . ' WHERE p.active = 1 LIMIT 1';
+    Db::getInstance()->executeS($sql);
+    return true;
+});
+
+if ($samplePid > 0) {
+    smokeTest('SyncFilterHelper::shouldProductBeKept returns bool for a real product', function () use ($samplePid) {
+        return is_bool(PrestaShop\AiSmartTalk\SyncFilterHelper::shouldProductBeKept($samplePid));
+    });
+
+    smokeTest('MultistoreHelper active-state probes do not crash', function () use ($samplePid) {
+        return is_bool(PrestaShop\AiSmartTalk\MultistoreHelper::isProductActiveInAnyShop($samplePid))
+            && is_bool(PrestaShop\AiSmartTalk\MultistoreHelper::isProductActiveOnlyInAnyShop($samplePid));
+    });
+}
+
+// ─── DEV-857: In-widget cart contract ─────────────────────────────────────────
+// The same-origin cart controller + its CSRF token. The token uses hash_hmac
+// (NOT Tools::encrypt, removed in PS9) precisely so it works on 1.7/8/9.
+echo "\n\033[1m[DEV-857: Cart Contract]\033[0m\n";
+
+smokeTest('Cart front controller class loads (parses on this PS version)', function () {
+    require_once _PS_MODULE_DIR_ . 'aismarttalk/controllers/front/cart.php';
+    return class_exists('AismarttalkCartModuleFrontController');
+});
+
+smokeTest('Cart CSRF token round-trips (hash_hmac, version-safe)', function () {
+    $token = PrestaShop\AiSmartTalk\ChatbotSettingsBuilder::cartTokenForCustomer(42);
+    return is_string($token) && $token !== ''
+        && PrestaShop\AiSmartTalk\ChatbotSettingsBuilder::isCartTokenValid($token, 42) === true;
+});
+
+smokeTest('Cart CSRF token rejects wrong customer + empty token', function () {
+    $token = PrestaShop\AiSmartTalk\ChatbotSettingsBuilder::cartTokenForCustomer(42);
+    return PrestaShop\AiSmartTalk\ChatbotSettingsBuilder::isCartTokenValid($token, 43) === false
+        && PrestaShop\AiSmartTalk\ChatbotSettingsBuilder::isCartTokenValid('', 42) === false;
+});
+
+// ─── DEV-857: Widget locales ──────────────────────────────────────────────────
+echo "\n\033[1m[DEV-857: Widget Locales]\033[0m\n";
+
+smokeTest('WidgetLocales::all returns a non-empty picker list', function () {
+    $all = PrestaShop\AiSmartTalk\WidgetLocales::all();
+    return is_array($all) && count($all) > 0 && isset($all[0]['code'], $all[0]['name']);
+});
+
+smokeTest('WidgetLocales::isValid / sanitize filter + dedupe codes', function () {
+    return PrestaShop\AiSmartTalk\WidgetLocales::isValid('fr') === true
+        && PrestaShop\AiSmartTalk\WidgetLocales::isValid('zz') === false
+        && PrestaShop\AiSmartTalk\WidgetLocales::sanitize(['fr', 'zz', 'en', 'fr']) === ['fr', 'en'];
+});
+
+// ─── DEV-857: Live-stock hooks ────────────────────────────────────────────────
+// actionUpdateQuantity is the baseline stock signal; the ObjectModel
+// StockAvailable hooks are best-effort (registered in a try/catch), so a missing
+// one is a warning, not a failure.
+echo "\n\033[1m[DEV-857: Stock Hooks]\033[0m\n";
+
+if (Module::isInstalled('aismarttalk')) {
+    smokeTest("Hook 'actionUpdateQuantity' registered", function () use ($module) {
+        return $module->isRegisteredInHook('actionUpdateQuantity');
+    });
+
+    foreach (['actionObjectStockAvailableUpdateAfter', 'actionObjectStockAvailableAddAfter'] as $optHook) {
+        if ($module->isRegisteredInHook($optHook)) {
+            echo "  \033[32m✓\033[0m Optional hook '$optHook' registered\n";
+            $passed++;
+        } else {
+            echo "  \033[33m⚠\033[0m Optional hook '$optHook' not registered (best-effort — live stock degrades gracefully)\n";
+        }
+    }
+} else {
+    echo "  \033[33m⚠\033[0m Skipped — module not installed\n";
+}
 
 // ─── Uninstall ──────────────────────────────────────────────────────────────
 echo "\n\033[1m[Uninstall]\033[0m\n";
