@@ -30,7 +30,7 @@ class ChatbotSettingsBuilder
 {
     /** @var string[] Settings that must not be overridden by embed config */
     private const PROTECTED_SETTINGS = [
-        'chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang',
+        'chatModelId', 'apiUrl', 'wsUrl', 'cdnUrl', 'source', 'userToken', 'lang', 'cart',
     ];
 
     /**
@@ -60,6 +60,10 @@ class ChatbotSettingsBuilder
             'wsUrl' => $wsUrl,
             'cdnUrl' => $cdnUrl,
             'source' => 'PRESTASHOP',
+            // Server-rendered cart capability: drives the "Add to cart" button on
+            // product cards. The flag only decides whether the widget SHOWS it; the
+            // cart controller re-checks the logged-in customer authoritatively.
+            'cart' => self::buildCartSettings(),
         ];
 
         // Resolve auto-login and inject user token
@@ -78,6 +82,102 @@ class ChatbotSettingsBuilder
 
         // Apply PrestaShop customization overrides (priority over API defaults)
         $settings = self::applyCustomizationOverrides($settings);
+
+        // Keep the active language consistent with the offered set.
+        $settings = self::reconcileLangWithAllowed($settings);
+
+        return $settings;
+    }
+
+    /**
+     * Build the cart capability block exposed to the widget.
+     *
+     * `isCustomerLoggedIn` is server-rendered (authoritative at render time) so the
+     * widget knows whether to show the "Add to cart" button. `url` is the same-origin
+     * front-controller the parent loader will POST to (the storefront cookie travels
+     * with it). `token` is a per-customer CSRF guard verified by the controller.
+     *
+     * @return array
+     */
+    public static function buildCartSettings(): array
+    {
+        $context = \Context::getContext();
+        $loggedIn = isset($context->customer) && (int) $context->customer->id > 0 && $context->customer->isLogged();
+
+        $url = '';
+        $checkoutUrl = '';
+        try {
+            $url = $context->link->getModuleLink('aismarttalk', 'cart', [], true);
+            $checkoutUrl = $context->link->getPageLink('order', true);
+        } catch (\Throwable $e) {
+            $url = '';
+        }
+
+        return [
+            'enabled' => true,
+            'isCustomerLoggedIn' => $loggedIn,
+            'currency' => isset($context->currency) ? $context->currency->iso_code : '',
+            // Single canonical endpoint (action=add|get|update|remove) + the native
+            // checkout page. The widget never sees these; only the same-origin loader does.
+            'url' => $url,
+            'checkoutUrl' => $checkoutUrl,
+            // How the loader refreshes the native cart block after a mutation
+            // (canonical contract): PrestaShop fires prestashop.emit('updateCart').
+            'nativeRefresh' => ['type' => 'prestashop', 'event' => 'updateCart'],
+            'token' => $loggedIn ? self::cartTokenForCustomer((int) $context->customer->id) : null,
+        ];
+    }
+
+    /**
+     * Per-customer CSRF token for the cart controller. Derived from the customer id
+     * via the shop cookie key, so it cannot be forged by a third-party page and is
+     * stable for the customer's session.
+     *
+     * @param int $idCustomer
+     * @return string
+     */
+    public static function cartTokenForCustomer(int $idCustomer): string
+    {
+        // NB: Tools::encrypt() was removed in PrestaShop 9 — calling it fatals the
+        // whole footer render (and the widget silently vanishes). hash_hmac with the
+        // shop cookie key is the version-safe equivalent (same secret, works on 1.7/8/9).
+        return hash_hmac('sha256', 'aismarttalk_cart_' . $idCustomer, _COOKIE_KEY_);
+    }
+
+    /**
+     * Constant-time validation of a cart token against a customer id.
+     *
+     * @param string $token
+     * @param int    $idCustomer
+     * @return bool
+     */
+    public static function isCartTokenValid(string $token, int $idCustomer): bool
+    {
+        if ($token === '' || $idCustomer <= 0) {
+            return false;
+        }
+
+        return hash_equals(self::cartTokenForCustomer($idCustomer), $token);
+    }
+
+    /**
+     * Ensure the active language is one the widget actually offers.
+     *
+     * The base `lang` is the visitor's PrestaShop language, which may not be in
+     * the merchant's allowed set. When that happens the widget would start in a
+     * language its switcher can't even select — so fall back to the first
+     * allowed language. No-op when no restriction is configured.
+     *
+     * @param array $settings Current chatbot settings
+     * @return array Settings with a consistent `lang`
+     */
+    public static function reconcileLangWithAllowed(array $settings): array
+    {
+        $allowed = $settings['allowedLanguages'] ?? null;
+        if (is_array($allowed) && count($allowed) > 0
+            && (!isset($settings['lang']) || !in_array($settings['lang'], $allowed, true))) {
+            $settings['lang'] = $allowed[0];
+        }
 
         return $settings;
     }
@@ -209,6 +309,19 @@ class ChatbotSettingsBuilder
             }
             if (!empty($secondaryColor)) {
                 $settings['theme']['colors']['brand']['200'] = $secondaryColor;
+            }
+        }
+
+        // Allowed languages override (restrict the widget's language switcher).
+        // Empty/unset locally → inherit the platform embed config (or all langs).
+        $allowedLanguagesRaw = \Configuration::get('AI_SMART_TALK_ALLOWED_LANGUAGES');
+        if (!empty($allowedLanguagesRaw)) {
+            $decoded = json_decode($allowedLanguagesRaw, true);
+            if (is_array($decoded)) {
+                $sanitized = WidgetLocales::sanitize($decoded);
+                if (count($sanitized) > 0) {
+                    $settings['allowedLanguages'] = $sanitized;
+                }
             }
         }
 

@@ -29,6 +29,7 @@ class ComposerStaticInit3bdbd939a184a583fcb24dad87c35c72
         'PrestaShop\\AiSmartTalk\\AiSmartTalkProductSync' => __DIR__ . '/../..' . '/classes/AiSmartTalkProductSync.php',
         'PrestaShop\\AiSmartTalk\\ApiClient' => __DIR__ . '/../..' . '/classes/ApiClient.php',
         'PrestaShop\\AiSmartTalk\\ApiResponse' => __DIR__ . '/../..' . '/classes/ApiResponse.php',
+        'PrestaShop\\AiSmartTalk\\CanonicalProductMapper' => __DIR__ . '/../..' . '/classes/CanonicalProductMapper.php',
         'PrestaShop\\AiSmartTalk\\ChatbotSettingsBuilder' => __DIR__ . '/../..' . '/classes/ChatbotSettingsBuilder.php',
         'PrestaShop\\AiSmartTalk\\CleanProductDocuments' => __DIR__ . '/../..' . '/classes/CleanProductDocuments.php',
         'PrestaShop\\AiSmartTalk\\CombinationHelper' => __DIR__ . '/../..' . '/classes/CombinationHelper.php',
@@ -40,9 +41,12 @@ class ComposerStaticInit3bdbd939a184a583fcb24dad87c35c72
         'PrestaShop\\AiSmartTalk\\PriceCalculator' => __DIR__ . '/../..' . '/classes/PriceCalculator.php',
         'PrestaShop\\AiSmartTalk\\PriceFormatter' => __DIR__ . '/../..' . '/classes/PriceFormatter.php',
         'PrestaShop\\AiSmartTalk\\PriceInfo' => __DIR__ . '/../..' . '/classes/PriceInfo.php',
+        'PrestaShop\\AiSmartTalk\\StockStatusHelper' => __DIR__ . '/../..' . '/classes/StockStatusHelper.php',
         'PrestaShop\\AiSmartTalk\\SyncFilterHelper' => __DIR__ . '/../..' . '/classes/SyncFilterHelper.php',
+        'PrestaShop\\AiSmartTalk\\SynchCategoriesToAiSmartTalk' => __DIR__ . '/../..' . '/classes/SynchCategoriesToAiSmartTalk.php',
         'PrestaShop\\AiSmartTalk\\SynchProductsToAiSmartTalk' => __DIR__ . '/../..' . '/classes/SynchProductsToAiSmartTalk.php',
         'PrestaShop\\AiSmartTalk\\WebhookHandler' => __DIR__ . '/../..' . '/classes/WebhookHandler.php',
+        'PrestaShop\\AiSmartTalk\\WidgetLocales' => __DIR__ . '/../..' . '/classes/WidgetLocales.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

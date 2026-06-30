@@ -10,9 +10,13 @@ WHERE pc.name='PS_CURRENCY_DEFAULT';
 
 DELETE FROM ps_configuration WHERE name='AST_TEST_ORIGINAL_CURRENCY';
 
--- Drop the test currency (ID 99 reserved for tests)
+-- Drop the test currency (ID 99 reserved for tests). ps_currency_lang only
+-- exists on 1.7.6+ — guard the delete so cleanup also runs on 1.7.0–1.7.5.
 DELETE FROM ps_currency_shop WHERE id_currency=99;
-DELETE FROM ps_currency_lang WHERE id_currency=99;
+SET @has_cur_lang := (SELECT COUNT(*) FROM information_schema.tables
+   WHERE table_schema = DATABASE() AND table_name = 'ps_currency_lang');
+SET @sql := IF(@has_cur_lang > 0, 'DELETE FROM ps_currency_lang WHERE id_currency=99', 'DO 0');
+PREPARE s FROM @sql; EXECUTE s; DEALLOCATE PREPARE s;
 DELETE FROM ps_currency WHERE id_currency=99;
 
 -- Drop the test product and ALL dependent rows. PS9 doesn't FK-cascade,

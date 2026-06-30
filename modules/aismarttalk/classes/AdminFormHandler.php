@@ -414,6 +414,20 @@ class AdminFormHandler
         $consentWallMessage = \Tools::getValue('AI_SMART_TALK_CONSENT_WALL_MESSAGE', '');
         \Configuration::updateValue('AI_SMART_TALK_CONSENT_WALL_MESSAGE', pSQL($consentWallMessage));
 
+        // Allowed languages — restrict the widget's language switcher.
+        // Empty selection = offer every supported language (default).
+        $allowedLanguages = \Tools::getValue('AI_SMART_TALK_ALLOWED_LANGUAGES', []);
+        if (!is_array($allowedLanguages)) {
+            $allowedLanguages = [];
+        }
+        $allowedLanguages = WidgetLocales::sanitize($allowedLanguages);
+        // Store '' (not '[]') when nothing is selected so it reads as "no local
+        // restriction" everywhere (builder, reset detection) — empty = all langs.
+        \Configuration::updateValue(
+            'AI_SMART_TALK_ALLOWED_LANGUAGES',
+            count($allowedLanguages) > 0 ? json_encode($allowedLanguages) : ''
+        );
+
         $output .= $this->module->displayConfirmation(
             $this->trans('Chatbot customization saved.', [], 'Modules.Aismarttalk.Admin')
         );
@@ -430,6 +444,15 @@ class AdminFormHandler
         }
         \Configuration::updateValue('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT', $consentFilter);
 
+        // Live stock sync (only relevant — and only present in the form — when
+        // product sync is on; guarded so saving customer-only settings can't flip it).
+        if ((bool) \Configuration::get('AI_SMART_TALK_PRODUCT_SYNC')) {
+            \Configuration::updateValue(
+                'AI_SMART_TALK_LIVE_STOCK_SYNC',
+                (bool) \Tools::getValue('AI_SMART_TALK_LIVE_STOCK_SYNC', 0)
+            );
+        }
+
         // Handle sync filters in the same form submission
         $categoryMode = \Tools::getValue('sync_filter_category_mode', '');
         if ($categoryMode !== '') {
@@ -437,6 +460,7 @@ class AdminFormHandler
                 'mode' => ($categoryMode === 'exclude') ? SyncFilterHelper::MODE_EXCLUDE : SyncFilterHelper::MODE_INCLUDE,
                 'categories' => ($categoryMode === 'all') ? [] : \Tools::getValue('sync_filter_categories', []),
                 'include_subcategories' => false,
+                'include_out_of_stock' => (bool) \Tools::getValue('sync_filter_include_out_of_stock', 0),
             ];
 
             if (is_string($filterConfig['categories'])) {
@@ -565,9 +589,155 @@ class AdminFormHandler
         exit;
     }
 
+    /**
+     * AJAX entry point for the browser-driven, batched "Sync All Products".
+     *
+     * Two steps, both POSTed to the (admin-token-protected) module configure URL:
+     *  - astSync=init  : sync the category tree once, purge stale products, and return
+     *                    the full ordered list of product IDs to push (+ total).
+     *  - astSync=batch : push a single slice of IDs (ids[]) and return how many were sent.
+     *
+     * The browser owns the loop, so no single PHP request runs the whole catalog —
+     * this keeps each request short and lets the front render a real progress bar.
+     * Always emits JSON and exits.
+     *
+     * @param string $step Either 'init' or 'batch'
+     */
+    public function handleProductSyncAjax(string $step): void
+    {
+        // Drop any buffered BO chrome so the response is pure JSON.
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/json');
+
+        try {
+            if ($step === 'init') {
+                // Sync the category tree up-front (best-effort, same as the sync path)
+                // so products reference real Category ids during ingestion.
+                $categorySync = new SynchCategoriesToAiSmartTalk($this->context);
+                $categorySync();
+
+                $api = new SynchProductsToAiSmartTalk($this->context);
+                $ids = $api->resolveProductIdsToSync(true);
+
+                echo json_encode([
+                    'success' => true,
+                    'ids' => $ids,
+                    'total' => count($ids),
+                ]);
+            } elseif ($step === 'batch') {
+                $ids = \Tools::getValue('ids');
+                $ids = array_values(array_filter(array_map('intval', (array) $ids)));
+
+                if (empty($ids)) {
+                    echo json_encode(['success' => true, 'synced' => 0]);
+                    exit;
+                }
+
+                $api = new SynchProductsToAiSmartTalk($this->context);
+                $result = $api(['forceSync' => true, 'productIds' => $ids]);
+
+                if ($result === false) {
+                    echo json_encode([
+                        'success' => false,
+                        'error' => (string) \Configuration::get('AI_SMART_TALK_ERROR') ?: 'Synchronization error',
+                    ]);
+                    exit;
+                }
+
+                echo json_encode(['success' => true, 'synced' => (int) $result]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Unknown step']);
+            }
+        } catch (\Throwable $e) {
+            \PrestaShopLogger::addLog(
+                'AI SmartTalk: async product sync failed (' . $step . '): ' . $e->getMessage(),
+                3, null, 'AiSmartTalk', null, true
+            );
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+
+        exit;
+    }
+
+    /**
+     * AJAX entry point for the browser-driven, batched "Sync All Customers".
+     * Mirrors handleProductSyncAjax():
+     *  - astCustomerSync=init  : partition + cleanup + removals, returns to-sync IDs.
+     *  - astCustomerSync=batch : export a slice of customer IDs (ids[]).
+     * Always emits JSON and exits.
+     *
+     * @param string $step Either 'init' or 'batch'
+     */
+    public function handleCustomerSyncAjax(string $step): void
+    {
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+        header('Content-Type: application/json');
+
+        try {
+            AiSmartTalkCustomerSync::createTable();
+            $sync = new CustomerSync($this->context);
+
+            if ($step === 'init') {
+                $prep = $sync->prepareSyncAll();
+                // Removal failures are non-fatal: the export still proceeds, we only
+                // surface them as a note. Init only "fails" on a thrown exception.
+                echo json_encode([
+                    'success' => true,
+                    'ids' => $prep['ids'],
+                    'total' => count($prep['ids']),
+                    'removed' => (int) $prep['removed'],
+                    'error' => empty($prep['errors']) ? null : implode(' ', $prep['errors']),
+                ]);
+            } elseif ($step === 'batch') {
+                $ids = \Tools::getValue('ids');
+                $ids = array_values(array_filter(array_map('intval', (array) $ids)));
+
+                if (empty($ids)) {
+                    echo json_encode(['success' => true, 'synced' => 0]);
+                    exit;
+                }
+
+                $result = $sync->syncCustomerBatchByIds($ids);
+
+                if ($result === false) {
+                    echo json_encode(['success' => false, 'error' => 'Customer synchronization error']);
+                    exit;
+                }
+
+                echo json_encode(['success' => true, 'synced' => (int) $result]);
+            } else {
+                echo json_encode(['success' => false, 'error' => 'Unknown step']);
+            }
+        } catch (\Throwable $e) {
+            \PrestaShopLogger::addLog(
+                'AI SmartTalk: async customer sync failed (' . $step . '): ' . $e->getMessage(),
+                3, null, 'AiSmartTalk', null, true
+            );
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+        }
+
+        exit;
+    }
+
     private function handleProductSync(bool $force): string
     {
         $output = '';
+
+        // Sync the category tree up-front so products reference real Category ids
+        // and get auto-attached during ingestion. Non-fatal: a category-sync
+        // failure only surfaces a warning (the product sync upserts categories as
+        // a fallback), so it never blocks the catalog from syncing.
+        $categorySync = new SynchCategoriesToAiSmartTalk($this->context);
+        if ($categorySync() === false) {
+            $output .= $this->module->displayWarning(
+                $this->trans('Category tree could not be synchronized; product categories will be created on the fly.', [], 'Modules.Aismarttalk.Admin')
+            );
+        }
+
         $api = new SynchProductsToAiSmartTalk($this->context);
         $result = $api(['forceSync' => $force]);
 
@@ -581,7 +751,7 @@ class AdminFormHandler
             }
         } elseif ($result === 0) {
             $output .= $this->module->displayWarning(
-                $this->trans('No products found to synchronize. Check that your products are active, in stock, and match your sync filters.', [], 'Modules.Aismarttalk.Admin')
+                $this->trans('No products found to synchronize. Check that your products are active, in stock (or enable "Include out-of-stock products"), and match your sync filters.', [], 'Modules.Aismarttalk.Admin')
             );
         } else {
             if ($force) {
@@ -794,6 +964,7 @@ class AdminFormHandler
             'AI_SMART_TALK_ENABLE_FEEDBACK',
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
+            'AI_SMART_TALK_ALLOWED_LANGUAGES',
         ];
 
         foreach ($settingsToDelete as $setting) {

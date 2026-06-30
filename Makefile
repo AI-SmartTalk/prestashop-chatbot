@@ -1,4 +1,4 @@
-.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 smoke-test-ps1751 e2e e2e-install e2e-ps17 e2e-ps1751 e2e-headed e2e-ui e2e-setup e2e-reset e2e-reset-ps17 e2e-reset-ps1751 e2e-all e2e-multistore e2e-multistore-ps17 e2e-multistore-ps1751 e2e-multistore-enable e2e-multistore-disable e2e-multistore-enable-ps17 e2e-multistore-disable-ps17 e2e-multistore-enable-ps1751 e2e-multistore-disable-ps1751 ps1751 ps1751-stop ps1751-clean ps1751-logs ps1751-bash ps1751-admin init-test init-test-ps1751
+.PHONY: up down logs logs-error bash test test-verbose test-filter test-coverage test-install test-integration test-db-up test-db-down test-all smoke-test smoke-test-ps17 smoke-test-ps1751 seed-products seed-products-purge e2e e2e-install e2e-ps17 e2e-ps1751 e2e-headed e2e-ui e2e-setup e2e-reset e2e-reset-ps17 e2e-reset-ps1751 e2e-all e2e-multistore e2e-multistore-ps17 e2e-multistore-ps1751 e2e-multistore-enable e2e-multistore-disable e2e-multistore-enable-ps17 e2e-multistore-disable-ps17 e2e-multistore-enable-ps1751 e2e-multistore-disable-ps1751 ps1751 ps1751-stop ps1751-clean ps1751-logs ps1751-bash ps1751-admin init-test init-test-ps1751
 
 # ──────────────────────────────────────────────
 # Unit Tests (no DB needed)
@@ -70,6 +70,24 @@ smoke-test-ps1751:
 	docker exec prestashop1751 php modules/aismarttalk/tests/Smoke/run_smoke_tests.php
 
 # ──────────────────────────────────────────────
+# Massive product seeding (dev — stress-test the sync end to end)
+# ──────────────────────────────────────────────
+# Generates a big-group-grade catalog: deep category tree, brands, attribute
+# groups, simple AND multi-variant products, full price spectrum + promos,
+# in-stock / out-of-stock (+ restock dates), varied default category.
+# Override volume with COUNT=… and any flag with SEED_ARGS=…
+COUNT ?= 10000
+SEED_ARGS ?=
+
+# Generate products (e.g. make seed-products COUNT=50000)
+seed-products:
+	docker exec prestashop php modules/aismarttalk/tools/seed_products.php --count=$(COUNT) $(SEED_ARGS)
+
+# Remove EVERYTHING this seeder created (products, brands, attribute groups, category tree)
+seed-products-purge:
+	docker exec prestashop php modules/aismarttalk/tools/seed_products.php --purge
+
+# ──────────────────────────────────────────────
 # E2E Tests (Playwright — browser-based)
 # ──────────────────────────────────────────────
 # Requires: a running PS container + Node.js installed
@@ -120,12 +138,15 @@ e2e: e2e-reset
 	cd tests/e2e && PS_URL=http://localhost PS_ADMIN_PATH=$(PS9_ADMIN_PATH) npx playwright test
 
 # Run E2E on PS 1.7 — auto-resets before running
+# PS_DB_CONTAINER pins SQL-fixture loading (variants-sync) to THIS version's DB
+# container; without it helpers.ts defaults to the PS9 `prestashop_db` and any
+# fixture-backed spec fails ("container prestashop_db is not running").
 e2e-ps17: e2e-reset-ps17
-	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta17! npx playwright test
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) PS_DB_CONTAINER=prestashop17_db PS_CONTAINER=prestashop17 ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta17! npx playwright test
 
 # Run E2E on PS 1.7.5.1 — auto-resets before running
 e2e-ps1751: e2e-reset-ps1751
-	cd tests/e2e && PS_URL=http://localhost:8093 PS_ADMIN_PATH=$(PS1751_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta1751! npx playwright test
+	cd tests/e2e && PS_URL=http://localhost:8093 PS_ADMIN_PATH=$(PS1751_ADMIN_PATH) PS_DB_CONTAINER=prestashop1751_db PS_CONTAINER=prestashop1751 ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta1751! npx playwright test
 
 # Run E2E headed (visible browser)
 e2e-headed: e2e-reset
@@ -181,14 +202,14 @@ e2e-multistore: e2e-multistore-enable e2e-reset
 
 # Run E2E on PS 1.7 with multistore
 e2e-multistore-ps17: e2e-multistore-enable-ps17 e2e-reset-ps17
-	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta17! npx playwright test; \
+	cd tests/e2e && PS_URL=http://localhost:8091 PS_ADMIN_PATH=$(PS17_ADMIN_PATH) PS_DB_CONTAINER=prestashop17_db PS_CONTAINER=prestashop17 ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta17! npx playwright test; \
 	EXIT_CODE=$$?; \
 	$(MAKE) -C $(CURDIR) -s e2e-multistore-disable-ps17; \
 	exit $$EXIT_CODE
 
 # Run E2E on PS 1.7.5.1 with multistore
 e2e-multistore-ps1751: e2e-multistore-enable-ps1751 e2e-reset-ps1751
-	cd tests/e2e && PS_URL=http://localhost:8093 PS_ADMIN_PATH=$(PS1751_ADMIN_PATH) ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta1751! npx playwright test; \
+	cd tests/e2e && PS_URL=http://localhost:8093 PS_ADMIN_PATH=$(PS1751_ADMIN_PATH) PS_DB_CONTAINER=prestashop1751_db PS_CONTAINER=prestashop1751 ADMIN_EMAIL=demo@prestashop.com ADMIN_PASS=Admin_Presta1751! npx playwright test; \
 	EXIT_CODE=$$?; \
 	$(MAKE) -C $(CURDIR) -s e2e-multistore-disable-ps1751; \
 	exit $$EXIT_CODE

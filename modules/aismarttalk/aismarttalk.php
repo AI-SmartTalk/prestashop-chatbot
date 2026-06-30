@@ -25,12 +25,14 @@ use PrestaShop\AiSmartTalk\AiSmartTalkCustomerSync;
 use PrestaShop\AiSmartTalk\AiSmartTalkProductSync;
 use PrestaShop\AiSmartTalk\ApiClient;
 use PrestaShop\AiSmartTalk\ChatbotSettingsBuilder;
+use PrestaShop\AiSmartTalk\WidgetLocales;
 use PrestaShop\AiSmartTalk\CleanProductDocuments;
 use PrestaShop\AiSmartTalk\CustomerSync;
 use PrestaShop\AiSmartTalk\MultistoreHelper;
 use PrestaShop\AiSmartTalk\OAuthHandler;
 use PrestaShop\AiSmartTalk\OAuthTokenHandler;
 use PrestaShop\AiSmartTalk\SyncFilterHelper;
+use PrestaShop\AiSmartTalk\SynchCategoriesToAiSmartTalk;
 use PrestaShop\AiSmartTalk\SynchProductsToAiSmartTalk;
 use PrestaShop\AiSmartTalk\WebhookHandler;
 
@@ -48,7 +50,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.7.0';
+        $this->version = '3.11.0';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -84,6 +86,10 @@ class AiSmartTalk extends Module
             'AI_SMART_TALK_WS' => self::DEFAULT_WS_URL,
             'AI_SMART_TALK_IFRAME_POSITION' => 'footer',
             'AI_SMART_TALK_PRODUCT_SYNC' => false,
+            // Live stock sync OFF by default: only push every quantity change when a
+            // merchant opts in (otherwise we keep the lighter zero-crossing behaviour
+            // and save requests for shops that don't need exact live stock).
+            'AI_SMART_TALK_LIVE_STOCK_SYNC' => false,
             'AI_SMART_TALK_CUSTOMER_SYNC' => false,
             'AI_SMART_TALK_CUSTOMER_SYNC_CONSENT' => 'all',
         ];
@@ -134,6 +140,11 @@ class AiSmartTalk extends Module
             'actionProductAttributeCreate',
             'actionProductAttributeUpdate',
             'actionProductAttributeDelete',
+            // Category lifecycle — keep the backend category tree (used to attach
+            // products + drive hierarchy) in sync when the merchant edits it.
+            'actionCategoryAdd',
+            'actionCategoryUpdate',
+            'actionCategoryDelete',
             'actionAuthentication',
             'actionCustomerLogout',
             'actionCustomerAccountAdd',
@@ -165,6 +176,35 @@ class AiSmartTalk extends Module
                 if (!$this->registerHook($hook)) {
                     return false;
                 }
+            }
+        }
+
+        // Optional / best-effort hooks — registration failure must NEVER abort the
+        // install. The generic ObjectModel combination hooks are how PrestaShop
+        // 8/9's new product page surfaces variant changes (the legacy
+        // actionProductAttribute* hooks above cover 1.6/1.7). On any version where
+        // one of these can't be registered we simply skip it — incremental sync
+        // degrades gracefully (Force Sync remains the snapshot reconciliation).
+        $optionalHooks = [
+            'actionObjectCombinationAddAfter',
+            'actionObjectCombinationUpdateAfter',
+            'actionObjectCombinationDeleteAfter',
+            // Stock — the robust, version-agnostic signal. PrestaShop fires
+            // actionObject<Class>Add/UpdateAfter via the legacy Hook::exec on EVERY
+            // StockAvailable ObjectModel write (PS 1.6 → 9), from EVERY path: product
+            // page, the dedicated stock page, orders, webservice, CSV import. The
+            // dedicated actionUpdateQuantity hook is NOT emitted consistently by the
+            // PS 8/9 admin stock screens, so these are what make live stock reliable.
+            'actionObjectStockAvailableAddAfter',
+            'actionObjectStockAvailableUpdateAfter',
+        ];
+        foreach ($optionalHooks as $hook) {
+            try {
+                if (!$this->isRegisteredInHook($hook)) {
+                    $this->registerHook($hook);
+                }
+            } catch (\Throwable $e) {
+                // ignore — optional coverage only
             }
         }
 
@@ -222,6 +262,12 @@ class AiSmartTalk extends Module
             'actionProductAttributeCreate',
             'actionProductAttributeUpdate',
             'actionProductAttributeDelete',
+            'actionObjectCombinationAddAfter',
+            'actionObjectCombinationUpdateAfter',
+            'actionObjectCombinationDeleteAfter',
+            'actionCategoryAdd',
+            'actionCategoryUpdate',
+            'actionCategoryDelete',
             'actionAuthentication',
             'actionCustomerLogout',
             'actionCustomerAccountAdd',
@@ -254,6 +300,7 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_WS')
             && Configuration::deleteByName('AI_SMART_TALK_IFRAME_POSITION')
             && Configuration::deleteByName('AI_SMART_TALK_PRODUCT_SYNC')
+            && Configuration::deleteByName('AI_SMART_TALK_LIVE_STOCK_SYNC')
             && Configuration::deleteByName('AI_SMART_TALK_ACCESS_TOKEN')
             && Configuration::deleteByName('AI_SMART_TALK_CHAT_MODEL_ID')
             && Configuration::deleteByName('AI_SMART_TALK_OAUTH_SCOPE')
@@ -275,6 +322,7 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_MODE')
             && Configuration::deleteByName('AI_SMART_TALK_BORDER_RADIUS')
             && Configuration::deleteByName('AI_SMART_TALK_BUTTON_BORDER_RADIUS')
+            && Configuration::deleteByName('AI_SMART_TALK_ALLOWED_LANGUAGES')
             // Customer sync
             && Configuration::deleteByName('AI_SMART_TALK_CUSTOMER_SYNC')
             && Configuration::deleteByName('AI_SMART_TALK_CUSTOMER_SYNC_CONSENT')
@@ -367,6 +415,25 @@ class AiSmartTalk extends Module
         // Ensure default URLs are always available
         $this->ensureDefaultUrls();
 
+        // Asynchronous, browser-driven "Sync All Products": short-circuit here and
+        // answer JSON instead of rendering the whole BO page. The admin token has
+        // already been validated by AdminModulesController before getContent() runs.
+        // A dedicated param (not "ajax"/"action") is used on purpose so the native
+        // AdminController ajax router never intercepts the request before getContent().
+        $astSyncStep = Tools::getValue('astSync');
+        if ($astSyncStep === 'init' || $astSyncStep === 'batch') {
+            $ajaxHandler = new AdminFormHandler($this, $this->context);
+            $ajaxHandler->handleProductSyncAjax($astSyncStep);
+            // handleProductSyncAjax() always exits.
+        }
+
+        $astCustomerStep = Tools::getValue('astCustomerSync');
+        if ($astCustomerStep === 'init' || $astCustomerStep === 'batch') {
+            $ajaxHandler = new AdminFormHandler($this, $this->context);
+            $ajaxHandler->handleCustomerSyncAjax($astCustomerStep);
+            // handleCustomerSyncAjax() always exits.
+        }
+
         // Process all form submissions and actions via AdminFormHandler
         $handler = new AdminFormHandler($this, $this->context);
         $output = $handler->processAll();
@@ -442,6 +509,7 @@ class AiSmartTalk extends Module
 
             // Sync settings
             'productSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_PRODUCT_SYNC'),
+            'liveStockSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_LIVE_STOCK_SYNC'),
             'hasExistingProductSync' => !empty(AiSmartTalkProductSync::getSyncedProductIds((int) $this->context->shop->id)),
             'customerSyncEnabled' => (bool) Configuration::get('AI_SMART_TALK_CUSTOMER_SYNC'),
             'hasExistingCustomerSync' => !empty(AiSmartTalkCustomerSync::getSyncedCustomerIds()),
@@ -490,6 +558,11 @@ class AiSmartTalk extends Module
             'enableVoiceInput' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_INPUT') ?: '',
             'enableVoiceMode' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_MODE') ?: '',
             'enableAutoLogin' => Configuration::get('AI_SMART_TALK_ENABLE_AUTO_LOGIN') ?: '',
+
+            // Widget languages — restrict the language switcher (empty = all)
+            'availableLanguages' => WidgetLocales::all(),
+            'allowedLanguagesSelected' => $this->getAllowedLanguagesSelected(),
+            'allowedLanguagesMap' => array_fill_keys($this->getAllowedLanguagesSelected(), true),
 
             // GDPR settings
             'gdprEnabled' => Configuration::get('AI_SMART_TALK_GDPR_ENABLED') ?: '',
@@ -897,6 +970,7 @@ class AiSmartTalk extends Module
         $this->context->smarty->assign([
             'chatbotSettingsEncoded' => base64_encode(json_encode($chatbotSettings, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)),
             'cdnUrl' => $cdnUrl,
+            'moduleVersion' => $this->version,
         ]);
 
         return $this->display(__FILE__, 'views/templates/hook/footer.tpl');
@@ -911,9 +985,9 @@ class AiSmartTalk extends Module
 
             $idProduct = (int) $params['id_product'];
 
-            // Check if product is active + in stock in at least one shop
-            if (!MultistoreHelper::isProductActiveInAnyShop($idProduct)) {
-                // Not active anywhere — clean from knowledge base if it was synced
+            // Decide keep vs purge according to the current sync mode
+            // (active+stock by default, active-only when "include out-of-stock" is on).
+            if (!SyncFilterHelper::shouldProductBeKept($idProduct)) {
                 if (AiSmartTalkProductSync::isSynced($idProduct)) {
                     $api = new CleanProductDocuments();
                     $api(['productIds' => [(string) $idProduct]]);
@@ -1018,11 +1092,38 @@ class AiSmartTalk extends Module
     }
 
     /**
+     * Hook: actionObjectCombinationAddAfter — generic ObjectModel combination create.
+     */
+    public function hookActionObjectCombinationAddAfter($params)
+    {
+        $this->handleCombinationChange($params);
+    }
+
+    /**
+     * Hook: actionObjectCombinationUpdateAfter — generic ObjectModel combination edit.
+     */
+    public function hookActionObjectCombinationUpdateAfter($params)
+    {
+        $this->handleCombinationChange($params);
+    }
+
+    /**
+     * Hook: actionObjectCombinationDeleteAfter — generic ObjectModel combination delete.
+     * Fires on PrestaShop 8/9's new product page where the legacy
+     * actionProductAttributeDelete hook may not.
+     */
+    public function hookActionObjectCombinationDeleteAfter($params)
+    {
+        $this->handleCombinationChange($params);
+    }
+
+    /**
      * Resolve the parent product of a changed combination and trigger a parent re-sync.
      *
-     * Hook params may contain `id_product` directly, or only `id_product_attribute`.
-     * On delete the attribute row may already be gone, so we lookup the parent first
-     * and fall back to whatever the hook gave us.
+     * Hook params may carry: `id_product` directly, an `object` (Combination
+     * ObjectModel, for the actionObjectCombination*After hooks), or only
+     * `id_product_attribute`. On delete the attribute row may already be gone,
+     * so we try the object/params first and fall back to a DB lookup.
      */
     protected function handleCombinationChange(array $params): void
     {
@@ -1031,6 +1132,19 @@ class AiSmartTalk extends Module
         }
 
         $idProduct = isset($params['id_product']) ? (int) $params['id_product'] : 0;
+
+        // Generic ObjectModel hooks pass the Combination instance in `object`.
+        if ($idProduct <= 0 && isset($params['object']) && is_object($params['object'])) {
+            $combination = $params['object'];
+            if (!empty($combination->id_product)) {
+                $idProduct = (int) $combination->id_product;
+            } elseif (!empty($combination->id)) {
+                $idProduct = (int) \Db::getInstance()->getValue(
+                    'SELECT id_product FROM ' . _DB_PREFIX_ . 'product_attribute
+                     WHERE id_product_attribute = ' . (int) $combination->id
+                );
+            }
+        }
 
         if ($idProduct <= 0 && !empty($params['id_product_attribute'])) {
             $idProductAttribute = (int) $params['id_product_attribute'];
@@ -1044,9 +1158,10 @@ class AiSmartTalk extends Module
             return;
         }
 
-        // If the parent is no longer active+in-stock anywhere (last combination removed,
-        // for example), purge it from the knowledge base instead of re-syncing empty data.
-        if (!MultistoreHelper::isProductActiveInAnyShop($idProduct)) {
+        // If the parent must no longer be kept (rule depends on the "include out-of-stock"
+        // toggle — see SyncFilterHelper::shouldProductBeKept), purge it from the knowledge
+        // base instead of re-syncing empty data.
+        if (!SyncFilterHelper::shouldProductBeKept($idProduct)) {
             if (AiSmartTalkProductSync::isSynced($idProduct)) {
                 $api = new CleanProductDocuments();
                 $api(['productIds' => [(string) $idProduct]]);
@@ -1064,6 +1179,50 @@ class AiSmartTalk extends Module
         $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
 
         AiSmartTalkProductSync::updateLastSyncTime($idProduct);
+    }
+
+    /**
+     * Hook: actionCategoryAdd — a category was created.
+     */
+    public function hookActionCategoryAdd($params)
+    {
+        $this->resyncCategoryTree();
+    }
+
+    /**
+     * Hook: actionCategoryUpdate — a category was renamed / moved in the tree.
+     */
+    public function hookActionCategoryUpdate($params)
+    {
+        $this->resyncCategoryTree();
+    }
+
+    /**
+     * Hook: actionCategoryDelete — a category was removed.
+     */
+    public function hookActionCategoryDelete($params)
+    {
+        $this->resyncCategoryTree();
+    }
+
+    /**
+     * Resync the whole category tree to the backend (idempotent upsert). The tree
+     * is small enough to push wholesale on any change; a missing/renamed/moved
+     * category is reflected immediately so products stay attached to real ids.
+     * Gated behind the product-sync toggle and fully non-fatal.
+     */
+    protected function resyncCategoryTree(): void
+    {
+        try {
+            if (!(bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')) {
+                return;
+            }
+
+            $sync = new SynchCategoriesToAiSmartTalk($this->context);
+            $sync();
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk resyncCategoryTree error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
     }
 
     /**
@@ -1087,6 +1246,42 @@ class AiSmartTalk extends Module
             $this->handleQuantityUpdate($params);
         } catch (\Throwable $e) {
             PrestaShopLogger::addLog('AI SmartTalk hookActionUpdateQuantity error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
+        }
+    }
+
+    /**
+     * Robust, version-agnostic stock signal. PrestaShop fires
+     * actionObject<Class>Add/UpdateAfter via the legacy Hook::exec on EVERY
+     * StockAvailable ObjectModel write — product page, stock page, orders,
+     * webservice, CSV import — across PS 1.6 → 9. Unlike actionUpdateQuantity
+     * (not emitted by PS 8/9 admin stock screens), this fires reliably, so it is
+     * what drives live stock. We normalize the StockAvailable object to the same
+     * shape handleQuantityUpdate expects and reuse its debounced logic.
+     */
+    public function hookActionObjectStockAvailableUpdateAfter($params)
+    {
+        $this->handleStockAvailableObjectHook($params);
+    }
+
+    public function hookActionObjectStockAvailableAddAfter($params)
+    {
+        $this->handleStockAvailableObjectHook($params);
+    }
+
+    private function handleStockAvailableObjectHook($params): void
+    {
+        try {
+            $stock = isset($params['object']) ? $params['object'] : null;
+            if (!is_object($stock) || empty($stock->id_product)) {
+                return;
+            }
+            $this->handleQuantityUpdate([
+                'id_product' => (int) $stock->id_product,
+                'id_product_attribute' => isset($stock->id_product_attribute) ? (int) $stock->id_product_attribute : 0,
+                'quantity' => isset($stock->quantity) ? (int) $stock->quantity : null,
+            ]);
+        } catch (\Throwable $e) {
+            PrestaShopLogger::addLog('AI SmartTalk hookActionObjectStockAvailableUpdateAfter error: ' . $e->getMessage(), 3, null, 'AiSmartTalk', null, true);
         }
     }
 
@@ -1127,10 +1322,11 @@ class AiSmartTalk extends Module
 
                 $this->triggerOutOfStockWebhook($idProduct, $idProductAttribute, 1);
 
-                // Product sync: remove from AI SmartTalk if not active in any shop
+                // Product sync: purge only if the current sync mode no longer wants this
+                // product (active-only check when out-of-stock are kept, active+stock otherwise).
                 if ((bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')
                     && AiSmartTalkProductSync::isSynced($idProduct)
-                    && !MultistoreHelper::isProductActiveInAnyShop($idProduct)
+                    && !SyncFilterHelper::shouldProductBeKept($idProduct)
                 ) {
                     $api = new CleanProductDocuments();
                     $api(['productIds' => [(string) $idProduct]]);
@@ -1144,11 +1340,30 @@ class AiSmartTalk extends Module
                 Configuration::deleteByName($cacheKey);
             }
 
-            // Sync product if it hasn't been synced yet (new product or restock)
-            // and it matches category filters
-            if ((bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')
-                && !AiSmartTalkProductSync::isSynced($idProduct)
-                && SyncFilterHelper::shouldProductBeSynced($idProduct, MultistoreHelper::getDefaultShopId())
+            if (!(bool) MultistoreHelper::getConfig('AI_SMART_TALK_PRODUCT_SYNC')) {
+                return;
+            }
+
+            // Not synced yet (new product or restock from zero) → sync if it passes
+            // the filters. This is the baseline behaviour, independent of live stock.
+            if (!AiSmartTalkProductSync::isSynced($idProduct)) {
+                if (SyncFilterHelper::shouldProductBeSynced($idProduct, MultistoreHelper::getDefaultShopId())) {
+                    $api = new SynchProductsToAiSmartTalk($this->context);
+                    $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
+                    AiSmartTalkProductSync::updateLastSyncTime($idProduct);
+                }
+                return;
+            }
+
+            // Already synced + LIVE STOCK opt-in → push this quantity change so the
+            // assistant reflects the exact remaining units. Debounced (canSync) to
+            // coalesce bursts; on the backend this resolves to a metadata-only update
+            // (no re-vectorization). When the toggle is OFF (default) we do nothing
+            // here for an in-stock change, saving requests for shops that don't need
+            // live quantity (availability still updated on the zero-crossing above).
+            if ((bool) MultistoreHelper::getConfig('AI_SMART_TALK_LIVE_STOCK_SYNC')
+                && AiSmartTalkProductSync::canSync($idProduct)
+                && SyncFilterHelper::shouldProductBeKept($idProduct)
             ) {
                 $api = new SynchProductsToAiSmartTalk($this->context);
                 $api(['productIds' => [(string) $idProduct], 'forceSync' => true]);
@@ -1616,6 +1831,22 @@ class AiSmartTalk extends Module
      * Prevents URL parameter pollution where action params (forceSync, syncCustomers, clean)
      * persist in form actions and re-trigger on every subsequent form submission.
      */
+    /**
+     * Decode the merchant's saved language restriction for the back-office picker.
+     *
+     * @return array<int, string> Valid locale codes (empty = all languages offered)
+     */
+    private function getAllowedLanguagesSelected(): array
+    {
+        $raw = Configuration::get('AI_SMART_TALK_ALLOWED_LANGUAGES');
+        if (empty($raw)) {
+            return [];
+        }
+        $decoded = json_decode($raw, true);
+
+        return is_array($decoded) ? WidgetLocales::sanitize($decoded) : [];
+    }
+
     private function getCleanFormAction(): string
     {
         $uri = $_SERVER['REQUEST_URI'];
@@ -1650,6 +1881,7 @@ class AiSmartTalk extends Module
             'AI_SMART_TALK_ENABLE_FEEDBACK',
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
+            'AI_SMART_TALK_ALLOWED_LANGUAGES',
         ];
 
         foreach ($settingsToCheck as $setting) {

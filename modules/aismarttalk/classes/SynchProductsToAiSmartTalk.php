@@ -117,17 +117,6 @@ class SynchProductsToAiSmartTalk
                 $priceDecimals
             );
 
-            // Keep the legacy has_special_price flag — driven by SQL detection
-            // of an active ps_specific_price row. Combined with priceInfo it
-            // also catches group/catalog reductions that don't sit in specific_price.
-            $hasSpecialPrice = !empty($product['specific_price'])
-                || !empty($product['price_reduction'])
-                || $priceInfo->hasDiscount;
-
-            // Format dates
-            $priceFrom = !empty($product['price_from']) && $product['price_from'] !== '0000-00-00 00:00:00' ? $product['price_from'] : null;
-            $priceTo = !empty($product['price_to']) && $product['price_to'] !== '0000-00-00 00:00:00' ? $product['price_to'] : null;
-
             // Variants are only fetched for products that have combinations.
             // Empty array for simple products keeps the payload shape stable for the backend.
             $variants = CombinationHelper::getVariants(
@@ -139,35 +128,51 @@ class SynchProductsToAiSmartTalk
                 $linkRewrite
             );
 
-            $documentDatas[] = [
-                'id' => $product['id_product'],
-                'title' => $product['name'],
-                'description' => strip_tags($product['description']),
-                'description_short' => strip_tags($product['description_short']),
-                'reference' => $product['reference'],
-                'price' => PriceFormatter::format($priceInfo->finalPrice, $priceDecimals),
-                'price_decimals' => $priceDecimals,
-                'currency' => $product['currency_code'] ?? 'EUR',
-                'currency_sign' => $currencySign,
-                // Promotion fields — present only when the product is actually discounted.
-                // Backend / LLM / front all treat their absence as "no promo".
-                'original_price' => $priceInfo->hasDiscount
-                    ? PriceFormatter::format($priceInfo->originalPrice, $priceDecimals)
-                    : null,
-                'discount_percent' => $priceInfo->hasDiscount ? $priceInfo->discountPercent : null,
-                'discount_amount' => $priceInfo->hasDiscount
-                    ? PriceFormatter::format($priceInfo->discountAmount, $priceDecimals)
-                    : null,
-                'discount_type' => $priceInfo->hasDiscount ? $priceInfo->discountType : null,
-                'has_special_price' => $hasSpecialPrice,
-                'price_from' => $priceFrom,
-                'price_to' => $priceTo,
-                'url' => $productUrl,
-                'image_url' => $imageUrl,
-                'variants' => $variants,
-            ];
+            // Total stock across the resolved shop (parent level). Drives the
+            // canonical availability/restockDate; combinations carry their own.
+            $parentQuantity = (int) \StockAvailable::getQuantityAvailableByProduct(
+                (int) $product['id_product'],
+                0,
+                $bestShopId
+            );
 
-            if (count($documentDatas) === 10) {
+            $brand = !empty($psProduct->id_manufacturer)
+                ? \Manufacturer::getNameById((int) $psProduct->id_manufacturer)
+                : null;
+
+            // Emit the cross-platform canonical v1 document. CanonicalProductMapper
+            // owns the Money/availability/variant conversions so the payload is
+            // identical in shape to every other connector.
+            $documentDatas[] = CanonicalProductMapper::map([
+                'idProduct' => (int) $product['id_product'],
+                'name' => $product['name'],
+                'description' => strip_tags($product['description']),
+                'descriptionShort' => strip_tags($product['description_short']),
+                'reference' => $product['reference'],
+                'brand' => $brand ?: null,
+                'decimals' => $priceDecimals,
+                'currency' => $product['currency_code'] ?? 'EUR',
+                'sign' => $currencySign,
+                'url' => $productUrl,
+                'imageUrl' => $imageUrl,
+                'quantity' => $parentQuantity,
+                'availableDate' => $product['available_date'] ?? null,
+                'categories' => CanonicalProductMapper::productCategories(
+                    (int) $product['id_product'],
+                    $defaultLangId
+                ),
+                // Product-level features (Material, Style…) → canonical attributes,
+                // so even a simple product exposes facetable attributes.
+                'attributes' => CanonicalProductMapper::productFeatures(
+                    (int) $product['id_product'],
+                    $defaultLangId
+                ),
+                'defaultCategoryExternalId' => (int) $psProduct->id_category_default,
+                'variants' => $variants,
+                'priceInfo' => $priceInfo,
+            ]);
+
+            if (count($documentDatas) === 50) {
                 if (!$this->postIfDataExists($documentDatas)) {
                     return false;
                 }
@@ -204,16 +209,27 @@ class SynchProductsToAiSmartTalk
         return AiSmartTalkProductSync::markProductsAsSynced($productIds, $idShop);
     }
 
+    /**
+     * Posts a batch of canonical v1 documents to the source-agnostic ingestion
+     * endpoint. The endpoint is fire-and-forget: it validates ONLY the envelope
+     * synchronously, enqueues the batch on RabbitMQ and answers 202 Accepted.
+     *
+     * Per-product canonical validation runs asynchronously in the backend worker,
+     * so there is no synchronous `rejected` list to react to here. Any 2xx
+     * (200 or 202) is a success; only a transport error or an `error` status
+     * aborts the sync.
+     */
     private function postToApi($documentDatas)
     {
         $client = ApiClient::fromConfig();
 
-        $response = $client->post('/api/document/source', [
-            'documentDatas' => $documentDatas,
-            'chatModelId' => $client->getChatModelId(),
-            'chatModelToken' => $client->getAccessToken(),
-            'source' => 'PRESTASHOP',
+        // Unified product endpoint shared by every connector: the platform is
+        // passed in the body (`source`), there is no per-platform route.
+        $response = $client->post('/api/v1/products', [
+            'payloadVersion' => '1',
+            'source' => 'prestashop',
             'siteIdentifier' => $client->getSiteIdentifier(),
+            'documents' => $documentDatas,
         ]);
 
         if (!$response->isSuccess()) {
@@ -221,22 +237,98 @@ class SynchProductsToAiSmartTalk
             return false;
         }
 
-        MultistoreHelper::deleteConfig('AI_SMART_TALK_ERROR');
-
         if ($response->get('status') === 'error') {
             MultistoreHelper::updateConfig('AI_SMART_TALK_ERROR', $response->get('message'));
             return false;
         }
 
+        // Accepted (202) / ok (200): the batch is queued. Clear any stale error.
+        MultistoreHelper::deleteConfig('AI_SMART_TALK_ERROR');
+
         return $response->body;
+    }
+
+    /**
+     * Resolve the list of product IDs that a forced "Sync All" would send,
+     * WITHOUT fetching/posting anything. Used by the asynchronous, browser-driven
+     * sync to know the total up-front and drive a progress bar.
+     *
+     * Mirrors __invoke()'s force path: when forcing, out-of-stock/inactive
+     * products are purged once here (the per-batch calls then carry explicit
+     * productIds, so cleanup never runs again).
+     *
+     * @param bool $force
+     * @return int[] Ordered list of product IDs to synchronize
+     */
+    public function resolveProductIdsToSync($force)
+    {
+        $this->forceSync = (bool) $force;
+
+        if ($this->forceSync) {
+            $this->cleanOutOfStockProducts();
+        }
+
+        return $this->getProductIdsToSynchronize();
+    }
+
+    /**
+     * ID-only variant of getProductsToSynchronize(): same filters, no payload columns.
+     * Kept in lock-step with the full query via the shared buildSyncFromWhere().
+     *
+     * @return int[]
+     */
+    private function getProductIdsToSynchronize()
+    {
+        $sql = 'SELECT p.id_product ' . $this->buildSyncFromWhere();
+        $rows = \Db::getInstance()->executeS($sql);
+
+        if (!$rows) {
+            return [];
+        }
+
+        return array_map(static function ($row) {
+            return (int) $row['id_product'];
+        }, $rows);
     }
 
     /**
      * Get products to synchronize across ALL shops (union, deduplicated).
      * Product data (name, price, image, URL) prefers the default shop, with fallback to any shop.
-     * A product is included if it is active + in stock in at least one shop.
+     *
+     * Inclusion rules:
+     *  - Product must be active in at least one shop (always).
+     *  - Stock requirement: when the "include out-of-stock" toggle is OFF (default),
+     *    the product must also have stock > 0 in at least one shop. When ON, the
+     *    stock check is dropped entirely so every active product is synchronized.
      */
     private function getProductsToSynchronize()
+    {
+        $sql = 'SELECT p.id_product, pl.name, pl.description, pl.description_short,
+                   p.reference, p.price, cl.link_rewrite, i.id_image,
+                   p.active,
+                   p.available_date,
+                   pl.id_shop as best_shop_id,
+                   c.iso_code as currency_code,
+                   sp.price as specific_price,
+                   sp.from as price_from,
+                   sp.to as price_to,
+                   sp.reduction as price_reduction,
+                   sp.reduction_type '
+            . $this->buildSyncFromWhere();
+
+        $products = \Db::getInstance()->executeS($sql);
+
+        return $products ?: [];
+    }
+
+    /**
+     * Builds the shared FROM/JOIN/WHERE/GROUP BY tail used by both the full
+     * product fetch and the ID-only resolution, so the two never drift apart
+     * (same stock/force/productIds/category filters).
+     *
+     * @return string SQL starting at "FROM ..." through "GROUP BY p.id_product"
+     */
+    private function buildSyncFromWhere()
     {
         $defaultLangId = (int) \Configuration::get('PS_LANG_DEFAULT');
         $defaultShopId = MultistoreHelper::getDefaultShopId();
@@ -244,22 +336,29 @@ class SynchProductsToAiSmartTalk
         $allShopIds = MultistoreHelper::getAllShopIds();
         $shopIdList = implode(',', array_map('intval', $allShopIds));
 
+        $includeOutOfStock = SyncFilterHelper::shouldIncludeOutOfStock();
+
         // Build a stock-availability subquery: product is in stock in at least one shop,
         // either at the parent level (id_product_attribute = 0) OR via any of its combinations.
         // Excluding combination rows here would mark stores that sell only via declinations
         // (e.g. ALL products are variants of a parent) as fully out-of-stock.
-        $stockExistsConditions = [];
-        foreach ($allShopIds as $sid) {
-            $shopGroupId = (int) \Shop::getGroupFromShop($sid);
-            $stockExistsConditions[] = 'EXISTS (
-                SELECT 1 FROM ' . _DB_PREFIX_ . 'stock_available sa_check
-                WHERE sa_check.id_product = p.id_product
-                    AND (sa_check.id_shop = ' . (int) $sid . '
-                         OR (sa_check.id_shop = 0 AND sa_check.id_shop_group = ' . $shopGroupId . '))
-                    AND sa_check.quantity > 0
-            )';
+        //
+        // When the toggle is ON, $stockCondition stays empty and is never appended below.
+        $stockCondition = '';
+        if (!$includeOutOfStock) {
+            $stockExistsConditions = [];
+            foreach ($allShopIds as $sid) {
+                $shopGroupId = (int) \Shop::getGroupFromShop($sid);
+                $stockExistsConditions[] = 'EXISTS (
+                    SELECT 1 FROM ' . _DB_PREFIX_ . 'stock_available sa_check
+                    WHERE sa_check.id_product = p.id_product
+                        AND (sa_check.id_shop = ' . (int) $sid . '
+                             OR (sa_check.id_shop = 0 AND sa_check.id_shop_group = ' . $shopGroupId . '))
+                        AND sa_check.quantity > 0
+                )';
+            }
+            $stockCondition = '(' . implode(' OR ', $stockExistsConditions) . ')';
         }
-        $stockCondition = '(' . implode(' OR ', $stockExistsConditions) . ')';
 
         // Use EXISTS instead of JOIN to avoid row multiplication (strict GROUP BY compatible)
         $activeInAnyShop = 'EXISTS (
@@ -286,18 +385,7 @@ class SynchProductsToAiSmartTalk
             ORDER BY (ims2.id_shop = ' . $defaultShopId . ') DESC, ims2.id_shop ASC
             LIMIT 1)';
 
-        $sql = 'SELECT p.id_product, pl.name, pl.description, pl.description_short,
-                   p.reference, p.price, cl.link_rewrite, i.id_image,
-                   p.active,
-                   p.available_date,
-                   pl.id_shop as best_shop_id,
-                   c.iso_code as currency_code,
-                   sp.price as specific_price,
-                   sp.from as price_from,
-                   sp.to as price_to,
-                   sp.reduction as price_reduction,
-                   sp.reduction_type
-            FROM ' . _DB_PREFIX_ . 'product p
+        $sql = 'FROM ' . _DB_PREFIX_ . 'product p
             LEFT JOIN ' . _DB_PREFIX_ . 'product_lang pl
                 ON p.id_product = pl.id_product AND pl.id_lang = ' . $defaultLangId . '
                 AND pl.id_shop = ' . $plShopSubquery . '
@@ -322,8 +410,12 @@ class SynchProductsToAiSmartTalk
             LEFT JOIN ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps ON p.id_product = aps.id_product
                 AND aps.id_shop = ' . $defaultShopId . '
             WHERE pl.name IS NOT NULL
-                AND ' . $activeInAnyShop . '
-                AND ' . $stockCondition;
+                AND ' . $activeInAnyShop;
+
+        // Stock requirement only applies when the "include out-of-stock" toggle is OFF.
+        if ($stockCondition !== '') {
+            $sql .= ' AND ' . $stockCondition;
+        }
 
         // If not forcing sync, only get products that are not yet synced
         if ($this->forceSync === false) {
@@ -344,19 +436,18 @@ class SynchProductsToAiSmartTalk
 
         $sql .= ' GROUP BY p.id_product';
 
-        $products = \Db::getInstance()->executeS($sql);
-
-        return $products ?: [];
+        return $sql;
     }
 
     /**
      * Nettoie les produits hors stock ou inactifs d'AI SmartTalk lors d'une re-synchronisation.
-     * Un produit n'est nettoyé que s'il est inactif/hors stock dans TOUS les shops.
+     *
+     * The keep/purge decision is delegated to SyncFilterHelper::shouldProductBeKept:
+     *  - default mode: purge if not active+in-stock anywhere,
+     *  - include-out-of-stock mode: purge only if inactive everywhere (stock irrelevant).
      */
     private function cleanOutOfStockProducts()
     {
-        $defaultShopId = MultistoreHelper::getDefaultShopId();
-
         // Get all products currently synced
         $sql = 'SELECT DISTINCT aps.id_product
                 FROM ' . _DB_PREFIX_ . 'aismarttalk_product_sync aps
@@ -370,8 +461,7 @@ class SynchProductsToAiSmartTalk
         $toClean = [];
         foreach ($syncedProducts as $row) {
             $idProduct = (int) $row['id_product'];
-            // Product should be cleaned if not active+in stock in any shop
-            if (!MultistoreHelper::isProductActiveInAnyShop($idProduct)) {
+            if (!SyncFilterHelper::shouldProductBeKept($idProduct)) {
                 $toClean[] = $idProduct;
             }
         }

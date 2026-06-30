@@ -16,6 +16,10 @@ import { loginToAdmin, goToModuleConfig, loadSqlFixture, runSqlOnPs, runSqlRows 
 
 const adminPath = process.env.PS_ADMIN_PATH || 'admin-qa';
 const TEST_PRODUCT_REF = 'AST-VARIANT-LYD-TEST';
+// App (PHP) container to exec into. Defaults to the PS9 stack (`prestashop`); the
+// PS 1.7 Makefile targets override it (prestashop17 / prestashop1751) so these
+// in-container PHP probes run against the version under test, not the PS9 box.
+const PS_CONTAINER = process.env.PS_CONTAINER || 'prestashop';
 
 async function goToSyncTab(page: import('@playwright/test').Page) {
   await goToModuleConfig(page, adminPath);
@@ -59,13 +63,22 @@ test.describe('Sync — variants (declinations) + LYD currency', () => {
     expect(refs).toEqual(['AST-VAR-BLUE-L', 'AST-VAR-RED-M']);
   });
 
-  test('fixture inserted: LYD currency has precision = 3', () => {
-    const rows = runSqlRows(
-      `SELECT iso_code, \`precision\` AS prec FROM ps_currency WHERE id_currency=99`
+  test('fixture inserted: LYD currency present (precision = 3 where the column exists)', () => {
+    const cur = runSqlRows(`SELECT iso_code FROM ps_currency WHERE id_currency=99`);
+    expect(cur.length).toBe(1);
+    expect(cur[0].iso_code).toBe('LYD');
+
+    // `precision` exists on 1.7.6+/8/9; on 1.7.0–1.7.5 ps_currency has no such
+    // column — the decimal precision is CLDR-derived from the iso_code ('LYD' → 3),
+    // so there is nothing to assert at the DB level on those versions.
+    const hasPrecision = runSqlRows(
+      `SELECT COUNT(*) AS n FROM information_schema.columns
+       WHERE table_schema = DATABASE() AND table_name = 'ps_currency' AND column_name = 'precision'`
     );
-    expect(rows.length).toBe(1);
-    expect(rows[0].iso_code).toBe('LYD');
-    expect(rows[0].prec).toBe('3');
+    if (Number(hasPrecision[0].n) > 0) {
+      const rows = runSqlRows(`SELECT \`precision\` AS prec FROM ps_currency WHERE id_currency=99`);
+      expect(rows[0].prec).toBe('3');
+    }
   });
 
   test('default currency is LYD after seed', () => {
@@ -172,7 +185,7 @@ try {
     let output: string;
     try {
       output = execFileSync('docker', [
-        'exec', '-i', 'prestashop', 'php', '-d', 'display_errors=1',
+        'exec', '-i', PS_CONTAINER, 'php', '-d', 'display_errors=1',
       ], { encoding: 'utf-8', input: phpScript, stdio: ['pipe', 'pipe', 'pipe'] });
     } catch (e: any) {
       // Surface the stderr/stdout from PHP so the failure is actionable.
@@ -255,7 +268,7 @@ try {
     let output: string;
     try {
       output = execFileSync('docker', [
-        'exec', '-i', 'prestashop', 'php', '-d', 'display_errors=1',
+        'exec', '-i', PS_CONTAINER, 'php', '-d', 'display_errors=1',
       ], { encoding: 'utf-8', input: phpScript, stdio: ['pipe', 'pipe', 'pipe'] });
     } catch (e: any) {
       const stderr = e.stderr?.toString?.() ?? '';
@@ -320,11 +333,11 @@ echo "OK\\n";
 
     const { execFileSync } = require('child_process');
     execFileSync('docker', [
-      'exec', '-i', 'prestashop', 'php', '-d', 'display_errors=1',
+      'exec', '-i', PS_CONTAINER, 'php', '-d', 'display_errors=1',
     ], { encoding: 'utf-8', input: phpScript, stdio: ['pipe', 'pipe', 'pipe'] });
 
     const captured = execFileSync('docker', [
-      'exec', 'prestashop', 'cat', captureFile,
+      'exec', PS_CONTAINER, 'cat', captureFile,
     ], { encoding: 'utf-8' });
 
     const entry = JSON.parse(captured);

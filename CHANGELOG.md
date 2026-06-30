@@ -3,6 +3,34 @@
 All notable changes to the AI SmartTalk PrestaShop module.
 Versioning follows [SemVer](https://semver.org/). Dates are ISO-8601.
 
+## [3.8.0] — 2026-05-23
+
+Option « inclure les produits hors stock » dans la synchronisation produits.
+
+### Added
+
+- **Toggle « Include out-of-stock products »** dans la section *Product Filters*
+  de la page de configuration. Par défaut **désactivé** : seuls les produits
+  actifs avec un stock > 0 dans au moins une boutique sont envoyés à AI
+  SmartTalk — comportement historique préservé. Activé, **tous** les produits
+  actifs sont synchronisés indépendamment de leur niveau de stock, et un
+  produit qui tombe à zéro n'est plus purgé du knowledge base. Le webhook
+  `ps_on_product_out_of_stock` reste indépendant et continue de notifier les
+  ruptures.
+- **`SyncFilterHelper::shouldProductBeKept(int $idProduct)`** — orchestrateur
+  unique de la décision keep/purge sur changement d'état (update produit,
+  combination, quantité). Les hooks correspondants délèguent désormais à cette
+  méthode au lieu d'appeler `isProductActiveInAnyShop` en dur, ce qui rend le
+  comportement uniforme entre la requête SQL en masse et les hooks unitaires.
+- **`MultistoreHelper::isProductActiveOnlyInAnyShop`** /
+  **`isProductActiveOnlyInShop`** — variantes sans contrainte de stock du
+  helper existant, utilisées par le mode « include out-of-stock ». Les helpers
+  historiques (`isProductActiveInAnyShop`, `isProductActiveInShop`) restent
+  inchangés.
+- Script `upgrade/upgrade-3.8.0.php` qui initialise explicitement la nouvelle
+  clé `AI_SMART_TALK_SYNC_INCLUDE_OUT_OF_STOCK` à `0` sur les installations
+  existantes, pour rendre la valeur visible/auditable dans `ps_configuration`.
+
 ## [3.7.0] — 2026-05-17
 
 Sortie majeure axée e-commerce : déclinaisons, devises non-EUR, promotions

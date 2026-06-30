@@ -132,6 +132,47 @@ class MultistoreHelper
     }
 
     /**
+     * Check if a product is active in at least one shop, regardless of stock.
+     *
+     * Used by the "include out-of-stock" sync mode: a product is still considered
+     * relevant for synchronization as long as it remains active somewhere — its
+     * stock level is irrelevant to the keep/purge decision.
+     *
+     * @param int $idProduct
+     * @return bool
+     */
+    public static function isProductActiveOnlyInAnyShop(int $idProduct): bool
+    {
+        $shopIds = self::getAllShopIds();
+
+        foreach ($shopIds as $shopId) {
+            if (self::isProductActiveOnlyInShop($idProduct, $shopId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if a product is active in a specific shop, regardless of stock.
+     *
+     * @param int $idProduct
+     * @param int $idShop
+     * @return bool
+     */
+    public static function isProductActiveOnlyInShop(int $idProduct, int $idShop): bool
+    {
+        $sql = 'SELECT 1
+                FROM ' . _DB_PREFIX_ . 'product_shop ps
+                WHERE ps.id_product = ' . (int) $idProduct . '
+                    AND ps.id_shop = ' . (int) $idShop . '
+                    AND ps.active = 1';
+
+        return (bool) \Db::getInstance()->getValue($sql);
+    }
+
+    /**
      * Get all active shops with their names.
      *
      * @return array Array of ['id_shop' => int, 'name' => string]

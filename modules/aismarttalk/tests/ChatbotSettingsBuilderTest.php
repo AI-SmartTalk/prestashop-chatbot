@@ -272,4 +272,95 @@ class ChatbotSettingsBuilderTest extends TestCase
         $this->assertEquals('Chat now', $result['buttonText']);
         $this->assertEquals('medium', $result['chatSize']);
     }
+
+    // =========================================================================
+    // allowedLanguages overrides
+    // =========================================================================
+
+    public function testAllowedLanguagesOverrideAppliedWhenSet(): void
+    {
+        \Configuration::$globalStore['AI_SMART_TALK_ALLOWED_LANGUAGES'] = json_encode(['fr', 'en']);
+
+        $result = ChatbotSettingsBuilder::applyCustomizationOverrides([]);
+
+        $this->assertEquals(['fr', 'en'], $result['allowedLanguages']);
+    }
+
+    public function testAllowedLanguagesDropsInvalidCodes(): void
+    {
+        \Configuration::$globalStore['AI_SMART_TALK_ALLOWED_LANGUAGES'] = json_encode(['fr', 'klingon', 'xx']);
+
+        $result = ChatbotSettingsBuilder::applyCustomizationOverrides([]);
+
+        $this->assertEquals(['fr'], $result['allowedLanguages']);
+    }
+
+    public function testAllowedLanguagesNotAppliedWhenUnset(): void
+    {
+        $result = ChatbotSettingsBuilder::applyCustomizationOverrides([]);
+        $this->assertArrayNotHasKey('allowedLanguages', $result);
+    }
+
+    public function testAllowedLanguagesNotAppliedWhenEmptyOrAllInvalid(): void
+    {
+        \Configuration::$globalStore['AI_SMART_TALK_ALLOWED_LANGUAGES'] = '';
+        $this->assertArrayNotHasKey('allowedLanguages', ChatbotSettingsBuilder::applyCustomizationOverrides([]));
+
+        \Configuration::$globalStore['AI_SMART_TALK_ALLOWED_LANGUAGES'] = json_encode([]);
+        $this->assertArrayNotHasKey('allowedLanguages', ChatbotSettingsBuilder::applyCustomizationOverrides([]));
+
+        \Configuration::$globalStore['AI_SMART_TALK_ALLOWED_LANGUAGES'] = json_encode(['klingon']);
+        $this->assertArrayNotHasKey('allowedLanguages', ChatbotSettingsBuilder::applyCustomizationOverrides([]));
+    }
+
+    public function testAllowedLanguagesInheritedFromEmbedConfigWhenNoLocalOverride(): void
+    {
+        // Platform restricts languages; no PS-local override → widget inherits them.
+        $embedConfig = ['allowedLanguages' => ['de', 'fr']];
+
+        $result = ChatbotSettingsBuilder::build('m', 'en', 'https://api', 'https://cdn', 'wss://ws', $embedConfig);
+
+        $this->assertEquals(['de', 'fr'], $result['allowedLanguages']);
+    }
+
+    public function testLocalAllowedLanguagesOverrideEmbedConfig(): void
+    {
+        \Configuration::$globalStore['AI_SMART_TALK_ALLOWED_LANGUAGES'] = json_encode(['fr']);
+        $embedConfig = ['allowedLanguages' => ['de', 'en']];
+
+        $result = ChatbotSettingsBuilder::build('m', 'en', 'https://api', 'https://cdn', 'wss://ws', $embedConfig);
+
+        $this->assertEquals(['fr'], $result['allowedLanguages']);
+    }
+
+    // =========================================================================
+    // reconcileLangWithAllowed
+    // =========================================================================
+
+    public function testReconcileLangFallsBackWhenVisitorLangNotOffered(): void
+    {
+        $result = ChatbotSettingsBuilder::reconcileLangWithAllowed(['lang' => 'fr', 'allowedLanguages' => ['lu', 'th', 'ge']]);
+        $this->assertEquals('lu', $result['lang']);
+    }
+
+    public function testReconcileLangKeptWhenOffered(): void
+    {
+        $result = ChatbotSettingsBuilder::reconcileLangWithAllowed(['lang' => 'th', 'allowedLanguages' => ['lu', 'th', 'ge']]);
+        $this->assertEquals('th', $result['lang']);
+    }
+
+    public function testReconcileLangNoopWithoutRestriction(): void
+    {
+        $result = ChatbotSettingsBuilder::reconcileLangWithAllowed(['lang' => 'fr']);
+        $this->assertEquals('fr', $result['lang']);
+    }
+
+    public function testBuildReconcilesLangWithLocalAllowed(): void
+    {
+        // Visitor browses in French, but the merchant only offers lu/th/ge →
+        // the widget must start in an offered language, not 'fr'.
+        \Configuration::$globalStore['AI_SMART_TALK_ALLOWED_LANGUAGES'] = json_encode(['lu', 'th', 'ge']);
+        $result = ChatbotSettingsBuilder::build('m', 'fr', 'https://api', 'https://cdn', 'wss://ws', null);
+        $this->assertEquals('lu', $result['lang']);
+    }
 }
