@@ -352,6 +352,7 @@ class AdminFormHandler
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
             'AI_SMART_TALK_ENABLE_AUTO_LOGIN',
+            'AI_SMART_TALK_REQUIRE_AUTHENTICATION',
         ];
 
         $toggleValues = [];
@@ -964,6 +965,7 @@ class AdminFormHandler
             'AI_SMART_TALK_ENABLE_FEEDBACK',
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
+            'AI_SMART_TALK_REQUIRE_AUTHENTICATION',
             'AI_SMART_TALK_ALLOWED_LANGUAGES',
         ];
 

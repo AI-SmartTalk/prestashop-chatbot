@@ -168,6 +168,27 @@ class ChatbotSettingsBuilderTest extends TestCase
         $this->assertTrue($result['enableFeedback']);
     }
 
+    public function testRequireAuthenticationOverrideOn(): void
+    {
+        \Configuration::$globalStore['AI_SMART_TALK_REQUIRE_AUTHENTICATION'] = 'on';
+        $result = ChatbotSettingsBuilder::applyCustomizationOverrides([]);
+        $this->assertTrue($result['requireAuthentication']);
+    }
+
+    public function testRequireAuthenticationOverrideOff(): void
+    {
+        \Configuration::$globalStore['AI_SMART_TALK_REQUIRE_AUTHENTICATION'] = 'off';
+        $result = ChatbotSettingsBuilder::applyCustomizationOverrides([]);
+        $this->assertFalse($result['requireAuthentication']);
+    }
+
+    public function testRequireAuthenticationInheritsEmbedConfigWhenEmpty(): void
+    {
+        // Empty local setting → keep the platform embed-config value untouched.
+        $result = ChatbotSettingsBuilder::applyCustomizationOverrides(['requireAuthentication' => true]);
+        $this->assertTrue($result['requireAuthentication']);
+    }
+
     public function testColorThemeOverride(): void
     {
         \Configuration::$globalStore['AI_SMART_TALK_PRIMARY_COLOR'] = '#667eea';

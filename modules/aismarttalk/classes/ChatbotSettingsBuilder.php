@@ -278,6 +278,7 @@ class ChatbotSettingsBuilder
             'AI_SMART_TALK_ENABLE_VOICE_INPUT' => 'enableVoiceInput',
             'AI_SMART_TALK_ENABLE_VOICE_MODE' => 'enableVoiceMode',
             'AI_SMART_TALK_ENABLE_AUTO_LOGIN' => 'enableAutoLogin',
+            'AI_SMART_TALK_REQUIRE_AUTHENTICATION' => 'requireAuthentication',
         ];
 
         foreach ($toggleOverrides as $configKey => $settingKey) {

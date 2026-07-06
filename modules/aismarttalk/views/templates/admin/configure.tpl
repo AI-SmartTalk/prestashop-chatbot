@@ -2191,6 +2191,14 @@ a.ast-btn-success:hover {
                                         <option value="off" {if $enableAutoLogin == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
                                     </select>
                                 </div>
+                                <div class="ast-feature-toggle">
+                                    <span class="label"><i class="icon icon-lock"></i> {l s='Require login' mod='aismarttalk'}</span>
+                                    <select name="AI_SMART_TALK_REQUIRE_AUTHENTICATION" class="ast-select" style="width: auto;">
+                                        <option value="" {if $requireAuthentication == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
+                                        <option value="on" {if $requireAuthentication == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
+                                        <option value="off" {if $requireAuthentication == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>

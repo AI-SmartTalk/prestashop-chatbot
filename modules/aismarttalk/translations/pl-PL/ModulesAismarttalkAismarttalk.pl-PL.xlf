@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file original="modulesaismarttalkaismarttalk" source-language="fr-FR" target-language="fr-FR" datatype="plaintext">
+  <file original="modulesaismarttalkaismarttalk" source-language="pl-PL" target-language="pl-PL" datatype="plaintext">
     <body>
       <trans-unit id="9048105ce6fcce0e57c7b4d1e9ca2562">
         <source>Customer sync failed. Please check the logs.</source>
-        <target>Échec de la synchronisation des clients. Veuillez vérifier les journaux.</target>
+        <target>Synchronizacja klientów nie powiodła się. Sprawdź dzienniki.</target>
       </trans-unit>
       <trans-unit id="cf36b967e06c8ab5ceefe4705b7a59fe">
         <source>Customer sync completed: %d synced, %d removed.</source>
-        <target>Synchronisation des clients terminée : %d synchronisés, %d supprimés.</target>
+        <target>Synchronizacja klientów zakończona: zsynchronizowano %d, usunięto %d.</target>
       </trans-unit>
     </body>
   </file>

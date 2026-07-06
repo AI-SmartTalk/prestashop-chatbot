@@ -1,94 +1,94 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file original="modulesaismarttalkbackoffice" source-language="fr-FR" target-language="fr-FR" datatype="plaintext">
+  <file original="modulesaismarttalkbackoffice" source-language="pt-PT" target-language="pt-PT" datatype="plaintext">
     <body>
       <trans-unit id="0ab6a976075a95477d019fdb1dbc311d">
         <source>Partner offers opt-in only</source>
-        <target>Offres partenaires (opt-in) uniquement</target>
+        <target>Apenas quem aceitou ofertas de parceiros</target>
       </trans-unit>
       <trans-unit id="0c0974375df8ee4d5d4363a06594adca">
         <source>Payload Encryption</source>
-        <target>Chiffrement de la charge utile</target>
+        <target>Encriptação do payload</target>
       </trans-unit>
       <trans-unit id="3dfccabfc77db460915210175e832ed1">
         <source>Newsletter subscribers only</source>
-        <target>Abonnés à la newsletter uniquement</target>
+        <target>Apenas subscritores da newsletter</target>
       </trans-unit>
       <trans-unit id="4ca6c9ad02b3d9b6927532bc24696f59">
         <source>Only sync customers who have given their consent. Based on PrestaShop native fields.</source>
-        <target>Synchroniser uniquement les clients ayant donné leur consentement. Basé sur les champs natifs de PrestaShop.</target>
+        <target>Sincronizar apenas os clientes que deram o seu consentimento. Baseado nos campos nativos do PrestaShop.</target>
       </trans-unit>
       <trans-unit id="9048105ce6fcce0e57c7b4d1e9ca2562">
         <source>Customer sync failed. Please check the logs.</source>
-        <target>Échec de la synchronisation des clients. Veuillez vérifier les journaux.</target>
+        <target>Falha na sincronização de clientes. Verifique os registos.</target>
       </trans-unit>
       <trans-unit id="913403b47a9c7cbb0ebdf595e98231db">
         <source>Newsletter OR partner offers</source>
-        <target>Newsletter OU offres partenaires</target>
+        <target>Newsletter OU ofertas de parceiros</target>
       </trans-unit>
       <trans-unit id="93cba07454f06a4a960172bbd6e2a435">
         <source>Yes</source>
-        <target>Oui</target>
+        <target>Sim</target>
       </trans-unit>
       <trans-unit id="952482e1b3fed8b46ee3403789657026">
         <source>Open AI SmartTalk Backoffice</source>
-        <target>Ouvrir le backoffice AI SmartTalk</target>
+        <target>Abrir o Backoffice da AI SmartTalk</target>
       </trans-unit>
       <trans-unit id="9d7ad9c1c0b7d12b514fadc423e47cfd">
         <source>Customer sync completed successfully!</source>
-        <target>Synchronisation des clients terminée avec succès !</target>
+        <target>Sincronização de clientes concluída com sucesso!</target>
       </trans-unit>
       <trans-unit id="9daf1fb753b42c3cdc8f1d01669cd6d8">
         <source>Save Settings</source>
-        <target>Enregistrer les paramètres</target>
+        <target>Guardar definições</target>
       </trans-unit>
       <trans-unit id="a1ca8a9d9193297b06f7dc7706c67a85">
         <source>Sync All</source>
-        <target>Tout synchroniser</target>
+        <target>Sincronizar tudo</target>
       </trans-unit>
       <trans-unit id="ae943d854b9d705b53cacfefab7ffe7d">
         <source>AI SmartTalk Backoffice</source>
-        <target>Backoffice AI SmartTalk</target>
+        <target>Backoffice da AI SmartTalk</target>
       </trans-unit>
       <trans-unit id="b22409f152bba7e25497c5f9bb0e1500">
         <source>All data is encrypted with AES-256-GCM before transmission.</source>
-        <target>Toutes les données sont chiffrées avec AES-256-GCM avant transmission.</target>
+        <target>Todos os dados são encriptados com AES-256-GCM antes da transmissão.</target>
       </trans-unit>
       <trans-unit id="bafd7322c6e97d25b6299b5d6fe8920b">
         <source>No</source>
-        <target>Non</target>
+        <target>Não</target>
       </trans-unit>
       <trans-unit id="bde62109d53f3e15e3b09b4ca12c0973">
         <source>Newsletter AND partner offers</source>
-        <target>Newsletter ET offres partenaires</target>
+        <target>Newsletter E ofertas de parceiros</target>
       </trans-unit>
       <trans-unit id="bdef527bcce28314a45131e828f2132a">
         <source>Consent Filter</source>
-        <target>Filtre de consentement</target>
+        <target>Filtro de consentimento</target>
       </trans-unit>
       <trans-unit id="cda5094ddb1f71c851ad76d94806da6a">
         <source>An error occurred during customer sync.</source>
-        <target>Une erreur s&apos;est produite lors de la synchronisation des clients.</target>
+        <target>Ocorreu um erro durante a sincronização de clientes.</target>
       </trans-unit>
       <trans-unit id="d31653f8edd147b8f8e8c524094d7b96">
         <source>Auto-sync customers with AI SmartTalk</source>
-        <target>Synchroniser automatiquement les clients avec AI SmartTalk</target>
+        <target>Sincronizar automaticamente os clientes com a AI SmartTalk</target>
       </trans-unit>
       <trans-unit id="de31291360fc7b4f832afcc772a889bd">
         <source>Always active</source>
-        <target>Toujours actif</target>
+        <target>Sempre ativo</target>
       </trans-unit>
       <trans-unit id="e1d09a60e5e7c9f3339002323c2dd856">
         <source>AI SmartTalk Configuration</source>
-        <target>Configuration AI SmartTalk</target>
+        <target>Configuração da AI SmartTalk</target>
       </trans-unit>
       <trans-unit id="e3ee84d73862c5bffd62c3909d571156">
         <source>All customers (no filter)</source>
-        <target>Tous les clients (aucun filtre)</target>
+        <target>Todos os clientes (sem filtro)</target>
       </trans-unit>
       <trans-unit id="fec6b1393cb5a616a7b19766d1c612c4">
         <source>Customer Synchronization</source>
-        <target>Synchronisation des clients</target>
+        <target>Sincronização de clientes</target>
       </trans-unit>
     </body>
   </file>

@@ -50,7 +50,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.11.0';
+        $this->version = '3.12.0';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -320,6 +320,7 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_FEEDBACK')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_INPUT')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_MODE')
+            && Configuration::deleteByName('AI_SMART_TALK_REQUIRE_AUTHENTICATION')
             && Configuration::deleteByName('AI_SMART_TALK_BORDER_RADIUS')
             && Configuration::deleteByName('AI_SMART_TALK_BUTTON_BORDER_RADIUS')
             && Configuration::deleteByName('AI_SMART_TALK_ALLOWED_LANGUAGES')
@@ -558,6 +559,7 @@ class AiSmartTalk extends Module
             'enableVoiceInput' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_INPUT') ?: '',
             'enableVoiceMode' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_MODE') ?: '',
             'enableAutoLogin' => Configuration::get('AI_SMART_TALK_ENABLE_AUTO_LOGIN') ?: '',
+            'requireAuthentication' => Configuration::get('AI_SMART_TALK_REQUIRE_AUTHENTICATION') ?: '',
 
             // Widget languages — restrict the language switcher (empty = all)
             'availableLanguages' => WidgetLocales::all(),
@@ -1881,6 +1883,7 @@ class AiSmartTalk extends Module
             'AI_SMART_TALK_ENABLE_FEEDBACK',
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
+            'AI_SMART_TALK_REQUIRE_AUTHENTICATION',
             'AI_SMART_TALK_ALLOWED_LANGUAGES',
         ];
 

@@ -1,0 +1,995 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="modulesaismarttalkconfigure" source-language="pl-PL" target-language="pl-PL" datatype="plaintext">
+    <body>
+      <trans-unit id="00b926df64130d35aea3b34c0697da9a">
+        <source>No categories selected. All products will be synchronized (nothing excluded).</source>
+        <target>Nie wybrano żadnych kategorii. Wszystkie produkty zostaną zsynchronizowane (nic nie zostanie wykluczone).</target>
+      </trans-unit>
+      <trans-unit id="00d545d925d0b846d8c18ac76312946b">
+        <source>Voice Mode</source>
+        <target>Tryb głosowy</target>
+      </trans-unit>
+      <trans-unit id="01555b381222c2acc116a17c38e7acb3">
+        <source>Chat Window Corners</source>
+        <target>Rogi okna czatu</target>
+      </trans-unit>
+      <trans-unit id="020a9f6a979825fc9349eccc66bef6db">
+        <source>Secondary Color</source>
+        <target>Kolor dodatkowy</target>
+      </trans-unit>
+      <trans-unit id="04a5929cdd9cd48996a385ed0ed4a6a4">
+        <source>Send shipping notifications, update CRM, notify team on Slack</source>
+        <target>Wysyłaj powiadomienia o wysyłce, aktualizuj CRM, powiadamiaj zespół na Slacku</target>
+      </trans-unit>
+      <trans-unit id="05aec3b1beb9f047680f539fec2dadc0">
+        <source>Link to your privacy policy. Leave empty to use AI SmartTalk&apos;s default privacy policy.</source>
+        <target>Odnośnik do Twojej polityki prywatności. Pozostaw puste, aby użyć domyślnej polityki prywatności AI SmartTalk.</target>
+      </trans-unit>
+      <trans-unit id="06933067aafd48425d67bcb01bba5cb6">
+        <source>Update</source>
+        <target>Aktualizuj</target>
+      </trans-unit>
+      <trans-unit id="06b9281e396db002010bde1de57262eb">
+        <source>Auto</source>
+        <target>Auto</target>
+      </trans-unit>
+      <trans-unit id="06cce99e24187524f31c15562b6bb5f5">
+        <source>When enabled, users must explicitly accept data processing terms before using the chatbot. Recommended for strict GDPR compliance.</source>
+        <target>Po włączeniu użytkownicy muszą wyraźnie zaakceptować warunki przetwarzania danych przed skorzystaniem z chatbota. Zalecane dla ścisłej zgodności z RODO.</target>
+      </trans-unit>
+      <trans-unit id="0ab6a976075a95477d019fdb1dbc311d">
+        <source>Partner offers opt-in only</source>
+        <target>Tylko za zgodą na oferty partnerów</target>
+      </trans-unit>
+      <trans-unit id="0be328bbe76d7eba1b3abf14c1802edb">
+        <source>Connect your store to AI SmartTalk</source>
+        <target>Połącz swój sklep z AI SmartTalk</target>
+      </trans-unit>
+      <trans-unit id="0c0974375df8ee4d5d4363a06594adca">
+        <source>Payload Encryption</source>
+        <target>Szyfrowanie ładunku</target>
+      </trans-unit>
+      <trans-unit id="0e465b854b30820ea24d2750e4e3c7bc">
+        <source>Synchronization failed</source>
+        <target>Synchronizacja nie powiodła się</target>
+      </trans-unit>
+      <trans-unit id="1063e38cb53d94d386f21227fcd84717">
+        <source>Remove</source>
+        <target>Usuń</target>
+      </trans-unit>
+      <trans-unit id="134353eb582d3f9bfd506fffd830814d">
+        <source>All types</source>
+        <target>Wszystkie typy</target>
+      </trans-unit>
+      <trans-unit id="150c7abfca6c489fee5cb82fbb7a9bc4">
+        <source>Webhook</source>
+        <target>Webhook</target>
+      </trans-unit>
+      <trans-unit id="1513c3f1ded1488473c778a19db0bc2e">
+        <source>Button Position</source>
+        <target>Pozycja przycisku</target>
+      </trans-unit>
+      <trans-unit id="155726cf6229fef3b66bca3bd3934b78">
+        <source>Try different filters.</source>
+        <target>Spróbuj innych filtrów.</target>
+      </trans-unit>
+      <trans-unit id="185bb765c58aac16e9abe552f0f195a9">
+        <source>Sync Settings</source>
+        <target>Ustawienia synchronizacji</target>
+      </trans-unit>
+      <trans-unit id="190f98c2cacb55b891fafae1bc1c2996">
+        <source>Button Style</source>
+        <target>Styl przycisku</target>
+      </trans-unit>
+      <trans-unit id="1973451bade12ed85f84221461e56e61">
+        <source>Default (bottom-right)</source>
+        <target>Domyślnie (prawy dolny róg)</target>
+      </trans-unit>
+      <trans-unit id="199588abf1dd6a164af9d25c4f0c0222">
+        <source>Auto-Login</source>
+        <target>Automatyczne logowanie</target>
+      </trans-unit>
+      <trans-unit id="1b99d38ccc9a9ec18813eec98c72b1ef">
+        <source>Require login</source>
+        <target>Wymagaj logowania</target>
+      </trans-unit>
+      <trans-unit id="1baf4ba83bf603eb82af6d81c5318d50">
+        <source>Color Mode</source>
+        <target>Tryb kolorów</target>
+      </trans-unit>
+      <trans-unit id="1c1560a83adb7d62d9ccee904ad839b4">
+        <source>Active skills on your assistant. It uses them automatically based on context.</source>
+        <target>Aktywne umiejętności Twojego asystenta. Wykorzystuje je automatycznie w zależności od kontekstu.</target>
+      </trans-unit>
+      <trans-unit id="1cd227d33c31da71a9668d0cf7afd9ad">
+        <source>All except selected</source>
+        <target>Wszystkie oprócz zaznaczonych</target>
+      </trans-unit>
+      <trans-unit id="1d47a11a82a37faee5e16c2742366dbc">
+        <source>Team Seats</source>
+        <target>Miejsca w zespole</target>
+      </trans-unit>
+      <trans-unit id="1dd7ce1f6571e15422e56f6b1c627461">
+        <source>Using Webhooks in SmartFlows</source>
+        <target>Korzystanie z webhooków w SmartFlows</target>
+      </trans-unit>
+      <trans-unit id="1ef7cdb80da336815fec3ebeca5efbad">
+        <source>Usage &amp; Credits</source>
+        <target>Zużycie i kredyty</target>
+      </trans-unit>
+      <trans-unit id="1f37743cdcdef44b3d80e8c166c6c3ce">
+        <source>API URL</source>
+        <target>Adres URL API</target>
+      </trans-unit>
+      <trans-unit id="2046c1758a047be4b8cdf87d7c824b56">
+        <source>Create a new SmartFlow and select &quot;PrestaShop Trigger&quot; as the starting point</source>
+        <target>Utwórz nowy SmartFlow i wybierz „PrestaShop Trigger&quot; jako punkt startowy</target>
+      </trans-unit>
+      <trans-unit id="216c8941be720bdd651135bf3aee3cb1">
+        <source>Loading your skills...</source>
+        <target>Ładowanie Twoich umiejętności...</target>
+      </trans-unit>
+      <trans-unit id="217b4168969fa53f433f7f6da261a262">
+        <source>Update available</source>
+        <target>Dostępna aktualizacja</target>
+      </trans-unit>
+      <trans-unit id="21e2bb42873eddcb9b476b8eafbe0c18">
+        <source>Reset to defaults</source>
+        <target>Przywróć domyślne</target>
+      </trans-unit>
+      <trans-unit id="221d2a347ebfc15d48665188f639d1cb">
+        <source>Webhooks</source>
+        <target>Webhooki</target>
+      </trans-unit>
+      <trans-unit id="223a1067d9b26aee31ab821726bfbbf1">
+        <source>Product Sync</source>
+        <target>Synchronizacja produktów</target>
+      </trans-unit>
+      <trans-unit id="2660064e68655415da2628c2ae2f7592">
+        <source>Small</source>
+        <target>Mały</target>
+      </trans-unit>
+      <trans-unit id="27f08387b26e1ceeb1b60bd9c97e7a47">
+        <source>AI Agents</source>
+        <target>Agenci AI</target>
+      </trans-unit>
+      <trans-unit id="2938c7f7e560ed972f8a4f68e80ff834">
+        <source>Dashboard</source>
+        <target>Pulpit</target>
+      </trans-unit>
+      <trans-unit id="2b31634e3cfef1bfdd7d0d2cdfdc3f9d">
+        <source>Collapse</source>
+        <target>Zwiń</target>
+      </trans-unit>
+      <trans-unit id="2b7dabba0077abe3732e0418b048a56b">
+        <source>Scheduled</source>
+        <target>Zaplanowane</target>
+      </trans-unit>
+      <trans-unit id="2c1a97beaa4b568c82b48b8c1427f4f3">
+        <source>Slightly Rounded</source>
+        <target>Lekko zaokrąglone</target>
+      </trans-unit>
+      <trans-unit id="2cc1943d4c0b46bfcf503a75c44f988b">
+        <source>Popular</source>
+        <target>Popularne</target>
+      </trans-unit>
+      <trans-unit id="2e53df154f6d5a2d96fdf858acb58f7b">
+        <source>Intelligent chatbot for your PrestaShop store</source>
+        <target>Inteligentny chatbot dla Twojego sklepu PrestaShop</target>
+      </trans-unit>
+      <trans-unit id="2ec0d16e4ca169baedb9b2d50ec5c6d7">
+        <source>Connected</source>
+        <target>Połączono</target>
+      </trans-unit>
+      <trans-unit id="30fc6bbba82125243ecf4ddb27fee645">
+        <source>Minimal</source>
+        <target>Minimalny</target>
+      </trans-unit>
+      <trans-unit id="320355281cd4d51c3b1e7a8b570bfa54">
+        <source>Product Out of Stock</source>
+        <target>Produkt niedostępny</target>
+      </trans-unit>
+      <trans-unit id="32036005d1f6ed59803ba3e13c80993e">
+        <source>Avatar</source>
+        <target>Awatar</target>
+      </trans-unit>
+      <trans-unit id="33d8042bd735c559cc3206f4bc99aedc">
+        <source>Sort by</source>
+        <target>Sortuj według</target>
+      </trans-unit>
+      <trans-unit id="34a65a3ab5b7795fe2ba1de284531724">
+        <source>Moderate reviews, respond to feedback, analyze sentiment</source>
+        <target>Moderuj recenzje, odpowiadaj na opinie, analizuj sentyment</target>
+      </trans-unit>
+      <trans-unit id="3840ed007159742c5c68b29482212229">
+        <source>You are on the Free plan. Upgrade for more features and higher limits.</source>
+        <target>Korzystasz z planu Darmowego. Ulepsz plan, aby uzyskać więcej funkcji i wyższe limity.</target>
+      </trans-unit>
+      <trans-unit id="389984170258f1354e2668d82f906f61">
+        <source>installs</source>
+        <target>instalacji</target>
+      </trans-unit>
+      <trans-unit id="3a08e2e340ab29fd9263af48193cbf8e">
+        <source>Languages</source>
+        <target>Języki</target>
+      </trans-unit>
+      <trans-unit id="3a69b34ce86dacb205936a8094f6c743">
+        <source>Large</source>
+        <target>Duży</target>
+      </trans-unit>
+      <trans-unit id="3a9f85d8aa0c97dcab49b604950ff0f0">
+        <source>Enable Chatbot</source>
+        <target>Włącz chatbota</target>
+      </trans-unit>
+      <trans-unit id="3b878279a04dc47d60932cb294d96259">
+        <source>Overview</source>
+        <target>Przegląd</target>
+      </trans-unit>
+      <trans-unit id="3dfccabfc77db460915210175e832ed1">
+        <source>Newsletter subscribers only</source>
+        <target>Tylko subskrybenci newslettera</target>
+      </trans-unit>
+      <trans-unit id="3f3e336e2f1fa10375efd923fca18b55">
+        <source>Warning:</source>
+        <target>Ostrzeżenie:</target>
+      </trans-unit>
+      <trans-unit id="4163953e84894b63c0b75e14d60992a8">
+        <source>Before Footer</source>
+        <target>Przed stopką</target>
+      </trans-unit>
+      <trans-unit id="419f3742e6de8e0ec4b22cce005e7630">
+        <source>Platform</source>
+        <target>Platforma</target>
+      </trans-unit>
+      <trans-unit id="42020b9480701cf6bf9e2abc0f9081f7">
+        <source>Search categories...</source>
+        <target>Szukaj kategorii...</target>
+      </trans-unit>
+      <trans-unit id="42f2639370f346e5276ff6d67b7eef7d">
+        <source>Exclude checked categories</source>
+        <target>Wyklucz zaznaczone kategorie</target>
+      </trans-unit>
+      <trans-unit id="44903af8585a78751280aa2f0e604b46">
+        <source>Skill type</source>
+        <target>Typ umiejętności</target>
+      </trans-unit>
+      <trans-unit id="449d688c6921069a9559495d3a040a6c">
+        <source>By default, only products with stock are synchronized. Enable to sync every active product, even when its stock is zero.</source>
+        <target>Domyślnie synchronizowane są tylko produkty z zapasem. Włącz, aby synchronizować każdy aktywny produkt, nawet gdy jego zapas wynosi zero.</target>
+      </trans-unit>
+      <trans-unit id="4538a06b57b0d8de79c02666184e7378">
+        <source>Synchronizing products…</source>
+        <target>Synchronizowanie produktów…</target>
+      </trans-unit>
+      <trans-unit id="455a646a7fac58f56ff2c6aa623c3bf5">
+        <source>Button Corners</source>
+        <target>Rogi przycisku</target>
+      </trans-unit>
+      <trans-unit id="459904cc900b02c2c94c8c0547c731c7">
+        <source>Your products will be available to the AI chatbot</source>
+        <target>Twoje produkty będą dostępne dla chatbota AI</target>
+      </trans-unit>
+      <trans-unit id="45b5de8fb2930cf2cc1dc2c6d20bd72a">
+        <source>Button Text</source>
+        <target>Tekst przycisku</target>
+      </trans-unit>
+      <trans-unit id="45e96c0a422ce8a1a6ec1bd5eb9625c6">
+        <source>Select All</source>
+        <target>Zaznacz wszystko</target>
+      </trans-unit>
+      <trans-unit id="45eac4f14d4cd05a4be315960a601507">
+        <source>Uninstall failed. Please try again.</source>
+        <target>Odinstalowanie nie powiodło się. Spróbuj ponownie.</target>
+      </trans-unit>
+      <trans-unit id="46fac2977c657eea2aa992614ef697c7">
+        <source>e.g., Need help?</source>
+        <target>np. Potrzebujesz pomocy?</target>
+      </trans-unit>
+      <trans-unit id="48c2413e67809d15dae144e447f75b8d">
+        <source>Go to AI SmartTalk Dashboard → SmartFlows</source>
+        <target>Przejdź do panelu AI SmartTalk → SmartFlows</target>
+      </trans-unit>
+      <trans-unit id="49616a2f9d7bdd0587286d960c5b7de7">
+        <source>Save Appearance</source>
+        <target>Zapisz wygląd</target>
+      </trans-unit>
+      <trans-unit id="49ab28040dfa07f53544970c6d147e1e">
+        <source>Connect</source>
+        <target>Połącz</target>
+      </trans-unit>
+      <trans-unit id="4b6f7d34a58ba399f077685951d06738">
+        <source>customers</source>
+        <target>klienci</target>
+      </trans-unit>
+      <trans-unit id="4b8e8c6910d2dd70bdbd3f7b65e6f55a">
+        <source>Order Status Changed</source>
+        <target>Zmieniono status zamówienia</target>
+      </trans-unit>
+      <trans-unit id="4ca473a37084dcefb43fd6cd03bb2d77">
+        <source>Return Requested</source>
+        <target>Złożono wniosek o zwrot</target>
+      </trans-unit>
+      <trans-unit id="4d28d3f0516961815be888e1d927aee0">
+        <source>Chatbot Status</source>
+        <target>Status chatbota</target>
+      </trans-unit>
+      <trans-unit id="4d297f5df921dca388a17e3336cad50f">
+        <source>Bottom Right</source>
+        <target>Prawy dolny róg</target>
+      </trans-unit>
+      <trans-unit id="4d3d769b812b6faa6b76e1a8abaece2d">
+        <source>Active</source>
+        <target>Aktywny</target>
+      </trans-unit>
+      <trans-unit id="4e94c8ad46c8aef1ca637841dfbe2159">
+        <source>GDPR</source>
+        <target>RODO</target>
+      </trans-unit>
+      <trans-unit id="50176e199dc3f735aa2a17c1cd1e8996">
+        <source>No skills installed yet</source>
+        <target>Nie zainstalowano jeszcze żadnych umiejętności</target>
+      </trans-unit>
+      <trans-unit id="521c36a31c2762741cf0f8890cbe05e3">
+        <source>On</source>
+        <target>Wł.</target>
+      </trans-unit>
+      <trans-unit id="53650f6e915045e5674ff5cc17cdfb64">
+        <source>Choose your trigger event and configure the automation</source>
+        <target>Wybierz zdarzenie wyzwalające i skonfiguruj automatyzację</target>
+      </trans-unit>
+      <trans-unit id="5698ff75d7995162c5f984380cc62c12">
+        <source>All platforms</source>
+        <target>Wszystkie platformy</target>
+      </trans-unit>
+      <trans-unit id="59ea61e4d9d9255e175f475275becb51">
+        <source>Updates Available</source>
+        <target>Dostępne aktualizacje</target>
+      </trans-unit>
+      <trans-unit id="5b3d79443b52cfd0cba1f25ead28f592">
+        <source>My Skills</source>
+        <target>Moje umiejętności</target>
+      </trans-unit>
+      <trans-unit id="5c778527a17530b4ea21461f26b851a1">
+        <source>Restore default AI SmartTalk URLs</source>
+        <target>Przywróć domyślne adresy URL AI SmartTalk</target>
+      </trans-unit>
+      <trans-unit id="5cd65cbdebc84d6a1e75ff49362c362a">
+        <source>Discover new skills for your assistant. One-click install.</source>
+        <target>Odkryj nowe umiejętności dla swojego asystenta. Instalacja jednym kliknięciem.</target>
+      </trans-unit>
+      <trans-unit id="5d0eb7fd51b2555cbfe906345022422d">
+        <source>This will remove deleted and inactive products from AI SmartTalk. Active products are not affected.</source>
+        <target>Spowoduje to usunięcie usuniętych i nieaktywnych produktów z AI SmartTalk. Aktywne produkty nie zostaną naruszone.</target>
+      </trans-unit>
+      <trans-unit id="5d4d8771b47d6c5166952822e552f082">
+        <source>Extra Large</source>
+        <target>Bardzo duży</target>
+      </trans-unit>
+      <trans-unit id="60b4e96f874a81a7bc9fd8e1cfbac2f2">
+        <source>Chatbot</source>
+        <target>Chatbot</target>
+      </trans-unit>
+      <trans-unit id="60de370a2bf0abba26a2f975ae014021">
+        <source>skill(s) can be updated to the latest version.</source>
+        <target>umiejętność(-i) można zaktualizować do najnowszej wersji.</target>
+      </trans-unit>
+      <trans-unit id="62920bb17b67d01241cbc7c555e0b4ae">
+        <source>Create SmartFlow</source>
+        <target>Utwórz SmartFlow</target>
+      </trans-unit>
+      <trans-unit id="62f5d708d6ad1fa1ddd9429a65cccbea">
+        <source>All categories</source>
+        <target>Wszystkie kategorie</target>
+      </trans-unit>
+      <trans-unit id="632cb28994165f2796524031e3cc66fc">
+        <source>Send thank you email, create invoice, notify warehouse</source>
+        <target>Wyślij e-mail z podziękowaniem, utwórz fakturę, powiadom magazyn</target>
+      </trans-unit>
+      <trans-unit id="675e31b94580e2642405e2f8586d112e">
+        <source>Marketplace</source>
+        <target>Marketplace</target>
+      </trans-unit>
+      <trans-unit id="6b0637bccba7149546923459fb81d88f">
+        <source>Get started by connecting your PrestaShop store to AI SmartTalk. It only takes a minute!</source>
+        <target>Rozpocznij, łącząc swój sklep PrestaShop z AI SmartTalk. To zajmuje tylko chwilę!</target>
+      </trans-unit>
+      <trans-unit id="6baa2db5f51a63a1c3eefd22073d0cb7">
+        <source>Configure privacy information displayed in the chatbot. This helps comply with GDPR requirements.</source>
+        <target>Skonfiguruj informacje o prywatności wyświetlane w chatbocie. Pomaga to spełnić wymogi RODO.</target>
+      </trans-unit>
+      <trans-unit id="6c396f6f9c3ab45242bd90f21b997baa">
+        <source>Alert purchasing team, notify supplier, update availability</source>
+        <target>Powiadom zespół zakupowy, poinformuj dostawcę, zaktualizuj dostępność</target>
+      </trans-unit>
+      <trans-unit id="6d7d82d9c1d7f68064d14e673d53eb19">
+        <source>Update failed</source>
+        <target>Aktualizacja nie powiodła się</target>
+      </trans-unit>
+      <trans-unit id="704d0c1f877a77244266908551a1ee27">
+        <source>Sync All Products</source>
+        <target>Synchronizuj wszystkie produkty</target>
+      </trans-unit>
+      <trans-unit id="710e2aeba1b59bc06895b5e8d42f3072">
+        <source>WebSocket URL</source>
+        <target>Adres URL WebSocket</target>
+      </trans-unit>
+      <trans-unit id="780c462e85ba4399a5d42e88f69a15ca">
+        <source>Billing</source>
+        <target>Rozliczenia</target>
+      </trans-unit>
+      <trans-unit id="7a1920d61156abc05a60135aefe8bc67">
+        <source>Default</source>
+        <target>Domyślny</target>
+      </trans-unit>
+      <trans-unit id="7a3db64a2f62ef8db793122f93094ce4">
+        <source>Explore the Marketplace below to get started.</source>
+        <target>Przeglądaj Marketplace poniżej, aby rozpocząć.</target>
+      </trans-unit>
+      <trans-unit id="7b277018e43d41bc445731092b91547d">
+        <source>Not connected</source>
+        <target>Nie połączono</target>
+      </trans-unit>
+      <trans-unit id="7dce122004969d56ae2e0245cb754d35">
+        <source>Edit</source>
+        <target>Edytuj</target>
+      </trans-unit>
+      <trans-unit id="7e2708aeb65763c54052f57ed1a1ec1d">
+        <source>Attachments</source>
+        <target>Załączniki</target>
+      </trans-unit>
+      <trans-unit id="7eb5542553fa5e5db4656e1c16f1316d">
+        <source>Bottom Left</source>
+        <target>Lewy dolny róg</target>
+      </trans-unit>
+      <trans-unit id="8098b34f582537833b36b58273c3545b">
+        <source>Expand</source>
+        <target>Rozwiń</target>
+      </trans-unit>
+      <trans-unit id="817434295a673aed431435658b65d9a7">
+        <source>Icon</source>
+        <target>Ikona</target>
+      </trans-unit>
+      <trans-unit id="828b25e698a9dd31e23460eae37fbe4d">
+        <source>Sync products from every category</source>
+        <target>Synchronizuj produkty ze wszystkich kategorii</target>
+      </trans-unit>
+      <trans-unit id="846495f9ceed11accf8879f555936a7d">
+        <source>Navigation</source>
+        <target>Nawigacja</target>
+      </trans-unit>
+      <trans-unit id="8493ff952d6273e269b5a7ee49c35cd6">
+        <source>Brand Colors</source>
+        <target>Kolory marki</target>
+      </trans-unit>
+      <trans-unit id="84d7238b6bce955ffa0daf3073f4e7d4">
+        <source>Payment Received</source>
+        <target>Płatność otrzymana</target>
+      </trans-unit>
+      <trans-unit id="85335c41d9f789fd02a9108c1a0c1c81">
+        <source>Only sync customers who have given their consent.</source>
+        <target>Synchronizuj tylko klientów, którzy wyrazili zgodę.</target>
+      </trans-unit>
+      <trans-unit id="85896a744f6fd84cbcd7bddb31fae8d7">
+        <source>Action:</source>
+        <target>Akcja:</target>
+      </trans-unit>
+      <trans-unit id="86024cad1e83101d97359d7351051156">
+        <source>products</source>
+        <target>produkty</target>
+      </trans-unit>
+      <trans-unit id="86d01321076e3679f934efa2623ec18a">
+        <source>Save Webhooks Settings</source>
+        <target>Zapisz ustawienia webhooków</target>
+      </trans-unit>
+      <trans-unit id="86ea09ffb4a5bb157cad1999dee33ab3">
+        <source>When:</source>
+        <target>Kiedy:</target>
+      </trans-unit>
+      <trans-unit id="87421dbd18a1eb6349fefd26db3a717d">
+        <source>Product Actions</source>
+        <target>Akcje na produktach</target>
+      </trans-unit>
+      <trans-unit id="8750864a9b58e6d2695463b0544f8fa7">
+        <source>No skills match your criteria</source>
+        <target>Żadna umiejętność nie pasuje do Twoich kryteriów</target>
+      </trans-unit>
+      <trans-unit id="87f8a6ab85c9ced3702b4ea641ad4bb5">
+        <source>Medium</source>
+        <target>Średni</target>
+      </trans-unit>
+      <trans-unit id="8a8e57b1911b99b924191503017760d7">
+        <source>Full Screen</source>
+        <target>Pełny ekran</target>
+      </trans-unit>
+      <trans-unit id="8cf712bed54d065525ddba9a9471f054">
+        <source>AI Messages</source>
+        <target>Wiadomości AI</target>
+      </trans-unit>
+      <trans-unit id="8e1eb5cb2e35c49ca8e4133c10165f21">
+        <source>When an event is triggered</source>
+        <target>Gdy zdarzenie zostanie wyzwolone</target>
+      </trans-unit>
+      <trans-unit id="90589c47f06eb971d548591f23c285af">
+        <source>Custom</source>
+        <target>Niestandardowy</target>
+      </trans-unit>
+      <trans-unit id="913403b47a9c7cbb0ebdf595e98231db">
+        <source>Newsletter OR partner offers</source>
+        <target>Newsletter LUB oferty partnerów</target>
+      </trans-unit>
+      <trans-unit id="919d6ca0bdec89732f24c0bb68c2fefc">
+        <source>Include out-of-stock products</source>
+        <target>Uwzględnij produkty niedostępne</target>
+      </trans-unit>
+      <trans-unit id="94a47c28a346b8f8a63a1d7ab6ff9abe">
+        <source>Notify customer service, create support ticket, track returns</source>
+        <target>Powiadom obsługę klienta, utwórz zgłoszenie serwisowe, śledź zwroty</target>
+      </trans-unit>
+      <trans-unit id="9622c46ac664d07f743905654edd5f26">
+        <source>Upgrade Plan</source>
+        <target>Ulepsz plan</target>
+      </trans-unit>
+      <trans-unit id="982687c45e594174ffd214300241be0b">
+        <source>Critical:</source>
+        <target>Krytyczne:</target>
+      </trans-unit>
+      <trans-unit id="98906ce409c5e233104f1850451e017a">
+        <source>Voice Input</source>
+        <target>Wejście głosowe</target>
+      </trans-unit>
+      <trans-unit id="98dd43dfae05b11befe1f140e0ec787a">
+        <source>Installed</source>
+        <target>Zainstalowano</target>
+      </trans-unit>
+      <trans-unit id="98f770b0af18ca763421bac22b4b6805">
+        <source>Features</source>
+        <target>Funkcje</target>
+      </trans-unit>
+      <trans-unit id="9914a0ce04a7b7b6a8e39bec55064b82">
+        <source>Light</source>
+        <target>Jasny</target>
+      </trans-unit>
+      <trans-unit id="9b1363da9503dbd4142c0274a88e8d4b">
+        <source>Assistant</source>
+        <target>Asystent</target>
+      </trans-unit>
+      <trans-unit id="9b5bba9cc25fb5c144524273306efd8f">
+        <source>Discovering skills...</source>
+        <target>Odkrywanie umiejętności...</target>
+      </trans-unit>
+      <trans-unit id="9b6545e4cea9b4ad4979d41bb9170e2b">
+        <source>Advanced</source>
+        <target>Zaawansowane</target>
+      </trans-unit>
+      <trans-unit id="9c04805fef34a0cc0b9d34d0d49a7c20">
+        <source>Installation failed. Please try again.</source>
+        <target>Instalacja nie powiodła się. Spróbuj ponownie.</target>
+      </trans-unit>
+      <trans-unit id="9daf1fb753b42c3cdc8f1d01669cd6d8">
+        <source>Save Settings</source>
+        <target>Zapisz ustawienia</target>
+      </trans-unit>
+      <trans-unit id="9dffbf69ffba8bc38bc4e01abf4b1675">
+        <source>Text</source>
+        <target>Tekst</target>
+      </trans-unit>
+      <trans-unit id="9e1779ae934a431ff38f6870d22509dc">
+        <source>Synchronizing customers…</source>
+        <target>Synchronizowanie klientów…</target>
+      </trans-unit>
+      <trans-unit id="9f8766481ef18b89fd1850611bf34b10">
+        <source>Customer Sync</source>
+        <target>Synchronizacja klientów</target>
+      </trans-unit>
+      <trans-unit id="9ff73c5171a5b36a486bad9016637562">
+        <source>Privacy Policy URL</source>
+        <target>Adres URL polityki prywatności</target>
+      </trans-unit>
+      <trans-unit id="9ffc3ccc968a96d902af963c6d7b4e97">
+        <source>Advanced Settings</source>
+        <target>Ustawienia zaawansowane</target>
+      </trans-unit>
+      <trans-unit id="9ffdb95250e26c7a6b468126ac7c75b0">
+        <source>How it works</source>
+        <target>Jak to działa</target>
+      </trans-unit>
+      <trans-unit id="a0bfb8e59e6c13fc8d990781f77694fe">
+        <source>Continue</source>
+        <target>Kontynuuj</target>
+      </trans-unit>
+      <trans-unit id="a0fcad8588008be7d4bd2a9c374714dc">
+        <source>Webhooks send real-time notifications to AI SmartTalk when events occur in your store. Enable the triggers you need to use them in SmartFlow automations.</source>
+        <target>Webhooki wysyłają powiadomienia w czasie rzeczywistym do AI SmartTalk, gdy w Twoim sklepie wystąpią zdarzenia. Włącz potrzebne wyzwalacze, aby używać ich w automatyzacjach SmartFlow.</target>
+      </trans-unit>
+      <trans-unit id="a18366b217ebf811ad1886e4f4f865b2">
+        <source>Dark</source>
+        <target>Ciemny</target>
+      </trans-unit>
+      <trans-unit id="a194984e8aabee81b2a8439a7f68a794">
+        <source>Show Privacy Info</source>
+        <target>Pokaż informacje o prywatności</target>
+      </trans-unit>
+      <trans-unit id="a1c58e94227389415de133efdf78ea6e">
+        <source>Appearance</source>
+        <target>Wygląd</target>
+      </trans-unit>
+      <trans-unit id="a1e08a5a201c7a8ea59257965edbff81">
+        <source>Update failed. Please try again.</source>
+        <target>Aktualizacja nie powiodła się. Spróbuj ponownie.</target>
+      </trans-unit>
+      <trans-unit id="a39d7ddb359ad59a525fa7c314a69c13">
+        <source>Are you sure you want to uninstall this skill? This action cannot be undone.</source>
+        <target>Czy na pewno chcesz odinstalować tę umiejętność? Tej akcji nie można cofnąć.</target>
+      </trans-unit>
+      <trans-unit id="aac67e05cabcf7d7274d1c36dd45bb4a">
+        <source>Only modify these settings if you have a custom/whitelabel deployment.</source>
+        <target>Zmieniaj te ustawienia tylko wtedy, gdy masz niestandardowe wdrożenie / whitelabel.</target>
+      </trans-unit>
+      <trans-unit id="ab81c41e2c6a46fc6e83d3b181a3a69b">
+        <source>Display Position</source>
+        <target>Pozycja wyświetlania</target>
+      </trans-unit>
+      <trans-unit id="ab8c6a8d739e202b70aadc8d124ee1d8">
+        <source>Your AI assistant</source>
+        <target>Twój asystent AI</target>
+      </trans-unit>
+      <trans-unit id="abdffc07f137a3b4b3e4df13d2cafee4">
+        <source>All languages</source>
+        <target>Wszystkie języki</target>
+      </trans-unit>
+      <trans-unit id="aced8b729db8a7fe08cc210a6c669d66">
+        <source>AI Skills</source>
+        <target>Umiejętności AI</target>
+      </trans-unit>
+      <trans-unit id="ad2a5437410048ccd076bc0d2f65e281">
+        <source>Add skill</source>
+        <target>Dodaj umiejętność</target>
+      </trans-unit>
+      <trans-unit id="ada988f8256e6b6b9d04a8ef7fd7ac39">
+        <source>No categories selected. No products will be synchronized.</source>
+        <target>Nie wybrano żadnych kategorii. Żadne produkty nie zostaną zsynchronizowane.</target>
+      </trans-unit>
+      <trans-unit id="b1136c4c5a25e9553c4ded48e06b07f9">
+        <source>Sync only from checked categories</source>
+        <target>Synchronizuj tylko z zaznaczonych kategorii</target>
+      </trans-unit>
+      <trans-unit id="b13b4ffdb2501cab3f7680bf1c081976">
+        <source>Footer (recommended)</source>
+        <target>Stopka (zalecane)</target>
+      </trans-unit>
+      <trans-unit id="b17480a8b78f43a6f103b63fd74d0d88">
+        <source>This will re-send ALL your customers to AI SmartTalk, not just new ones. Existing customers will be updated.</source>
+        <target>Spowoduje to ponowne wysłanie WSZYSTKICH Twoich klientów do AI SmartTalk, a nie tylko nowych. Istniejący klienci zostaną zaktualizowani.</target>
+      </trans-unit>
+      <trans-unit id="b1c94ca2fbc3e78fc30069c8d0f01680">
+        <source>All</source>
+        <target>Wszystko</target>
+      </trans-unit>
+      <trans-unit id="b22006654ad680f14fdb79559575afa9">
+        <source>Resets on:</source>
+        <target>Resetuje się:</target>
+      </trans-unit>
+      <trans-unit id="b22409f152bba7e25497c5f9bb0e1500">
+        <source>All data is encrypted with AES-256-GCM before transmission.</source>
+        <target>Wszystkie dane są szyfrowane algorytmem AES-256-GCM przed transmisją.</target>
+      </trans-unit>
+      <trans-unit id="b45855b541241445545851e9946470cf">
+        <source>Only selected</source>
+        <target>Tylko zaznaczone</target>
+      </trans-unit>
+      <trans-unit id="b4eba9664d6e7853e3162a5e02aa04c0">
+        <source>Custom legal text shown on the consent screen before users can access the chatbot.</source>
+        <target>Niestandardowy tekst prawny wyświetlany na ekranie zgody, zanim użytkownicy będą mogli uzyskać dostęp do chatbota.</target>
+      </trans-unit>
+      <trans-unit id="b7d65b81a1c6128c6ad3afccb8cbd97e">
+        <source>Edit URLs</source>
+        <target>Edytuj adresy URL</target>
+      </trans-unit>
+      <trans-unit id="b8f06517a18825b8723e5a59016694f4">
+        <source>Run a sync after saving to apply changes.</source>
+        <target>Uruchom synchronizację po zapisaniu, aby zastosować zmiany.</target>
+      </trans-unit>
+      <trans-unit id="b9a043569dbdf7efb1bb7214744748a7">
+        <source>Uninstall failed</source>
+        <target>Odinstalowanie nie powiodło się</target>
+      </trans-unit>
+      <trans-unit id="bde62109d53f3e15e3b09b4ca12c0973">
+        <source>Newsletter AND partner offers</source>
+        <target>Newsletter ORAZ oferty partnerów</target>
+      </trans-unit>
+      <trans-unit id="bde8714c656178d9b1f889cd18688816">
+        <source>Sync All Customers</source>
+        <target>Synchronizuj wszystkich klientów</target>
+      </trans-unit>
+      <trans-unit id="bdef527bcce28314a45131e828f2132a">
+        <source>Consent Filter</source>
+        <target>Filtr zgód</target>
+      </trans-unit>
+      <trans-unit id="bea4c2c8eb82d05891ddd71584881b56">
+        <source>Feedback</source>
+        <target>Opinie</target>
+      </trans-unit>
+      <trans-unit id="bef2481eda40bd121482f1814d72314f">
+        <source>Rounded</source>
+        <target>Zaokrąglone</target>
+      </trans-unit>
+      <trans-unit id="bf602e4ba7cd0ac23d4b6df230522f3f">
+        <source>This will re-send ALL your products to AI SmartTalk, not just new ones. Existing products will be updated.</source>
+        <target>Spowoduje to ponowne wysłanie WSZYSTKICH Twoich produktów do AI SmartTalk, a nie tylko nowych. Istniejące produkty zostaną zaktualizowane.</target>
+      </trans-unit>
+      <trans-unit id="c183819d8886547b9d8e87a45d918b5c">
+        <source>This overrides the language setting configured on the AI SmartTalk platform for this store.</source>
+        <target>To zastępuje ustawienie języka skonfigurowane na platformie AI SmartTalk dla tego sklepu.</target>
+      </trans-unit>
+      <trans-unit id="c452b890b1ddac02cf2705d9f5713436">
+        <source>Leave empty for default message</source>
+        <target>Pozostaw puste dla domyślnej wiadomości</target>
+      </trans-unit>
+      <trans-unit id="c4af7ff066ef79cb4c2b39f8fd7f4daa">
+        <source>For development or white-label deployments only.</source>
+        <target>Tylko dla wdrożeń deweloperskich lub white-label.</target>
+      </trans-unit>
+      <trans-unit id="c55b63c87f8439d4da3566e702c389fc">
+        <source>Synchronization complete</source>
+        <target>Synchronizacja zakończona</target>
+      </trans-unit>
+      <trans-unit id="c76a5e84e4bdee527e274ea30c680d79">
+        <source>active</source>
+        <target>aktywny</target>
+      </trans-unit>
+      <trans-unit id="c7b4f3712a331620b6f267f2f8c44a2d">
+        <source>Connect Now</source>
+        <target>Połącz teraz</target>
+      </trans-unit>
+      <trans-unit id="c86d98983d5e4c392004381bf623e43d">
+        <source>Multistore: products from all your shops are combined. A product active in any shop will be synchronized.</source>
+        <target>Wielosklep: produkty ze wszystkich Twoich sklepów są łączone. Produkt aktywny w dowolnym sklepie zostanie zsynchronizowany.</target>
+      </trans-unit>
+      <trans-unit id="c8c4f927fd2cb2ab060fb3c5c3179a7c">
+        <source>Display the AI assistant on your store</source>
+        <target>Wyświetlaj asystenta AI w swoim sklepie</target>
+      </trans-unit>
+      <trans-unit id="c9cc8cce247e49bae79f15173ce97354">
+        <source>Save</source>
+        <target>Zapisz</target>
+      </trans-unit>
+      <trans-unit id="ca967b742cd8faa3749288fd46d2deba">
+        <source>When a visitor browses your site</source>
+        <target>Gdy odwiedzający przegląda Twoją witrynę</target>
+      </trans-unit>
+      <trans-unit id="cb3302736e4e42665ecd5b5cfbe97208">
+        <source>Payload:</source>
+        <target>Ładunek:</target>
+      </trans-unit>
+      <trans-unit id="cb5ae54c706f733e73bfb0303e5e97a3">
+        <source>Disconnect from AI SmartTalk?</source>
+        <target>Rozłączyć z AI SmartTalk?</target>
+      </trans-unit>
+      <trans-unit id="ccbfdfb09f3ea8a9a0f6fe31f3fcad69">
+        <source>Heads up:</source>
+        <target>Uwaga:</target>
+      </trans-unit>
+      <trans-unit id="ce93c710b6628ba1c8392994592c6701">
+        <source>Clean Deleted Products</source>
+        <target>Wyczyść usunięte produkty</target>
+      </trans-unit>
+      <trans-unit id="ceb46ca115d05c51aa5a16a8867c3304">
+        <source>Square</source>
+        <target>Kwadratowe</target>
+      </trans-unit>
+      <trans-unit id="d01d23949938326321813aa82d60a648">
+        <source>Search skills... (e.g., &quot;create article&quot;, &quot;welcome&quot;)</source>
+        <target>Szukaj umiejętności... (np. „utwórz artykuł&quot;, „powitanie&quot;)</target>
+      </trans-unit>
+      <trans-unit id="d12fb360f73c34226d1e50228875d8cf">
+        <source>Not installed</source>
+        <target>Nie zainstalowano</target>
+      </trans-unit>
+      <trans-unit id="d13c3f7baed576768b11a714ef4d90e2">
+        <source>paused</source>
+        <target>wstrzymane</target>
+      </trans-unit>
+      <trans-unit id="d15305d7a4e34e02489c74a5ef542f36">
+        <source>Off</source>
+        <target>Wył.</target>
+      </trans-unit>
+      <trans-unit id="d16b4eceaa7c64bdd3162a6acc5298bb">
+        <source>Choose which languages the chatbot offers in its language switcher. Leave everything unchecked to offer all available languages.</source>
+        <target>Wybierz, które języki chatbot oferuje w przełączniku języków. Pozostaw wszystko odznaczone, aby oferować wszystkie dostępne języki.</target>
+      </trans-unit>
+      <trans-unit id="d464a5c607da1a3ab27f40710f7067e0">
+        <source>An error occurred during synchronization.</source>
+        <target>Wystąpił błąd podczas synchronizacji.</target>
+      </trans-unit>
+      <trans-unit id="d66c34552a26e2a46e16def699365f40">
+        <source>Based on context</source>
+        <target>Na podstawie kontekstu</target>
+      </trans-unit>
+      <trans-unit id="d779b14b96e529a5a58891cbd874aada">
+        <source>You have exceeded your plan limits. Upgrade now to avoid service interruption.</source>
+        <target>Przekroczono limity Twojego planu. Ulepsz plan teraz, aby uniknąć przerwy w działaniu usługi.</target>
+      </trans-unit>
+      <trans-unit id="d797b73c01bf1bf1da1f749c72b853c6">
+        <source>Webhook Triggers</source>
+        <target>Wyzwalacze webhooków</target>
+      </trans-unit>
+      <trans-unit id="d8e87c0927539672f54462c837be0b7f">
+        <source>Sync</source>
+        <target>Synchronizuj</target>
+      </trans-unit>
+      <trans-unit id="d9100bbb6abfa84d45f321e40bac456c">
+        <source>Setup needed</source>
+        <target>Wymagana konfiguracja</target>
+      </trans-unit>
+      <trans-unit id="da54548911976b9e4422703370d655b2">
+        <source>Consent Wall</source>
+        <target>Ekran zgody</target>
+      </trans-unit>
+      <trans-unit id="dae52b80711ee1029c7006f95018d300">
+        <source>Recent</source>
+        <target>Ostatnie</target>
+      </trans-unit>
+      <trans-unit id="dc30bc0c7914db5918da4263fce93ad2">
+        <source>Clear</source>
+        <target>Wyczyść</target>
+      </trans-unit>
+      <trans-unit id="de31291360fc7b4f832afcc772a889bd">
+        <source>Always active</source>
+        <target>Zawsze aktywny</target>
+      </trans-unit>
+      <trans-unit id="e36d6700df0a543aadd76104208334e2">
+        <source>Window Size</source>
+        <target>Rozmiar okna</target>
+      </trans-unit>
+      <trans-unit id="e3df131b0a3fa504d942c735130a6972">
+        <source>Connect customers with AI SmartTalk CRM</source>
+        <target>Połącz klientów z CRM AI SmartTalk</target>
+      </trans-unit>
+      <trans-unit id="e3dfd35056424eccc2b2407af0d0600f">
+        <source>Push every stock change so the assistant shows the exact remaining quantity. Leave off to save requests — availability still updates when a product goes out of stock.</source>
+        <target>Przesyłaj każdą zmianę stanu magazynowego, aby asystent pokazywał dokładną pozostałą ilość. Pozostaw wyłączone, aby oszczędzać żądania — dostępność i tak aktualizuje się, gdy produkt się wyczerpie.</target>
+      </trans-unit>
+      <trans-unit id="e3ee84d73862c5bffd62c3909d571156">
+        <source>All customers (no filter)</source>
+        <target>Wszyscy klienci (bez filtra)</target>
+      </trans-unit>
+      <trans-unit id="e40f8c488f8c2b566f2ffcfa1146816d">
+        <source>Example Use Cases</source>
+        <target>Przykładowe przypadki użycia</target>
+      </trans-unit>
+      <trans-unit id="e4894ca167b08880bfc35862f18575eb">
+        <source>available</source>
+        <target>dostępne</target>
+      </trans-unit>
+      <trans-unit id="e48b085b1aae8240069e900284865996">
+        <source>You have reached your plan limits. Upgrade to get more resources.</source>
+        <target>Osiągnięto limity Twojego planu. Ulepsz plan, aby uzyskać więcej zasobów.</target>
+      </trans-unit>
+      <trans-unit id="e4a2e4628f562b8d2cb38ede15a1a6d5">
+        <source>Live stock sync</source>
+        <target>Synchronizacja stanu magazynowego na żywo</target>
+      </trans-unit>
+      <trans-unit id="e693ba8db5bd43c8b27cf2eca19215ab">
+        <source>Customer Settings</source>
+        <target>Ustawienia klienta</target>
+      </trans-unit>
+      <trans-unit id="e99180abf47a8b3a856e0bcb2656990a">
+        <source>Paused</source>
+        <target>Wstrzymane</target>
+      </trans-unit>
+      <trans-unit id="ea4788705e6873b424c65e91c2846b19">
+        <source>Cancel</source>
+        <target>Anuluj</target>
+      </trans-unit>
+      <trans-unit id="ea7977b372a799c5d2648c17c23b37cd">
+        <source>Filters active</source>
+        <target>Aktywne filtry</target>
+      </trans-unit>
+      <trans-unit id="eb77c203b3ee118fb929194dc2517d78">
+        <source>Conversation tool</source>
+        <target>Narzędzie konwersacyjne</target>
+      </trans-unit>
+      <trans-unit id="ebd9bec4d70abc789d439c1f136b0538">
+        <source>Layout</source>
+        <target>Układ</target>
+      </trans-unit>
+      <trans-unit id="ebeb448861ab8d8b2269d3bf16657707">
+        <source>Privacy &amp; GDPR</source>
+        <target>Prywatność i RODO</target>
+      </trans-unit>
+      <trans-unit id="ec53a8c4f07baed5d8825072c89799be">
+        <source>Status</source>
+        <target>Status</target>
+      </trans-unit>
+      <trans-unit id="ef043591a47b12bf89a9e78a5450b24c">
+        <source>Customize your avatar (or generate one with AI) on</source>
+        <target>Dostosuj swój awatar (lub wygeneruj go za pomocą AI) na</target>
+      </trans-unit>
+      <trans-unit id="ef7de3f485174ff47f061ad27d83d0ee">
+        <source>selected</source>
+        <target>wybrano</target>
+      </trans-unit>
+      <trans-unit id="f1206f9fadc5ce41694f69129aecac26">
+        <source>Configure</source>
+        <target>Konfiguruj</target>
+      </trans-unit>
+      <trans-unit id="f1be08668609116a006195204b0f85ab">
+        <source>Open AI SmartTalk Dashboard</source>
+        <target>Otwórz panel AI SmartTalk</target>
+      </trans-unit>
+      <trans-unit id="f1bffd388cdeee5194b282c6eecff307">
+        <source>Review Posted</source>
+        <target>Opublikowano recenzję</target>
+      </trans-unit>
+      <trans-unit id="f28128b38efbc6134dc40751ee21fd29">
+        <source>Documents</source>
+        <target>Dokumenty</target>
+      </trans-unit>
+      <trans-unit id="f2fe0b3f21dce6962a67bac626d7704a">
+        <source>Customer Actions</source>
+        <target>Akcje klienta</target>
+      </trans-unit>
+      <trans-unit id="f4f70727dc34561dfde1a3c529b6205c">
+        <source>Settings</source>
+        <target>Ustawienia</target>
+      </trans-unit>
+      <trans-unit id="f58cad9934d025e94f60f43a060d5d6f">
+        <source>Choose which shops display the chatbot:</source>
+        <target>Wybierz, które sklepy wyświetlają chatbota:</target>
+      </trans-unit>
+      <trans-unit id="f6514844e02af4f6db40fc8559e68b6c">
+        <source>You have used %s of your plan limits. Consider upgrading soon.</source>
+        <target>Wykorzystałeś %s limitów swojego planu. Rozważ wkrótce ulepszenie planu.</target>
+      </trans-unit>
+      <trans-unit id="f6b8e9ca02227c9b1604c69646383e12">
+        <source>When a visitor asks your assistant</source>
+        <target>Gdy odwiedzający zadaje pytanie Twojemu asystentowi</target>
+      </trans-unit>
+      <trans-unit id="f92965e2c8a7afb3c1b9a5c09a263636">
+        <source>Done</source>
+        <target>Gotowe</target>
+      </trans-unit>
+      <trans-unit id="f951a1e1ff1ed0d24a2758b6441a3431">
+        <source>Primary Color</source>
+        <target>Kolor podstawowy</target>
+      </trans-unit>
+      <trans-unit id="f9e5514bc7a834e970a2f34ceab14740">
+        <source>Product Filters</source>
+        <target>Filtry produktów</target>
+      </trans-unit>
+      <trans-unit id="fa366f030289ef441955bfc14f226d96">
+        <source>skills available</source>
+        <target>dostępne umiejętności</target>
+      </trans-unit>
+      <trans-unit id="fa4b46272cf06b8dd6e470e437a1c6df">
+        <source>Custom Consent Message (optional)</source>
+        <target>Niestandardowa wiadomość zgody (opcjonalnie)</target>
+      </trans-unit>
+      <trans-unit id="fac5f4d9d430e77699ec114d346c9bb2">
+        <source>Installation failed</source>
+        <target>Instalacja nie powiodła się</target>
+      </trans-unit>
+      <trans-unit id="faf15012bcb2f128f723c0c4ac1a9932">
+        <source>Enable the webhooks you need above</source>
+        <target>Włącz potrzebne webhooki powyżej</target>
+      </trans-unit>
+      <trans-unit id="fb225c750a724e3b7ae97f47ad9e0842">
+        <source>Preparing synchronization…</source>
+        <target>Przygotowywanie synchronizacji…</target>
+      </trans-unit>
+      <trans-unit id="fc3e71ec5c563c146be2bc744cebf994">
+        <source>Clean Deleted</source>
+        <target>Wyczyść usunięte</target>
+      </trans-unit>
+      <trans-unit id="fc552c64c198c5239fdd44f6bc4ad49c">
+        <source>CDN URL</source>
+        <target>Adres URL CDN</target>
+      </trans-unit>
+      <trans-unit id="fe84ed3d6baffd193df85d308e5e908c">
+        <source>Filtered</source>
+        <target>Filtrowane</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>
