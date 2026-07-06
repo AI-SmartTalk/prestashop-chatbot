@@ -168,25 +168,30 @@ class ChatbotSettingsBuilderTest extends TestCase
         $this->assertTrue($result['enableFeedback']);
     }
 
-    public function testRequireAuthenticationOverrideOn(): void
+    public function testRequireLoginExplicitOnForcesLogin(): void
     {
-        \Configuration::$globalStore['AI_SMART_TALK_REQUIRE_AUTHENTICATION'] = 'on';
-        $result = ChatbotSettingsBuilder::applyCustomizationOverrides([]);
+        // Stored '1' → plugin authoritative: forces login even if the platform said false.
+        \Configuration::$globalStore['AI_SMART_TALK_REQUIRE_AUTHENTICATION'] = '1';
+        $result = ChatbotSettingsBuilder::applyCustomizationOverrides(['requireAuthentication' => false]);
         $this->assertTrue($result['requireAuthentication']);
     }
 
-    public function testRequireAuthenticationOverrideOff(): void
+    public function testRequireLoginExplicitOffDisablesLogin(): void
     {
-        \Configuration::$globalStore['AI_SMART_TALK_REQUIRE_AUTHENTICATION'] = 'off';
-        $result = ChatbotSettingsBuilder::applyCustomizationOverrides([]);
+        // Stored '0' → plugin authoritative: disables login even if the platform said true.
+        \Configuration::$globalStore['AI_SMART_TALK_REQUIRE_AUTHENTICATION'] = '0';
+        $result = ChatbotSettingsBuilder::applyCustomizationOverrides(['requireAuthentication' => true]);
         $this->assertFalse($result['requireAuthentication']);
     }
 
-    public function testRequireAuthenticationInheritsEmbedConfigWhenEmpty(): void
+    public function testRequireLoginInheritsPlatformWhenNeverSet(): void
     {
-        // Empty local setting → keep the platform embed-config value untouched.
-        $result = ChatbotSettingsBuilder::applyCustomizationOverrides(['requireAuthentication' => true]);
-        $this->assertTrue($result['requireAuthentication']);
+        // No stored key → keep whatever the platform embed config set (never silently dropped)...
+        $inherited = ChatbotSettingsBuilder::applyCustomizationOverrides(['requireAuthentication' => true]);
+        $this->assertTrue($inherited['requireAuthentication']);
+        // ...and never inject a default when the platform did not provide one.
+        $absent = ChatbotSettingsBuilder::applyCustomizationOverrides([]);
+        $this->assertArrayNotHasKey('requireAuthentication', $absent);
     }
 
     public function testColorThemeOverride(): void

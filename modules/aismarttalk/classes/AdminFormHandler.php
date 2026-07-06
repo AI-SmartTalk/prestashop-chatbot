@@ -352,7 +352,6 @@ class AdminFormHandler
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
             'AI_SMART_TALK_ENABLE_AUTO_LOGIN',
-            'AI_SMART_TALK_REQUIRE_AUTHENTICATION',
         ];
 
         $toggleValues = [];
@@ -386,6 +385,14 @@ class AdminFormHandler
         foreach ($toggleValues as $field => $value) {
             \Configuration::updateValue($field, $value);
         }
+
+        // Require login: explicit boolean (checkbox). Persisting the key marks it
+        // as a deliberate merchant choice, after which the plugin is authoritative
+        // over the platform value (see ChatbotSettingsBuilder).
+        \Configuration::updateValue(
+            'AI_SMART_TALK_REQUIRE_AUTHENTICATION',
+            \Tools::getValue('AI_SMART_TALK_REQUIRE_AUTHENTICATION') ? '1' : '0'
+        );
 
         // GDPR settings
         $gdprEnabled = \Tools::getValue('AI_SMART_TALK_GDPR_ENABLED', '');
@@ -965,7 +972,6 @@ class AdminFormHandler
             'AI_SMART_TALK_ENABLE_FEEDBACK',
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
-            'AI_SMART_TALK_REQUIRE_AUTHENTICATION',
             'AI_SMART_TALK_ALLOWED_LANGUAGES',
         ];
 

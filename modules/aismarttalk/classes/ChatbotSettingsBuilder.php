@@ -278,7 +278,6 @@ class ChatbotSettingsBuilder
             'AI_SMART_TALK_ENABLE_VOICE_INPUT' => 'enableVoiceInput',
             'AI_SMART_TALK_ENABLE_VOICE_MODE' => 'enableVoiceMode',
             'AI_SMART_TALK_ENABLE_AUTO_LOGIN' => 'enableAutoLogin',
-            'AI_SMART_TALK_REQUIRE_AUTHENTICATION' => 'requireAuthentication',
         ];
 
         foreach ($toggleOverrides as $configKey => $settingKey) {
@@ -288,6 +287,15 @@ class ChatbotSettingsBuilder
             } elseif ($value === 'off') {
                 $settings[$settingKey] = false;
             }
+        }
+
+        // Require login is an explicit binary, NOT the tri-state inherit pattern:
+        // once the merchant has saved a choice in the plugin, the plugin is
+        // authoritative. Until then (no stored key) we keep whatever the platform
+        // embed config already set, so a login requirement configured on the
+        // platform is never silently dropped by installing/updating the plugin.
+        if (\Configuration::hasKey('AI_SMART_TALK_REQUIRE_AUTHENTICATION')) {
+            $settings['requireAuthentication'] = (bool) \Configuration::get('AI_SMART_TALK_REQUIRE_AUTHENTICATION');
         }
 
         // Color theme overrides (build nested theme structure)

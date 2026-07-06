@@ -559,7 +559,12 @@ class AiSmartTalk extends Module
             'enableVoiceInput' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_INPUT') ?: '',
             'enableVoiceMode' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_MODE') ?: '',
             'enableAutoLogin' => Configuration::get('AI_SMART_TALK_ENABLE_AUTO_LOGIN') ?: '',
-            'requireAuthentication' => Configuration::get('AI_SMART_TALK_REQUIRE_AUTHENTICATION') ?: '',
+            // Require login: explicit binary switch. Show a concrete state — the
+            // merchant's saved choice if any, otherwise the current platform value
+            // inherited from the embed config (never an opaque "default").
+            'requireLogin' => Configuration::hasKey('AI_SMART_TALK_REQUIRE_AUTHENTICATION')
+                ? (bool) Configuration::get('AI_SMART_TALK_REQUIRE_AUTHENTICATION')
+                : (bool) (is_array($embedConfig) && !empty($embedConfig['requireAuthentication'])),
 
             // Widget languages — restrict the language switcher (empty = all)
             'availableLanguages' => WidgetLocales::all(),
@@ -1883,7 +1888,6 @@ class AiSmartTalk extends Module
             'AI_SMART_TALK_ENABLE_FEEDBACK',
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
-            'AI_SMART_TALK_REQUIRE_AUTHENTICATION',
             'AI_SMART_TALK_ALLOWED_LANGUAGES',
         ];
 
