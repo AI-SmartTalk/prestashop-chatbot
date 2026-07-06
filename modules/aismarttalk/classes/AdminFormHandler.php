@@ -344,24 +344,20 @@ class AdminFormHandler
             $secondaryColor = '';
         }
 
-        // Feature toggles
-        $validToggleValues = ['', 'on', 'off'];
-        $toggleFields = [
+        // Feature toggles are plain on/off switches (checkboxes): a posted value
+        // means "on" (stored '1'), an absent one means "off" (stored '0'). Storing
+        // an explicit '1'/'0' makes the plugin authoritative over the platform for
+        // that switch (see ChatbotSettingsBuilder::explicitBinary).
+        $binaryToggleFields = [
             'AI_SMART_TALK_ENABLE_ATTACHMENT',
             'AI_SMART_TALK_ENABLE_FEEDBACK',
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
             'AI_SMART_TALK_ENABLE_AUTO_LOGIN',
+            'AI_SMART_TALK_REQUIRE_AUTHENTICATION',
         ];
 
-        $toggleValues = [];
-        foreach ($toggleFields as $field) {
-            $value = \Tools::getValue($field, '');
-            if (!in_array($value, $validToggleValues)) {
-                $value = '';
-            }
-            $toggleValues[$field] = $value;
-        }
+        // Note on GDPR toggles below: those keep the tri-state select on purpose.
 
         // Save all customization settings
         // Note: AI_SMART_TALK_AVATAR_URL is not saved here — avatar is managed on the platform
@@ -382,19 +378,14 @@ class AdminFormHandler
         \Configuration::updateValue('AI_SMART_TALK_PRIMARY_COLOR', $primaryColor);
         \Configuration::updateValue('AI_SMART_TALK_SECONDARY_COLOR', $secondaryColor);
 
-        foreach ($toggleValues as $field => $value) {
-            \Configuration::updateValue($field, $value);
+        foreach ($binaryToggleFields as $field) {
+            \Configuration::updateValue($field, \Tools::getValue($field) ? '1' : '0');
         }
 
-        // Require login: explicit boolean (checkbox). Persisting the key marks it
-        // as a deliberate merchant choice, after which the plugin is authoritative
-        // over the platform value (see ChatbotSettingsBuilder).
-        \Configuration::updateValue(
-            'AI_SMART_TALK_REQUIRE_AUTHENTICATION',
-            \Tools::getValue('AI_SMART_TALK_REQUIRE_AUTHENTICATION') ? '1' : '0'
-        );
-
-        // GDPR settings
+        // GDPR settings — kept as a tri-state select ('' inherits the platform):
+        // consent policy legitimately mirrors the platform default rather than a
+        // hard on/off, unlike the feature switches above.
+        $validToggleValues = ['', 'on', 'off'];
         $gdprEnabled = \Tools::getValue('AI_SMART_TALK_GDPR_ENABLED', '');
         $gdprPrivacyUrl = \Tools::getValue('AI_SMART_TALK_GDPR_PRIVACY_URL', '');
 

@@ -25,40 +25,53 @@ class ChatbotSettingsBuilderTest extends TestCase
 
     public function testAutoLoginExplicitlyOn(): void
     {
-        $this->assertTrue(ChatbotSettingsBuilder::resolveAutoLogin('on', null));
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_AUTO_LOGIN'] = '1';
+        $this->assertTrue(ChatbotSettingsBuilder::resolveAutoLogin(null));
     }
 
     public function testAutoLoginExplicitlyOff(): void
     {
-        $this->assertFalse(ChatbotSettingsBuilder::resolveAutoLogin('off', null));
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_AUTO_LOGIN'] = '0';
+        $this->assertFalse(ChatbotSettingsBuilder::resolveAutoLogin(null));
     }
 
     public function testAutoLoginDefaultsToTrueWhenNoEmbedConfig(): void
     {
-        $this->assertTrue(ChatbotSettingsBuilder::resolveAutoLogin('', null));
+        $this->assertTrue(ChatbotSettingsBuilder::resolveAutoLogin(null));
     }
 
     public function testAutoLoginFallsBackToEmbedConfigTrue(): void
     {
-        $this->assertTrue(ChatbotSettingsBuilder::resolveAutoLogin('', ['enableAutoLogin' => true]));
+        $this->assertTrue(ChatbotSettingsBuilder::resolveAutoLogin(['enableAutoLogin' => true]));
     }
 
     public function testAutoLoginFallsBackToEmbedConfigFalse(): void
     {
-        $this->assertFalse(ChatbotSettingsBuilder::resolveAutoLogin('', ['enableAutoLogin' => false]));
+        $this->assertFalse(ChatbotSettingsBuilder::resolveAutoLogin(['enableAutoLogin' => false]));
     }
 
     public function testAutoLoginDefaultsTrueWhenEmbedConfigMissesKey(): void
     {
-        $this->assertTrue(ChatbotSettingsBuilder::resolveAutoLogin('', ['otherKey' => 'value']));
+        $this->assertTrue(ChatbotSettingsBuilder::resolveAutoLogin(['otherKey' => 'value']));
     }
 
-    public function testAutoLoginPsSettingOverridesEmbedConfig(): void
+    public function testAutoLoginPluginChoiceOverridesEmbedConfig(): void
     {
-        // PS says off, embed says true → PS wins
-        $this->assertFalse(ChatbotSettingsBuilder::resolveAutoLogin('off', ['enableAutoLogin' => true]));
-        // PS says on, embed says false → PS wins
-        $this->assertTrue(ChatbotSettingsBuilder::resolveAutoLogin('on', ['enableAutoLogin' => false]));
+        // Plugin says off, embed says true → plugin wins
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_AUTO_LOGIN'] = '0';
+        $this->assertFalse(ChatbotSettingsBuilder::resolveAutoLogin(['enableAutoLogin' => true]));
+        // Plugin says on, embed says false → plugin wins
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_AUTO_LOGIN'] = '1';
+        $this->assertTrue(ChatbotSettingsBuilder::resolveAutoLogin(['enableAutoLogin' => false]));
+    }
+
+    public function testAutoLoginLegacyOnOffStillHonored(): void
+    {
+        // A shop upgrading from the tri-state era keeps 'on'/'off' semantics.
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_AUTO_LOGIN'] = 'off';
+        $this->assertFalse(ChatbotSettingsBuilder::resolveAutoLogin(['enableAutoLogin' => true]));
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_AUTO_LOGIN'] = 'on';
+        $this->assertTrue(ChatbotSettingsBuilder::resolveAutoLogin(['enableAutoLogin' => false]));
     }
 
     // =========================================================================
@@ -166,6 +179,41 @@ class ChatbotSettingsBuilderTest extends TestCase
     {
         $result = ChatbotSettingsBuilder::applyCustomizationOverrides(['enableFeedback' => true]);
         $this->assertTrue($result['enableFeedback']);
+    }
+
+    public function testToggleBinaryStoredOn(): void
+    {
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_ATTACHMENT'] = '1';
+        $result = ChatbotSettingsBuilder::applyCustomizationOverrides(['enableAttachment' => false]);
+        $this->assertTrue($result['enableAttachment']);
+    }
+
+    public function testToggleBinaryStoredOff(): void
+    {
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_ATTACHMENT'] = '0';
+        $result = ChatbotSettingsBuilder::applyCustomizationOverrides(['enableAttachment' => true]);
+        $this->assertFalse($result['enableAttachment']);
+    }
+
+    public function testToggleLegacyEmptyStringInheritsPlatform(): void
+    {
+        // Legacy tri-state "Default" ('') → no explicit choice → inherit platform.
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_FEEDBACK'] = '';
+        $result = ChatbotSettingsBuilder::applyCustomizationOverrides(['enableFeedback' => true]);
+        $this->assertTrue($result['enableFeedback']);
+    }
+
+    public function testExplicitBinaryParsing(): void
+    {
+        $this->assertNull(ChatbotSettingsBuilder::explicitBinary('AI_SMART_TALK_ENABLE_VOICE_MODE'));
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_VOICE_MODE'] = '';
+        $this->assertNull(ChatbotSettingsBuilder::explicitBinary('AI_SMART_TALK_ENABLE_VOICE_MODE'));
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_VOICE_MODE'] = '1';
+        $this->assertTrue(ChatbotSettingsBuilder::explicitBinary('AI_SMART_TALK_ENABLE_VOICE_MODE'));
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_VOICE_MODE'] = '0';
+        $this->assertFalse(ChatbotSettingsBuilder::explicitBinary('AI_SMART_TALK_ENABLE_VOICE_MODE'));
+        \Configuration::$globalStore['AI_SMART_TALK_ENABLE_VOICE_MODE'] = 'off';
+        $this->assertFalse(ChatbotSettingsBuilder::explicitBinary('AI_SMART_TALK_ENABLE_VOICE_MODE'));
     }
 
     public function testRequireLoginExplicitOnForcesLogin(): void

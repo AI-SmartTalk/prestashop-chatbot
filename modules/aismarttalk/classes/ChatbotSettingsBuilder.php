@@ -67,8 +67,7 @@ class ChatbotSettingsBuilder
         ];
 
         // Resolve auto-login and inject user token
-        $psAutoLogin = \Configuration::get('AI_SMART_TALK_ENABLE_AUTO_LOGIN') ?: '';
-        $autoLoginEnabled = self::resolveAutoLogin($psAutoLogin, $embedConfig);
+        $autoLoginEnabled = self::resolveAutoLogin($embedConfig);
 
         if ($autoLoginEnabled) {
             $userToken = OAuthTokenHandler::getOrRefreshUserToken();
@@ -183,20 +182,43 @@ class ChatbotSettingsBuilder
     }
 
     /**
-     * Resolve whether auto-login should be enabled.
-     * PrestaShop setting takes priority over API embed config.
+     * Resolve a binary feature switch stored as PrestaShop configuration.
      *
-     * @param string     $psSetting   PrestaShop setting value ('on', 'off', or '')
+     * Returns null when the merchant has made no explicit choice — either the key
+     * was never stored, or it holds the legacy tri-state '' ("Default") — so the
+     * caller keeps the inherited platform value. Otherwise returns the boolean,
+     * understanding both the new '1'/'0' and the legacy 'on'/'off' encodings.
+     *
+     * @param string $configKey
+     * @return bool|null
+     */
+    public static function explicitBinary(string $configKey): ?bool
+    {
+        if (!\Configuration::hasKey($configKey)) {
+            return null;
+        }
+        $value = (string) \Configuration::get($configKey);
+        if ($value === '') {
+            return null;
+        }
+
+        return $value === '1' || $value === 'on';
+    }
+
+    /**
+     * Resolve whether auto-login should be enabled.
+     * The merchant's explicit plugin choice takes priority over the API embed
+     * config; with no explicit choice the platform value is inherited (defaults
+     * to true when the embed config does not set it).
+     *
      * @param array|null $embedConfig Embed config from API
      * @return bool
      */
-    public static function resolveAutoLogin(string $psSetting, ?array $embedConfig): bool
+    public static function resolveAutoLogin(?array $embedConfig): bool
     {
-        if ($psSetting === 'on') {
-            return true;
-        }
-        if ($psSetting === 'off') {
-            return false;
+        $explicit = self::explicitBinary('AI_SMART_TALK_ENABLE_AUTO_LOGIN');
+        if ($explicit !== null) {
+            return $explicit;
         }
 
         // Fall back to API embed config (defaults to true if not set)
@@ -271,31 +293,26 @@ class ChatbotSettingsBuilder
             }
         }
 
-        // Boolean toggle overrides (only if explicitly 'on' or 'off')
-        $toggleOverrides = [
+        // Feature switches are explicit binaries (not a tri-state "inherit" select).
+        // explicitBinary() returns null when the merchant made no explicit choice
+        // (key never stored, or the legacy '' from the old tri-state) so we keep the
+        // platform value already merged from the embed config; otherwise the plugin
+        // is authoritative. Legacy 'on'/'off' values are still read correctly, so a
+        // shop upgrading from the tri-state era keeps its effective settings.
+        $binaryToggles = [
             'AI_SMART_TALK_ENABLE_ATTACHMENT' => 'enableAttachment',
             'AI_SMART_TALK_ENABLE_FEEDBACK' => 'enableFeedback',
             'AI_SMART_TALK_ENABLE_VOICE_INPUT' => 'enableVoiceInput',
             'AI_SMART_TALK_ENABLE_VOICE_MODE' => 'enableVoiceMode',
             'AI_SMART_TALK_ENABLE_AUTO_LOGIN' => 'enableAutoLogin',
+            'AI_SMART_TALK_REQUIRE_AUTHENTICATION' => 'requireAuthentication',
         ];
 
-        foreach ($toggleOverrides as $configKey => $settingKey) {
-            $value = \Configuration::get($configKey);
-            if ($value === 'on') {
-                $settings[$settingKey] = true;
-            } elseif ($value === 'off') {
-                $settings[$settingKey] = false;
+        foreach ($binaryToggles as $configKey => $settingKey) {
+            $explicit = self::explicitBinary($configKey);
+            if ($explicit !== null) {
+                $settings[$settingKey] = $explicit;
             }
-        }
-
-        // Require login is an explicit binary, NOT the tri-state inherit pattern:
-        // once the merchant has saved a choice in the plugin, the plugin is
-        // authoritative. Until then (no stored key) we keep whatever the platform
-        // embed config already set, so a login requirement configured on the
-        // platform is never silently dropped by installing/updating the plugin.
-        if (\Configuration::hasKey('AI_SMART_TALK_REQUIRE_AUTHENTICATION')) {
-            $settings['requireAuthentication'] = (bool) \Configuration::get('AI_SMART_TALK_REQUIRE_AUTHENTICATION');
         }
 
         // Color theme overrides (build nested theme structure)

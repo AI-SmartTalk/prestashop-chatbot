@@ -2153,43 +2153,38 @@ a.ast-btn-success:hover {
                             <div class="ast-features-grid">
                                 <div class="ast-feature-toggle">
                                     <span class="label"><i class="icon icon-paperclip"></i> {l s='Attachments' mod='aismarttalk'}</span>
-                                    <select name="AI_SMART_TALK_ENABLE_ATTACHMENT" class="ast-select" style="width: auto;">
-                                        <option value="" {if $enableAttachment == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
-                                        <option value="on" {if $enableAttachment == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
-                                        <option value="off" {if $enableAttachment == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
-                                    </select>
+                                    <label class="ast-switch">
+                                        <input type="checkbox" name="AI_SMART_TALK_ENABLE_ATTACHMENT" value="1" {if $enableAttachment}checked{/if}>
+                                        <span class="ast-switch-slider"></span>
+                                    </label>
                                 </div>
                                 <div class="ast-feature-toggle">
                                     <span class="label"><i class="icon icon-thumbs-up"></i> {l s='Feedback' mod='aismarttalk'}</span>
-                                    <select name="AI_SMART_TALK_ENABLE_FEEDBACK" class="ast-select" style="width: auto;">
-                                        <option value="" {if $enableFeedback == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
-                                        <option value="on" {if $enableFeedback == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
-                                        <option value="off" {if $enableFeedback == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
-                                    </select>
+                                    <label class="ast-switch">
+                                        <input type="checkbox" name="AI_SMART_TALK_ENABLE_FEEDBACK" value="1" {if $enableFeedback}checked{/if}>
+                                        <span class="ast-switch-slider"></span>
+                                    </label>
                                 </div>
                                 <div class="ast-feature-toggle">
                                     <span class="label"><i class="icon icon-microphone"></i> {l s='Voice Input' mod='aismarttalk'}</span>
-                                    <select name="AI_SMART_TALK_ENABLE_VOICE_INPUT" class="ast-select" style="width: auto;">
-                                        <option value="" {if $enableVoiceInput == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
-                                        <option value="on" {if $enableVoiceInput == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
-                                        <option value="off" {if $enableVoiceInput == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
-                                    </select>
+                                    <label class="ast-switch">
+                                        <input type="checkbox" name="AI_SMART_TALK_ENABLE_VOICE_INPUT" value="1" {if $enableVoiceInput}checked{/if}>
+                                        <span class="ast-switch-slider"></span>
+                                    </label>
                                 </div>
                                 <div class="ast-feature-toggle">
                                     <span class="label"><i class="icon icon-phone"></i> {l s='Voice Mode' mod='aismarttalk'}</span>
-                                    <select name="AI_SMART_TALK_ENABLE_VOICE_MODE" class="ast-select" style="width: auto;">
-                                        <option value="" {if $enableVoiceMode == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
-                                        <option value="on" {if $enableVoiceMode == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
-                                        <option value="off" {if $enableVoiceMode == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
-                                    </select>
+                                    <label class="ast-switch">
+                                        <input type="checkbox" name="AI_SMART_TALK_ENABLE_VOICE_MODE" value="1" {if $enableVoiceMode}checked{/if}>
+                                        <span class="ast-switch-slider"></span>
+                                    </label>
                                 </div>
                                 <div class="ast-feature-toggle">
                                     <span class="label"><i class="icon icon-user"></i> {l s='Auto-Login' mod='aismarttalk'}</span>
-                                    <select name="AI_SMART_TALK_ENABLE_AUTO_LOGIN" class="ast-select" style="width: auto;">
-                                        <option value="" {if $enableAutoLogin == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
-                                        <option value="on" {if $enableAutoLogin == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
-                                        <option value="off" {if $enableAutoLogin == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
-                                    </select>
+                                    <label class="ast-switch">
+                                        <input type="checkbox" name="AI_SMART_TALK_ENABLE_AUTO_LOGIN" value="1" {if $enableAutoLogin}checked{/if}>
+                                        <span class="ast-switch-slider"></span>
+                                    </label>
                                 </div>
                                 <div class="ast-feature-toggle">
                                     <span class="label"><i class="icon icon-lock"></i> {l s='Require login' mod='aismarttalk'}</span>
