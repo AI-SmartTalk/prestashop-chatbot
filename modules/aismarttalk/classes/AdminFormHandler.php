@@ -344,24 +344,20 @@ class AdminFormHandler
             $secondaryColor = '';
         }
 
-        // Feature toggles
-        $validToggleValues = ['', 'on', 'off'];
-        $toggleFields = [
+        // Feature toggles are plain on/off switches (checkboxes): a posted value
+        // means "on" (stored '1'), an absent one means "off" (stored '0'). Storing
+        // an explicit '1'/'0' makes the plugin authoritative over the platform for
+        // that switch (see ChatbotSettingsBuilder::explicitBinary).
+        $binaryToggleFields = [
             'AI_SMART_TALK_ENABLE_ATTACHMENT',
             'AI_SMART_TALK_ENABLE_FEEDBACK',
             'AI_SMART_TALK_ENABLE_VOICE_INPUT',
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
             'AI_SMART_TALK_ENABLE_AUTO_LOGIN',
+            'AI_SMART_TALK_REQUIRE_AUTHENTICATION',
+            'AI_SMART_TALK_GDPR_ENABLED',
+            'AI_SMART_TALK_CONSENT_WALL_ENABLED',
         ];
-
-        $toggleValues = [];
-        foreach ($toggleFields as $field) {
-            $value = \Tools::getValue($field, '');
-            if (!in_array($value, $validToggleValues)) {
-                $value = '';
-            }
-            $toggleValues[$field] = $value;
-        }
 
         // Save all customization settings
         // Note: AI_SMART_TALK_AVATAR_URL is not saved here — avatar is managed on the platform
@@ -382,34 +378,21 @@ class AdminFormHandler
         \Configuration::updateValue('AI_SMART_TALK_PRIMARY_COLOR', $primaryColor);
         \Configuration::updateValue('AI_SMART_TALK_SECONDARY_COLOR', $secondaryColor);
 
-        foreach ($toggleValues as $field => $value) {
-            \Configuration::updateValue($field, $value);
+        foreach ($binaryToggleFields as $field) {
+            \Configuration::updateValue($field, \Tools::getValue($field) ? '1' : '0');
         }
 
-        // GDPR settings
-        $gdprEnabled = \Tools::getValue('AI_SMART_TALK_GDPR_ENABLED', '');
+        // GDPR text fields (the GDPR on/off and Consent Wall switches are saved as
+        // binaries in the loop above). The privacy URL and consent message stay
+        // free-text inputs.
         $gdprPrivacyUrl = \Tools::getValue('AI_SMART_TALK_GDPR_PRIVACY_URL', '');
-
-        if (!in_array($gdprEnabled, $validToggleValues)) {
-            $gdprEnabled = '';
-        }
-
         if (!empty($gdprPrivacyUrl) && !filter_var($gdprPrivacyUrl, FILTER_VALIDATE_URL)) {
             $gdprPrivacyUrl = '';
             $output .= $this->module->displayWarning(
                 $this->trans('Invalid privacy policy URL - must be a valid URL starting with http:// or https://', [], 'Modules.Aismarttalk.Admin')
             );
         }
-
-        \Configuration::updateValue('AI_SMART_TALK_GDPR_ENABLED', $gdprEnabled);
         \Configuration::updateValue('AI_SMART_TALK_GDPR_PRIVACY_URL', pSQL($gdprPrivacyUrl));
-
-        // GDPR Consent Wall settings
-        $consentWallEnabled = \Tools::getValue('AI_SMART_TALK_CONSENT_WALL_ENABLED', '');
-        if (!in_array($consentWallEnabled, $validToggleValues)) {
-            $consentWallEnabled = '';
-        }
-        \Configuration::updateValue('AI_SMART_TALK_CONSENT_WALL_ENABLED', $consentWallEnabled);
 
         $consentWallMessage = \Tools::getValue('AI_SMART_TALK_CONSENT_WALL_MESSAGE', '');
         \Configuration::updateValue('AI_SMART_TALK_CONSENT_WALL_MESSAGE', pSQL($consentWallMessage));

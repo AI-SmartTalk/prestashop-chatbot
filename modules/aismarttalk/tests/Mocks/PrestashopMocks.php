@@ -70,6 +70,24 @@ class Configuration
     }
 
     /**
+     * Mock Configuration::hasKey() — whether the key has ever been stored.
+     */
+    public static function hasKey($key, $idLang = null, $idShopGroup = null, $idShop = null)
+    {
+        if ($idShop !== null && $idShop > 0) {
+            return isset(self::$shopStore[$idShop][$key]) || isset(self::$globalStore[$key]);
+        }
+
+        $contextShopId = Shop::getContextShopID();
+        if ($contextShopId > 0 && Shop::getContext() === Shop::CONTEXT_SHOP
+            && isset(self::$shopStore[$contextShopId][$key])) {
+            return true;
+        }
+
+        return isset(self::$globalStore[$key]);
+    }
+
+    /**
      * Mock Configuration::updateValue()
      * In CONTEXT_ALL: writes to global
      * In CONTEXT_SHOP: writes to current shop

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
+  <file original="modulesaismarttalkchatbottoggle" source-language="nl-NL" target-language="nl-NL" datatype="plaintext">
+    <body>
+      <trans-unit id="93cba07454f06a4a960172bbd6e2a435">
+        <source>Yes</source>
+        <target>Ja</target>
+      </trans-unit>
+      <trans-unit id="bafd7322c6e97d25b6299b5d6fe8920b">
+        <source>No</source>
+        <target>Nee</target>
+      </trans-unit>
+      <trans-unit id="ee2c7aebc882012e14d880887965e5e6">
+        <source>Chatbot Activation</source>
+        <target>Chatbotactivering</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

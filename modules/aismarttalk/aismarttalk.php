@@ -50,7 +50,7 @@ class AiSmartTalk extends Module
     {
         $this->name = 'aismarttalk';
         $this->tab = 'front_office_features';
-        $this->version = '3.11.0';
+        $this->version = '3.12.0';
         $this->author = 'AI SmartTalk';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = [
@@ -320,6 +320,7 @@ class AiSmartTalk extends Module
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_FEEDBACK')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_INPUT')
             && Configuration::deleteByName('AI_SMART_TALK_ENABLE_VOICE_MODE')
+            && Configuration::deleteByName('AI_SMART_TALK_REQUIRE_AUTHENTICATION')
             && Configuration::deleteByName('AI_SMART_TALK_BORDER_RADIUS')
             && Configuration::deleteByName('AI_SMART_TALK_BUTTON_BORDER_RADIUS')
             && Configuration::deleteByName('AI_SMART_TALK_ALLOWED_LANGUAGES')
@@ -488,6 +489,11 @@ class AiSmartTalk extends Module
         // Multistore context
         $isMultistoreActive = MultistoreHelper::isMultistoreActive();
 
+        // Platform-provided GDPR defaults (nested) used to render the GDPR switches.
+        $gdprPlatform = (is_array($embedConfig) && isset($embedConfig['gdprConsent']) && is_array($embedConfig['gdprConsent']))
+            ? $embedConfig['gdprConsent']
+            : null;
+
         $this->context->smarty->assign([
             'modulePath' => $this->_path,
             'moduleVersion' => $this->version,
@@ -553,11 +559,15 @@ class AiSmartTalk extends Module
             'buttonBorderRadius' => Configuration::get('AI_SMART_TALK_BUTTON_BORDER_RADIUS') ?: '',
             'primaryColor' => Configuration::get('AI_SMART_TALK_PRIMARY_COLOR') ?: '',
             'secondaryColor' => Configuration::get('AI_SMART_TALK_SECONDARY_COLOR') ?: '',
-            'enableAttachment' => Configuration::get('AI_SMART_TALK_ENABLE_ATTACHMENT') ?: '',
-            'enableFeedback' => Configuration::get('AI_SMART_TALK_ENABLE_FEEDBACK') ?: '',
-            'enableVoiceInput' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_INPUT') ?: '',
-            'enableVoiceMode' => Configuration::get('AI_SMART_TALK_ENABLE_VOICE_MODE') ?: '',
-            'enableAutoLogin' => Configuration::get('AI_SMART_TALK_ENABLE_AUTO_LOGIN') ?: '',
+            // Feature switches render a concrete on/off state: the merchant's saved
+            // choice if any, otherwise the current platform value from the embed
+            // config (never an opaque "default"). Auto-login defaults to on.
+            'enableAttachment' => $this->featureSwitchState('AI_SMART_TALK_ENABLE_ATTACHMENT', $embedConfig, 'enableAttachment', false),
+            'enableFeedback' => $this->featureSwitchState('AI_SMART_TALK_ENABLE_FEEDBACK', $embedConfig, 'enableFeedback', false),
+            'enableVoiceInput' => $this->featureSwitchState('AI_SMART_TALK_ENABLE_VOICE_INPUT', $embedConfig, 'enableVoiceInput', false),
+            'enableVoiceMode' => $this->featureSwitchState('AI_SMART_TALK_ENABLE_VOICE_MODE', $embedConfig, 'enableVoiceMode', false),
+            'enableAutoLogin' => $this->featureSwitchState('AI_SMART_TALK_ENABLE_AUTO_LOGIN', $embedConfig, 'enableAutoLogin', true),
+            'requireLogin' => $this->featureSwitchState('AI_SMART_TALK_REQUIRE_AUTHENTICATION', $embedConfig, 'requireAuthentication', false),
 
             // Widget languages — restrict the language switcher (empty = all)
             'availableLanguages' => WidgetLocales::all(),
@@ -565,9 +575,12 @@ class AiSmartTalk extends Module
             'allowedLanguagesMap' => array_fill_keys($this->getAllowedLanguagesSelected(), true),
 
             // GDPR settings
-            'gdprEnabled' => Configuration::get('AI_SMART_TALK_GDPR_ENABLED') ?: '',
+            // GDPR on/off and Consent Wall are switches too — show the concrete
+            // state (saved choice, else the platform gdprConsent value: enabled
+            // defaults on, consent wall defaults off).
+            'gdprEnabled' => $this->featureSwitchState('AI_SMART_TALK_GDPR_ENABLED', $gdprPlatform, 'enabled', true),
             'gdprPrivacyUrl' => Configuration::get('AI_SMART_TALK_GDPR_PRIVACY_URL') ?: '',
-            'consentWallEnabled' => Configuration::get('AI_SMART_TALK_CONSENT_WALL_ENABLED') ?: '',
+            'consentWallEnabled' => $this->featureSwitchState('AI_SMART_TALK_CONSENT_WALL_ENABLED', $gdprPlatform, 'consentWallEnabled', false),
             'consentWallMessage' => Configuration::get('AI_SMART_TALK_CONSENT_WALL_MESSAGE') ?: '',
 
             // Cache and override status
@@ -1863,6 +1876,31 @@ class AiSmartTalk extends Module
         $base = $parsed['path'] ?? '';
 
         return $base . ($cleanQuery ? '?' . $cleanQuery : '');
+    }
+
+    /**
+     * Effective on/off state to render for a binary feature switch: the merchant's
+     * explicit plugin choice if any, otherwise the current platform value from the
+     * embed config, otherwise the given fallback. Keeps the switch showing a real
+     * yes/no state instead of an opaque "default".
+     *
+     * @param string     $configKey   PrestaShop configuration key
+     * @param array|null $embedConfig  Embed config fetched from the API
+     * @param string     $embedKey     Corresponding key in the embed config
+     * @param bool       $fallback     Value when neither a choice nor a platform value exists
+     * @return bool
+     */
+    private function featureSwitchState($configKey, $embedConfig, $embedKey, $fallback)
+    {
+        $explicit = ChatbotSettingsBuilder::explicitBinary($configKey);
+        if ($explicit !== null) {
+            return $explicit;
+        }
+        if (is_array($embedConfig) && array_key_exists($embedKey, $embedConfig)) {
+            return (bool) $embedConfig[$embedKey];
+        }
+
+        return $fallback;
     }
 
     private function hasLocalCustomizations(): bool
