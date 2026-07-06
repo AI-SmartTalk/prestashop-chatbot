@@ -365,14 +365,15 @@ class ChatbotSettingsBuilder
      */
     private static function applyGdprOverrides(array $settings): array
     {
-        $gdprEnabled = \Configuration::get('AI_SMART_TALK_GDPR_ENABLED');
+        // GDPR on/off and Consent Wall are binary switches (null = inherit platform).
+        $gdprEnabled = self::explicitBinary('AI_SMART_TALK_GDPR_ENABLED');
         $gdprPrivacyUrl = \Configuration::get('AI_SMART_TALK_GDPR_PRIVACY_URL');
-        $consentWallEnabled = \Configuration::get('AI_SMART_TALK_CONSENT_WALL_ENABLED');
+        $consentWallEnabled = self::explicitBinary('AI_SMART_TALK_CONSENT_WALL_ENABLED');
         $consentWallMessage = \Configuration::get('AI_SMART_TALK_CONSENT_WALL_MESSAGE');
 
-        $hasGdprOverrides = $gdprEnabled === 'on' || $gdprEnabled === 'off'
+        $hasGdprOverrides = $gdprEnabled !== null
             || !empty($gdprPrivacyUrl)
-            || $consentWallEnabled === 'on' || $consentWallEnabled === 'off';
+            || $consentWallEnabled !== null;
 
         if (!$hasGdprOverrides) {
             return $settings;
@@ -388,19 +389,19 @@ class ChatbotSettingsBuilder
             $settings['gdprConsent'] = [];
         }
 
-        if ($gdprEnabled === 'on') {
+        if ($gdprEnabled === true) {
             $settings['gdprConsent']['enabled'] = true;
             $settings['gdprConsent']['privacyPolicyUrl'] = !empty($gdprPrivacyUrl) ? $gdprPrivacyUrl : $defaultPrivacyUrl;
-        } elseif ($gdprEnabled === 'off') {
+        } elseif ($gdprEnabled === false) {
             $settings['gdprConsent']['enabled'] = false;
         }
 
-        if ($consentWallEnabled === 'on') {
+        if ($consentWallEnabled === true) {
             $settings['gdprConsent']['consentWallEnabled'] = true;
             if (!empty($consentWallMessage)) {
                 $settings['gdprConsent']['consentWallMessage'] = $consentWallMessage;
             }
-        } elseif ($consentWallEnabled === 'off') {
+        } elseif ($consentWallEnabled === false) {
             $settings['gdprConsent']['consentWallEnabled'] = false;
         }
 

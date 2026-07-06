@@ -2236,11 +2236,10 @@ a.ast-btn-success:hover {
 
                             <div class="ast-feature-toggle" style="margin-bottom: 20px;">
                                 <span class="label"><i class="icon icon-eye"></i> {l s='Show Privacy Info' mod='aismarttalk'}</span>
-                                <select name="AI_SMART_TALK_GDPR_ENABLED" class="ast-select" style="width: auto;">
-                                    <option value="" {if $gdprEnabled == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
-                                    <option value="on" {if $gdprEnabled == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
-                                    <option value="off" {if $gdprEnabled == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
-                                </select>
+                                <label class="ast-switch">
+                                    <input type="checkbox" name="AI_SMART_TALK_GDPR_ENABLED" value="1" {if $gdprEnabled}checked{/if}>
+                                    <span class="ast-switch-slider"></span>
+                                </label>
                             </div>
 
                             <div class="ast-form-group">
@@ -2251,11 +2250,10 @@ a.ast-btn-success:hover {
 
                             <div class="ast-feature-toggle" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0;">
                                 <span class="label"><i class="icon icon-lock"></i> {l s='Consent Wall' mod='aismarttalk'} <span class="ast-badge ast-badge-info" style="font-size: 10px; margin-left: 4px;">STRICT</span></span>
-                                <select name="AI_SMART_TALK_CONSENT_WALL_ENABLED" class="ast-select" style="width: auto;">
-                                    <option value="" {if $consentWallEnabled == ''}selected{/if}>{l s='Default' mod='aismarttalk'}</option>
-                                    <option value="on" {if $consentWallEnabled == 'on'}selected{/if}>{l s='On' mod='aismarttalk'}</option>
-                                    <option value="off" {if $consentWallEnabled == 'off'}selected{/if}>{l s='Off' mod='aismarttalk'}</option>
-                                </select>
+                                <label class="ast-switch">
+                                    <input type="checkbox" name="AI_SMART_TALK_CONSENT_WALL_ENABLED" value="1" {if $consentWallEnabled}checked{/if}>
+                                    <span class="ast-switch-slider"></span>
+                                </label>
                             </div>
                             <p style="color: #64748b; font-size: 12px; margin: 8px 0 0;">{l s='When enabled, users must explicitly accept data processing terms before using the chatbot. Recommended for strict GDPR compliance.' mod='aismarttalk'}</p>
 

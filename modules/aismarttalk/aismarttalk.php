@@ -489,6 +489,11 @@ class AiSmartTalk extends Module
         // Multistore context
         $isMultistoreActive = MultistoreHelper::isMultistoreActive();
 
+        // Platform-provided GDPR defaults (nested) used to render the GDPR switches.
+        $gdprPlatform = (is_array($embedConfig) && isset($embedConfig['gdprConsent']) && is_array($embedConfig['gdprConsent']))
+            ? $embedConfig['gdprConsent']
+            : null;
+
         $this->context->smarty->assign([
             'modulePath' => $this->_path,
             'moduleVersion' => $this->version,
@@ -570,9 +575,12 @@ class AiSmartTalk extends Module
             'allowedLanguagesMap' => array_fill_keys($this->getAllowedLanguagesSelected(), true),
 
             // GDPR settings
-            'gdprEnabled' => Configuration::get('AI_SMART_TALK_GDPR_ENABLED') ?: '',
+            // GDPR on/off and Consent Wall are switches too — show the concrete
+            // state (saved choice, else the platform gdprConsent value: enabled
+            // defaults on, consent wall defaults off).
+            'gdprEnabled' => $this->featureSwitchState('AI_SMART_TALK_GDPR_ENABLED', $gdprPlatform, 'enabled', true),
             'gdprPrivacyUrl' => Configuration::get('AI_SMART_TALK_GDPR_PRIVACY_URL') ?: '',
-            'consentWallEnabled' => Configuration::get('AI_SMART_TALK_CONSENT_WALL_ENABLED') ?: '',
+            'consentWallEnabled' => $this->featureSwitchState('AI_SMART_TALK_CONSENT_WALL_ENABLED', $gdprPlatform, 'consentWallEnabled', false),
             'consentWallMessage' => Configuration::get('AI_SMART_TALK_CONSENT_WALL_MESSAGE') ?: '',
 
             // Cache and override status

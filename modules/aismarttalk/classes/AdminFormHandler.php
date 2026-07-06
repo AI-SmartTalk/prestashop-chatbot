@@ -355,9 +355,9 @@ class AdminFormHandler
             'AI_SMART_TALK_ENABLE_VOICE_MODE',
             'AI_SMART_TALK_ENABLE_AUTO_LOGIN',
             'AI_SMART_TALK_REQUIRE_AUTHENTICATION',
+            'AI_SMART_TALK_GDPR_ENABLED',
+            'AI_SMART_TALK_CONSENT_WALL_ENABLED',
         ];
-
-        // Note on GDPR toggles below: those keep the tri-state select on purpose.
 
         // Save all customization settings
         // Note: AI_SMART_TALK_AVATAR_URL is not saved here — avatar is managed on the platform
@@ -382,33 +382,17 @@ class AdminFormHandler
             \Configuration::updateValue($field, \Tools::getValue($field) ? '1' : '0');
         }
 
-        // GDPR settings — kept as a tri-state select ('' inherits the platform):
-        // consent policy legitimately mirrors the platform default rather than a
-        // hard on/off, unlike the feature switches above.
-        $validToggleValues = ['', 'on', 'off'];
-        $gdprEnabled = \Tools::getValue('AI_SMART_TALK_GDPR_ENABLED', '');
+        // GDPR text fields (the GDPR on/off and Consent Wall switches are saved as
+        // binaries in the loop above). The privacy URL and consent message stay
+        // free-text inputs.
         $gdprPrivacyUrl = \Tools::getValue('AI_SMART_TALK_GDPR_PRIVACY_URL', '');
-
-        if (!in_array($gdprEnabled, $validToggleValues)) {
-            $gdprEnabled = '';
-        }
-
         if (!empty($gdprPrivacyUrl) && !filter_var($gdprPrivacyUrl, FILTER_VALIDATE_URL)) {
             $gdprPrivacyUrl = '';
             $output .= $this->module->displayWarning(
                 $this->trans('Invalid privacy policy URL - must be a valid URL starting with http:// or https://', [], 'Modules.Aismarttalk.Admin')
             );
         }
-
-        \Configuration::updateValue('AI_SMART_TALK_GDPR_ENABLED', $gdprEnabled);
         \Configuration::updateValue('AI_SMART_TALK_GDPR_PRIVACY_URL', pSQL($gdprPrivacyUrl));
-
-        // GDPR Consent Wall settings
-        $consentWallEnabled = \Tools::getValue('AI_SMART_TALK_CONSENT_WALL_ENABLED', '');
-        if (!in_array($consentWallEnabled, $validToggleValues)) {
-            $consentWallEnabled = '';
-        }
-        \Configuration::updateValue('AI_SMART_TALK_CONSENT_WALL_ENABLED', $consentWallEnabled);
 
         $consentWallMessage = \Tools::getValue('AI_SMART_TALK_CONSENT_WALL_MESSAGE', '');
         \Configuration::updateValue('AI_SMART_TALK_CONSENT_WALL_MESSAGE', pSQL($consentWallMessage));
