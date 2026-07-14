@@ -24,16 +24,22 @@ en cas de doute, le code fait foi.
   `parentExternalId`) même quand la plateforme les stocke en entier.
 - **Les prix sont des objets `Money`** en **unités mineures entières (centimes)** —
   jamais des strings ni des floats. Voir §4.
-- **Les null optionnels sont OMIS** du JSON, jamais envoyés comme `null` ou valeur
-  factice. Quelques champs de structure font exception et sont toujours présents
-  (voir la colonne « Obligatoire » du §3) : `type`, `externalId`, `title`,
-  `availability`, `quantity`, `attributes` (`[]` si vide), `variants` (`[]` si
-  produit simple). `restockDate` est la seule clé optionnelle émise explicitement
-  à `null`.
-- Le backend valide avec un schéma **Zod `.passthrough()`** : les clés inconnues
-  sont tolérées (compatibilité ascendante), mais les champs et types documentés
-  ici sont contrôlés strictement. Émettre du bruit inutile est donc à proscrire ;
-  ajouter un champ additif ne casse rien.
+- **Gestion des null selon le niveau :**
+  - **Au niveau produit**, les clés optionnelles restent **présentes avec la
+    valeur `null`** quand elles sont vides (ex. `reference`, `brand`, `url`,
+    `image`, `restockDate`, `defaultCategoryExternalId`). Elles ne sont PAS
+    retirées du JSON. Le backend les traite comme absentes (voir Zod ci-dessous).
+  - **Au niveau variant** (`variants[]`), les clés optionnelles nulles sont au
+    contraire **physiquement retirées** (`mapVariant()` applique un `array_filter`).
+    Restent toujours : `externalId`, `attributes`, `availability`, `quantity`.
+  - Champs de structure toujours présents au niveau produit (voir la colonne
+    « Obligatoire » du §3) : `type`, `externalId`, `title`, `availability`,
+    `quantity`, `attributes` (`[]` si vide), `variants` (`[]` si produit simple).
+- Le backend valide avec un schéma **Zod `.nullable().optional()` + `.passthrough()`** :
+  une clé optionnelle à `null` est équivalente à une clé absente, et les clés
+  inconnues sont tolérées (compatibilité ascendante). Les champs et types
+  documentés ici sont en revanche contrôlés strictement ; ajouter un champ additif
+  ne casse rien.
 
 ---
 
@@ -144,18 +150,20 @@ catégories et des `Money` en centimes (EUR, 2 décimales) :
 
 ## 3. Document produit — champ par champ
 
-Réf. : `CanonicalProductMapper::map()`. Colonne « Obligatoire » = clé toujours
-présente dans le JSON (les autres sont omises si null / vides).
+Réf. : `CanonicalProductMapper::map()`. **Toutes les clés produit ci-dessous sont
+toujours présentes dans le JSON** : la colonne « Oblig. » indique si la valeur est
+garantie non-nulle (`oui`) ou si elle peut valoir `null` quand la donnée est vide
+(`null ok`). Contrairement aux variants, aucune clé produit n'est retirée.
 
 | Champ                       | Type              | Oblig. | Source PrestaShop / règle                                                                                  |
 | --------------------------- | ----------------- | :----: | ---------------------------------------------------------------------------------------------------------- |
 | `type`                      | string            |  oui   | Constante `"product"`.                                                                                     |
 | `externalId`                | string            |  oui   | `id_product` (casté en string).                                                                            |
 | `title`                     | string            |  oui   | `product.name`.                                                                                            |
-| `description`               | string            |  non   | `product.description`, **HTML strippé** (`strip_tags`). Omis si vide.                                      |
-| `descriptionShort`          | string            |  non   | `product.description_short`, HTML strippé. Omis si vide.                                                   |
-| `reference`                 | string            |  non   | `product.reference` (SKU parent). Omis si vide.                                                            |
-| `brand`                     | string            |  non   | `Manufacturer::getNameById(id_manufacturer)`. Omis si absent.                                              |
+| `description`               | string \| null    | null ok | `product.description`, **HTML strippé** (`strip_tags`). `null` si vide.                                    |
+| `descriptionShort`          | string \| null    | null ok | `product.description_short`, HTML strippé. `null` si vide.                                                 |
+| `reference`                 | string \| null    | null ok | `product.reference` (SKU parent). `null` si vide.                                                          |
+| `brand`                     | string \| null    | null ok | `Manufacturer::getNameById(id_manufacturer)`. `null` si absent.                                            |
 | `attributes`                | array `{name,value}` | oui | **Features PrestaShop** produit (Matériau, Style…) via `productFeatures()`. `[]` si aucune. Facetables même sur un produit simple. |
 | `price`                     | `Money`           |  oui   | `priceInfo->finalPrice` (prix final TTC) → `Money`. Voir §4.                                               |
 | `availability`              | enum string       |  oui   | `"in_stock"` si `quantity > 0`, sinon `"out_of_stock"` (`availability()`).                                 |
@@ -163,8 +171,8 @@ présente dans le JSON (les autres sont omises si null / vides).
 | `restockDate`               | string \| null    |  oui   | `null` si en stock ; sinon date de réappro `available_date` normalisée `YYYY-MM-DD` (voir §5). Émis même à `null`. |
 | `categories`                | array `CategoryRef` | oui  | `productCategories()` → objets `CategoryRef` (§6). `[]` si aucune.                                          |
 | `defaultCategoryExternalId` | string \| null    |  oui   | `id_category_default` (string) si `> 1`, sinon `null` (Root virtuel). Catégorie principale du produit.     |
-| `url`                       | string            |  non   | Lien produit (`Link::getProductLink`). Omis si vide.                                                       |
-| `image`                     | string            |  non   | URL de l'image de couverture. Omis si absente.                                                             |
+| `url`                       | string \| null    | null ok | Lien produit (`Link::getProductLink`). `null` si vide.                                                     |
+| `image`                     | string \| null    | null ok | URL de l'image de couverture. `null` si absente.                                                           |
 | `variants`                  | array `ProductVariant` | oui | Déclinaisons (`CombinationHelper::getVariants`) → variants canoniques (§3.1). `[]` si produit simple.   |
 
 ### Champs de remise (produit)
