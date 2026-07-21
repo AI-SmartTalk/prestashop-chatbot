@@ -75,6 +75,7 @@ class WidgetLocales
         'aeb' => ['flag' => '🇹🇳', 'name' => 'العربية التونسية'],
         'ayl' => ['flag' => '🇱🇾', 'name' => 'العربية الليبية'],
         'vi' => ['flag' => '🇻🇳', 'name' => 'Tiếng Việt'],
+        'ms' => ['flag' => '🇲🇾', 'name' => 'Bahasa Melayu'],
     ];
 
     /**
